@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+from apps.tickets.querysets import TicketManager
 
 
 class Priority(models.TextChoices):
@@ -184,6 +185,8 @@ class Ticket(TimeStampedModel):
         related_name="followed_tickets",
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="tickets")
+
+    objects = TicketManager()
 
     class Meta:
         ordering = ["-created_at"]

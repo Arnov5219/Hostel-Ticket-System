@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Raise Ticket | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'tickets:list' %}">Tickets</a>
+  <span class="separator">/</span>
+  <span class="current">New Ticket</span>
+{% endblock %}
+
+{% block page_title %}Raise a Support Ticket{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; padding: 12px 0 40px 0;">
+  <div class="card" style="width: 100%; max-width: 640px; padding: 28px;">
+    
+    <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Report an Issue or Request</h2>
+      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px;">
+        Your ticket will be automatically routed to the responsible caretaker or technician.
+      </p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); margin-bottom: 16px;">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 16px;">
+      {% csrf_token %}
+      {{ form.priority }}
+
+      <!-- Category & Subcategory -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Category *</label>
+          {{ form.category }}
+          {% if form.category.errors %}<span class="form-error">{{ form.category.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Subcategory (Optional)</label>
+          {{ form.sub_category }}
+        </div>
+      </div>
+
+      <!-- Priority Segmented Control -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Priority</label>
+        <div class="segmented-control" id="priority-segmented">
+          <button type="button" class="segmented-option" onclick="setPriority('LOW', this)">Low</button>
+          <button type="button" class="segmented-option active" onclick="setPriority('MEDIUM', this)">Medium</button>
+          <button type="button" class="segmented-option" onclick="setPriority('HIGH', this)">High</button>
+          <button type="button" class="segmented-option" onclick="setPriority('URGENT', this)">Urgent</button>
+        </div>
+        <span class="form-help">Urgent is for active safety hazards or water floods only.</span>
+      </div>
+
+      <!-- Title -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Title / Summary *</label>
+        {{ form.title }}
+        {% if form.title.errors %}<span class="form-error">{{ form.title.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Description -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Detailed Description *</label>
+        {{ form.description }}
+        {% if form.description.errors %}<span class="form-error">{{ form.description.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Location (Hostel & Room) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Hostel *</label>
+          {{ form.hostel }}
+          {% if form.hostel.errors %}<span class="form-error">{{ form.hostel.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Room / Specific Location</label>
+          {{ form.room }}
+        </div>
+      </div>
+
+      <!-- Image Attachments (up to 3 images, 5 MB each) -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Image Attachments (Up to 3 photos, max 5 MB each)</label>
+        <div style="border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px; text-align: center; background-color: var(--bg-subtle);">
+          <i data-lucide="image-plus" style="width: 24px; height: 24px; color: var(--text-muted); margin-bottom: 6px;"></i>
+          <input type="file" name="images" id="ticket-images" multiple accept="image/*" class="form-control" style="border: none; background: transparent;">
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px;">PNG, JPG, WEBP supported</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
+        <a href="{% url 'tickets:list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+          <span>Raise Ticket</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<script>
+function setPriority(val, btn) {
+  document.getElementById('id_priority').value = val;
+  document.querySelectorAll('#priority-segmented .segmented-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

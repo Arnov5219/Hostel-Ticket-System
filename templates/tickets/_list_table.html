@@ -1,0 +1,84 @@
+{% load ui %}
+
+<div class="table-container" style="border: none; border-radius: 0;">
+  <table class="app-table">
+    <thead>
+      <tr>
+        <th style="width: 32px;"><input type="checkbox" id="select-all-tickets"></th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Hostel / Room</th>
+        <th>Level</th>
+        <th>SLA</th>
+        <th>Ticket ID</th>
+        <th>Updated</th>
+        <th style="width: 36px;"><i data-lucide="message-square" style="width: 13px; height: 13px;"></i></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in tickets %}
+        <tr onclick="if(!event.target.closest('input')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
+          <td><input type="checkbox" name="selected_tickets" value="{{ ticket.id }}"></td>
+          <td style="font-weight: 600;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>{{ ticket.title }}</span>
+              {% if ticket.attachments.exists %}
+                <i data-lucide="paperclip" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+              {% endif %}
+            </div>
+          </td>
+          <td>{% status_pill ticket.status %}</td>
+          <td>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px;"></i>
+              {{ ticket.category.name }}
+            </span>
+          </td>
+          <td>{% priority_dot ticket.priority %}</td>
+          <td>
+            {{ ticket.hostel.name }}
+            {% if ticket.room %}- Rm {{ ticket.room.room_number }}{% endif %}
+          </td>
+          <td>{% level_badge ticket.current_level %}</td>
+          <td>
+            <div class="sla-bar-container" title="{{ ticket.due_at|date:'M d, H:i' }}">
+              {% if ticket.is_overdue %}
+                <div class="sla-bar red" style="width: 100%;"></div>
+              {% elif ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+                <div class="sla-bar green" style="width: 100%;"></div>
+              {% else %}
+                <div class="sla-bar {% if ticket.priority == 'URGENT' %}amber{% else %}green{% endif %}" style="width: 50%;"></div>
+              {% endif %}
+            </div>
+          </td>
+          <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">
+            {{ ticket.ticket_no }}
+          </td>
+          <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+            {% time_ago ticket.updated_at %}
+          </td>
+          <td style="text-align: center; color: var(--text-muted); font-size: var(--fs-xs);">
+            {{ ticket.comment_count|default:0 }}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="11" style="text-align: center; padding: 48px; color: var(--text-muted);">
+            <div class="empty-state">
+              <i data-lucide="ticket" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 8px;"></i>
+              <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary);">No tickets found</h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: 12px;">Try adjusting your filters or search terms.</p>
+              {% if request.user.is_hosteler or request.user.is_admin %}
+              <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">+ Raise Ticket</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include 'components/_pagination.html' with page_obj=page_obj query_params=query_params %}

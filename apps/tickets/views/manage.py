@@ -1,24 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.permissions import can_manage_config
 from apps.tickets.forms import CategoryForm, RoutingRuleForm, TagForm
 from apps.tickets.models import Category, RoutingRule, SLAPolicy, Tag
-
-
-def ticket_list(request):
-    return HttpResponse("Ticket list placeholder")
-
-
-def ticket_kanban(request):
-    return HttpResponse("Ticket kanban placeholder")
-
-
-def ticket_create(request):
-    return HttpResponse("Ticket create placeholder")
 
 
 @login_required

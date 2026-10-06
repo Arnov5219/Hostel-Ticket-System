@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Tickets | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Tickets</span>
+{% endblock %}
+
+{% block page_title %}Ticket List{% endblock %}
+
+{% block page_actions %}
+  <div style="display: flex; align-items: center; gap: 8px;">
+    {% if not request.user.is_hosteler %}
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-secondary btn-sm" title="Kanban View">
+      <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
+      <span>Kanban View</span>
+    </a>
+    {% endif %}
+
+    <a href="{% url 'tickets:list' %}" class="btn btn-ghost btn-sm" title="Refresh">
+      <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+    </a>
+
+    {% if request.user.is_hosteler or request.user.is_admin %}
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+      <span>Raise Ticket</span>
+    </a>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; gap: 16px; height: 100%; align-items: stretch;">
+
+  <!-- Left Filter Sidebar (~220px) -->
+  <aside style="width: 220px; flex-shrink: 0; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 14px; height: fit-content;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+      <span style="font-weight: 600; font-size: var(--fs-sm);">Filter By</span>
+      <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--text-muted);">Clear all</a>
+    </div>
+
+    <form id="filter-form" method="get" hx-get="{% url 'tickets:list' %}" hx-target="#tickets-table-container" hx-push-url="true" style="display: flex; flex-direction: column; gap: 12px;">
+      
+      <!-- Status -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Status</label>
+        <select name="status" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">All Statuses</option>
+          {% for st_val, st_lbl in statuses %}
+            <option value="{{ st_val }}" {% if curr_status == st_val %}selected{% endif %}>{{ st_lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Priority -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Priority</label>
+        <select name="priority" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">All Priorities</option>
+          {% for pr_val, pr_lbl in priorities %}
+            <option value="{{ pr_val }}" {% if curr_priority == pr_val %}selected{% endif %}>{{ pr_lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Category -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Category</label>
+        <select name="category" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if curr_category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Hostel (Staff only) -->
+      {% if not request.user.is_hosteler %}
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Hostel</label>
+        <select name="hostel" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">All Hostels</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}" {% if curr_hostel == h.id|stringformat:'s' %}selected{% endif %}>{{ h.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Assigned To -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Assigned To</label>
+        <select name="assigned_to" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">Anyone</option>
+          {% for u in staff_users %}
+            <option value="{{ u.id }}" {% if curr_assigned == u.id|stringformat:'s' %}selected{% endif %}>{{ u.full_name|default:u.login_id }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Tags -->
+      {% if tags %}
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Tag</label>
+        <select name="tag" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">All Tags</option>
+          {% for t in tags %}
+            <option value="{{ t.id }}" {% if curr_tag == t.id|stringformat:'s' %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <input type="hidden" name="sort" id="sort-input" value="{{ curr_sort }}">
+    </form>
+  </aside>
+
+  <!-- Right Main Ticket Table Area -->
+  <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+    
+    <!-- Top Filter & Search Bar -->
+    <div class="card" style="padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+        <div style="position: relative; flex: 1; max-width: 320px;">
+          <i data-lucide="search" style="position: absolute; left: 8px; top: 8px; width: 14px; height: 14px; color: var(--text-muted);"></i>
+          <input type="text" name="search" value="{{ curr_search }}" placeholder="Search tickets, ID, reporter..."
+                 class="form-control" style="padding-left: 28px; font-size: var(--fs-sm);"
+                 hx-get="{% url 'tickets:list' %}" hx-target="#tickets-table-container" hx-trigger="keyup changed delay:300ms"
+                 hx-include="#filter-form">
+        </div>
+        <span style="font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle); padding: 4px 8px; border-radius: var(--radius-sm);">
+          {{ total_count }} total
+        </span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: var(--fs-xs); color: var(--text-muted);">Sort:</span>
+        <select class="form-select" style="width: 140px; font-size: var(--fs-xs); padding: 4px 8px;"
+                onchange="document.getElementById('sort-input').value = this.value; document.getElementById('filter-form').requestSubmit();">
+          <option value="-created_at" {% if curr_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+          <option value="created_at" {% if curr_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+          <option value="due_at" {% if curr_sort == 'due_at' %}selected{% endif %}>SLA Deadline</option>
+          <option value="-updated_at" {% if curr_sort == '-updated_at' %}selected{% endif %}>Last Updated</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tickets Table Container (HTMX swapped) -->
+    <div id="tickets-table-container" class="card" style="padding: 0; overflow: hidden; flex: 1;">
+      {% include 'tickets/_list_table.html' %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
