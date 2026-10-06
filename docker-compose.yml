@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hostel_tickets_db
+    restart: always
+    environment:
+      POSTGRES_DB: hostel_tickets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    container_name: hostel_tickets_web
+    restart: always
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_demo_data &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 config.wsgi:application"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DATABASE_URL: postgres://postgres:postgrespassword@db:5432/hostel_tickets
+      SECRET_KEY: django-insecure-prod-hostel-ticket-system-demo-key-replace-in-real-prod
+      ALLOWED_HOSTS: localhost,127.0.0.1,web
+      DEBUG: "False"
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
