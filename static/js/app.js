@@ -95,6 +95,65 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
     }
   });
+
+  // Live Instant Search for Command Palette
+  const searchInput = document.getElementById('search-input');
+  const paletteResults = document.getElementById('palette-results');
+  const paletteHint = document.getElementById('palette-hint');
+  let searchTimer = null;
+
+  if (searchInput && paletteResults) {
+    const defaultNavHtml = paletteResults.innerHTML;
+
+    searchInput.addEventListener('input', function() {
+      const q = this.value.trim();
+      clearTimeout(searchTimer);
+
+      if (q.length < 2) {
+        paletteResults.innerHTML = defaultNavHtml;
+        if (paletteHint) paletteHint.textContent = 'Quick navigation: Dashboard, Tickets, Kanban, Profile';
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      searchTimer = setTimeout(() => {
+        if (paletteHint) paletteHint.textContent = `Searching for "${q}"...`;
+        fetch(`/tickets/search-quick/?q=${encodeURIComponent(q)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.results || data.results.length === 0) {
+              paletteResults.innerHTML = `
+                <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: var(--fs-xs);">
+                  No tickets found matching "${q}". Press Enter to search everywhere.
+                </div>
+              `;
+              if (paletteHint) paletteHint.textContent = 'Press Enter to open full search results';
+              return;
+            }
+
+            if (paletteHint) paletteHint.textContent = `${data.results.length} result(s) found (Click or press Enter)`;
+            paletteResults.innerHTML = data.results.map(t => `
+              <a href="${t.url}" class="dropdown-item" style="border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; text-decoration: none;">
+                <div style="display: flex; flex-direction: column; gap: 2px; overflow: hidden;">
+                  <span style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    ${t.title}
+                  </span>
+                  <span style="font-size: 11px; color: var(--text-muted);">
+                    ${t.ticket_no} • ${t.category || 'General'} • ${t.hostel || ''}
+                  </span>
+                </div>
+                <span class="status-pill ${t.status.toLowerCase().replace('_', '-')}" style="font-size: 10px; padding: 1px 6px;">
+                  ${t.status_display}
+                </span>
+              </a>
+            `).join('');
+          })
+          .catch(() => {
+            if (paletteHint) paletteHint.textContent = 'Search failed';
+          });
+      }, 250);
+    });
+  }
 });
 
 // Toast notification function

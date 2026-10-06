@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}403 Forbidden | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Access Denied</span>
+{% endblock %}
+
+{% block page_title %}Access Denied{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center; padding: 32px 16px;">
+  <div style="width: 64px; height: 64px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <i data-lucide="shield-alert" style="width: 32px; height: 32px;"></i>
+  </div>
+  <span style="font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--st-open-fg); text-transform: uppercase; margin-bottom: 4px;">403 Forbidden</span>
+  <h2 style="font-size: 24px; font-weight: 700; margin: 0 0 12px; color: var(--text-primary);">You don't have permission to view this page</h2>
+  <p style="font-size: var(--fs-md); color: var(--text-muted); max-width: 480px; margin: 0 0 24px; line-height: 1.5;">
+    Your current user role does not have the required authorization to view or perform operations on this resource.
+  </p>
+  <div style="display: flex; gap: 12px;">
+    <a href="javascript:history.back()" class="btn btn-secondary">
+      <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+      <span>Go Back</span>
+    </a>
+    <a href="{% url 'core:home' %}" class="btn btn-primary">
+      <i data-lucide="home" style="width: 14px; height: 14px;"></i>
+      <span>Return to Dashboard</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

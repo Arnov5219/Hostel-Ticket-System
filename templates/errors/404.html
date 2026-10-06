@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}404 Not Found | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Page Not Found</span>
+{% endblock %}
+
+{% block page_title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center; padding: 32px 16px;">
+  <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--bg-hover); color: var(--text-muted); display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <i data-lucide="compass" style="width: 32px; height: 32px;"></i>
+  </div>
+  <span style="font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">404 Not Found</span>
+  <h2 style="font-size: 24px; font-weight: 700; margin: 0 0 12px; color: var(--text-primary);">The page or ticket you requested does not exist</h2>
+  <p style="font-size: var(--fs-md); color: var(--text-muted); max-width: 480px; margin: 0 0 24px; line-height: 1.5;">
+    The link you followed may be broken, or the ticket or room record might have been removed.
+  </p>
+  <div style="display: flex; gap: 12px;">
+    <a href="javascript:history.back()" class="btn btn-secondary">
+      <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+      <span>Go Back</span>
+    </a>
+    <a href="{% url 'core:home' %}" class="btn btn-primary">
+      <i data-lucide="home" style="width: 14px; height: 14px;"></i>
+      <span>Return to Dashboard</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

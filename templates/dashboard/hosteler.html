@@ -33,7 +33,7 @@
         <div style="font-weight: 600; font-size: var(--fs-md);">Welcome, {{ user.full_name|default:user.login_id }}</div>
         <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; gap: 12px; margin-top: 2px;">
           <span>Hostel: <strong>{{ user.hostel.name|default:"Not assigned" }}</strong></span>
-          {% if user.room %}<span>Room: <strong>{{ user.room.number }}</strong></span>{% endif %}
+          {% if user.room %}<span>Room: <strong>{{ user.room.room_number }}</strong></span>{% endif %}
           <span>Roll / ID: <strong>{{ user.login_id }}</strong></span>
         </div>
       </div>

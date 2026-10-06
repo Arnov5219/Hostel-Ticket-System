@@ -20,6 +20,11 @@
     </a>
     {% endif %}
 
+    <a href="{% url 'tickets:export_csv' %}{% if query_params %}?{{ query_params }}{% endif %}" class="btn btn-secondary btn-sm" title="Export Filtered CSV">
+      <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+      <span>Export CSV</span>
+    </a>
+
     <a href="{% url 'tickets:list' %}" class="btn btn-ghost btn-sm" title="Refresh">
       <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
     </a>
@@ -34,7 +39,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; gap: 16px; height: 100%; align-items: stretch;">
+<div style="display: flex; gap: 16px; height: 100%; align-items: stretch; flex-wrap: wrap;">
 
   <!-- Left Filter Sidebar (~220px) -->
   <aside style="width: 220px; flex-shrink: 0; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 14px; height: fit-content;">
@@ -42,6 +47,28 @@
       <span style="font-weight: 600; font-size: var(--fs-sm);">Filter By</span>
       <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--text-muted);">Clear all</a>
     </div>
+
+    <!-- Saved Filters Preset List -->
+    {% if saved_filters %}
+    <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+      <div style="font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Saved Presets</div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        {% for sf in saved_filters %}
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-xs);">
+          <a href="{% url 'tickets:list' %}?{{ sf.querystring }}" style="color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+            ★ {{ sf.name }}
+          </a>
+          <form action="{% url 'tickets:delete_filter' sf.id %}" method="post" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px;" title="Delete Preset">
+              <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     <form id="filter-form" method="get" hx-get="{% url 'tickets:list' %}" hx-target="#tickets-table-container" hx-push-url="true" style="display: flex; flex-direction: column; gap: 12px;">
       
@@ -117,14 +144,28 @@
 
       <input type="hidden" name="sort" id="sort-input" value="{{ curr_sort }}">
     </form>
+
+    <!-- Save Current Filter Button -->
+    {% if query_params %}
+    <form action="{% url 'tickets:save_filter' %}" method="post" style="margin: 0; padding-top: 8px; border-top: 1px solid var(--border);"
+          onsubmit="const n = prompt('Enter a name for this filter preset:'); if(!n) return false; this.name.value = n; return true;">
+      {% csrf_token %}
+      <input type="hidden" name="name" value="">
+      <input type="hidden" name="querystring" value="{{ query_params }}">
+      <button type="submit" class="btn btn-ghost btn-sm" style="width: 100%; justify-content: center; font-size: var(--fs-xs);">
+        <i data-lucide="bookmark" style="width: 12px; height: 12px;"></i>
+        <span>Save this filter</span>
+      </button>
+    </form>
+    {% endif %}
   </aside>
 
-  <!-- Right Main Ticket Table Area -->
-  <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+  <!-- Right Main Ticket Area -->
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
     
     <!-- Top Filter & Search Bar -->
-    <div class="card" style="padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+    <div class="card" style="padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
         <div style="position: relative; flex: 1; max-width: 320px;">
           <i data-lucide="search" style="position: absolute; left: 8px; top: 8px; width: 14px; height: 14px; color: var(--text-muted);"></i>
           <input type="text" name="search" value="{{ curr_search }}" placeholder="Search tickets, ID, reporter..."
@@ -149,6 +190,38 @@
       </div>
     </div>
 
+    <!-- Staff Bulk Actions Bar (Shown when checkboxes selected) -->
+    {% if not request.user.is_hosteler %}
+    <form id="bulk-action-form" action="{% url 'tickets:bulk_action' %}" method="post"
+          style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 8px 14px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      {% csrf_token %}
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="bulk-count" style="font-weight: 600; font-size: var(--fs-sm); color: #1e40af;">0 tickets selected</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <select name="action" class="form-select" style="width: 120px; font-size: var(--fs-xs);" onchange="updateBulkTarget(this.value)">
+          <option value="status">Set Status</option>
+          <option value="assign">Assign To</option>
+        </select>
+
+        <select id="bulk-status-select" name="target_value" class="form-select" style="width: 140px; font-size: var(--fs-xs);">
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="ON_HOLD">On Hold</option>
+        </select>
+
+        <select id="bulk-assign-select" name="target_value_assign" class="form-select" style="display: none; width: 140px; font-size: var(--fs-xs);">
+          {% for u in staff_users %}
+            <option value="{{ u.id }}">{{ u.full_name|default:u.login_id }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+      </div>
+    </form>
+    {% endif %}
+
     <!-- Tickets Table Container (HTMX swapped) -->
     <div id="tickets-table-container" class="card" style="padding: 0; overflow: hidden; flex: 1;">
       {% include 'tickets/_list_table.html' %}
@@ -157,4 +230,63 @@
   </div>
 
 </div>
+
+<script>
+  function updateBulkTarget(action) {
+    const statusSelect = document.getElementById('bulk-status-select');
+    const assignSelect = document.getElementById('bulk-assign-select');
+    if (action === 'assign') {
+      statusSelect.style.display = 'none';
+      assignSelect.style.display = 'inline-block';
+      assignSelect.name = 'target_value';
+      statusSelect.name = 'target_value_unused';
+    } else {
+      statusSelect.style.display = 'inline-block';
+      assignSelect.style.display = 'none';
+      statusSelect.name = 'target_value';
+      assignSelect.name = 'target_value_unused';
+    }
+  }
+
+  function syncBulkSelection() {
+    const bulkBar = document.getElementById('bulk-action-form');
+    if (!bulkBar) return;
+    const checkedBoxes = document.querySelectorAll('input[name="selected_tickets"]:checked');
+    const bulkCount = document.getElementById('bulk-count');
+    
+    // Remove existing cloned inputs
+    bulkBar.querySelectorAll('input[data-cloned="true"]').forEach(el => el.remove());
+
+    if (checkedBoxes.length > 0) {
+      bulkBar.style.display = 'flex';
+      bulkCount.textContent = `${checkedBoxes.length} ticket${checkedBoxes.length > 1 ? 's' : ''} selected`;
+      checkedBoxes.forEach(cb => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'selected_tickets';
+        hidden.value = cb.value;
+        hidden.dataset.cloned = 'true';
+        bulkBar.appendChild(hidden);
+      });
+    } else {
+      bulkBar.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('change', function(e) {
+    if (e.target.id === 'select-all-tickets') {
+      const isChecked = e.target.checked;
+      document.querySelectorAll('input[name="selected_tickets"]').forEach(cb => {
+        cb.checked = isChecked;
+      });
+      syncBulkSelection();
+    } else if (e.target.name === 'selected_tickets') {
+      syncBulkSelection();
+    }
+  });
+
+  document.body.addEventListener('htmx:afterSwap', function() {
+    syncBulkSelection();
+  });
+</script>
 {% endblock %}
