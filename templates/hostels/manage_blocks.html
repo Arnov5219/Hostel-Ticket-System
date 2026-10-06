@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Blocks | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'hostels:manage_hostels' %}">Hostels</a>
+  <span class="separator">/</span>
+  <span class="current">Blocks</span>
+{% endblock %}
+
+{% block page_title %}Hostel Blocks{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'hostels:manage_hostels' %}" class="btn btn-secondary">
+    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i>
+    <span>Hostels</span>
+  </a>
+  <a href="{% url 'hostels:manage_rooms' %}" class="btn btn-secondary">
+    <i data-lucide="door-closed" style="width: 14px; height: 14px;"></i>
+    <span>Rooms</span>
+  </a>
+  <button type="button" class="btn btn-primary" onclick="document.getElementById('add-block-modal').style.display='flex';">
+    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+    <span>Add Block</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-container" style="border: none;">
+    <table class="app-table">
+      <thead>
+        <tr>
+          <th>Block Name</th>
+          <th>Hostel</th>
+          <th>Rooms Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for block in blocks %}
+          <tr>
+            <td style="font-weight: 600;">{{ block.name }}</td>
+            <td>{{ block.hostel.name }}</td>
+            <td>{{ block.rooms.count }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 32px; color: var(--text-muted);">
+              No blocks found. Click "Add Block" to create one.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Block Modal -->
+<div id="add-block-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Add New Block</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('add-block-modal').style.display='none';">✕</button>
+    </div>
+
+    <form method="post" action="{% url 'hostels:manage_blocks' %}" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Hostel</label>
+        {{ form.hostel }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Block Name</label>
+        {{ form.name }}
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-block-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Block</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

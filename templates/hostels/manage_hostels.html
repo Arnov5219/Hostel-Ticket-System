@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Hostels | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Hostels</span>
+{% endblock %}
+
+{% block page_title %}Hostels Management{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'hostels:manage_blocks' %}" class="btn btn-secondary">
+    <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
+    <span>Blocks</span>
+  </a>
+  <a href="{% url 'hostels:manage_rooms' %}" class="btn btn-secondary">
+    <i data-lucide="door-closed" style="width: 14px; height: 14px;"></i>
+    <span>Rooms</span>
+  </a>
+  <button type="button" class="btn btn-primary" onclick="document.getElementById('add-hostel-modal').style.display='flex';">
+    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+    <span>Add Hostel</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Hostels List Table -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-container" style="border: none;">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Hostel Name</th>
+            <th>Code</th>
+            <th>Type</th>
+            <th>Blocks</th>
+            <th>Total Rooms</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for hostel in hostels %}
+            <tr>
+              <td style="font-weight: 600;">{{ hostel.name }}</td>
+              <td style="font-family: monospace; font-size: var(--fs-xs);">{{ hostel.code }}</td>
+              <td>{{ hostel.get_gender_type_display }}</td>
+              <td>{{ hostel.blocks.count }}</td>
+              <td>
+                {% with total=0 %}
+                  {% for block in hostel.blocks.all %}
+                    {{ block.rooms.count }}
+                  {% empty %}
+                    0
+                  {% endfor %}
+                {% endwith %}
+              </td>
+              <td>
+                {% if hostel.is_active %}
+                  <span class="status-pill resolved">Active</span>
+                {% else %}
+                  <span class="status-pill closed">Inactive</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                No hostels configured yet. Click "Add Hostel" to create one.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Hostel Modal -->
+<div id="add-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Add New Hostel</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('add-hostel-modal').style.display='none';">✕</button>
+    </div>
+
+    <form method="post" action="{% url 'hostels:manage_hostels' %}" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+
+      <div class="form-group">
+        <label class="form-label">Hostel Name</label>
+        {{ form.name }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Code (Unique)</label>
+        {{ form.code }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Gender Type</label>
+        {{ form.gender_type }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        {{ form.address }}
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-hostel-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Hostel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
