@@ -1,0 +1,24 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-muted); background: var(--bg-surface);">
+  <div>
+    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} items
+  </div>
+  <div style="display: flex; gap: 4px;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" class="btn btn-secondary btn-sm">Previous</a>
+    {% else %}
+      <span class="btn btn-secondary btn-sm" style="opacity: 0.5; pointer-events: none;">Previous</span>
+    {% endif %}
+
+    <span style="display: inline-flex; align-items: center; padding: 0 8px; font-weight: 500; color: var(--text-primary);">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" class="btn btn-secondary btn-sm">Next</a>
+    {% else %}
+      <span class="btn btn-secondary btn-sm" style="opacity: 0.5; pointer-events: none;">Next</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,15 @@
+<div class="page-header">
+  <div class="page-header-title">
+    <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+    {% block page_title_extra %}{% endblock %}
+  </div>
+
+  <div class="page-header-actions">
+    {% block page_actions %}
+      <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+        <span>Raise Ticket</span>
+      </a>
+    {% endblock %}
+  </div>
+</div>

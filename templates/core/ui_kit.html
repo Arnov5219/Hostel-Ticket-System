@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}UI Kit & Design System | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">UI Kit</span>
+{% endblock %}
+
+{% block page_title %}Design System Showcase{% endblock %}
+
+{% block page_actions %}
+  <button type="button" class="btn btn-secondary" onclick="showToast('Test notification message!', 'success');">
+    <i data-lucide="bell" style="width: 14px; height: 14px;"></i>
+    <span>Trigger Toast</span>
+  </button>
+  <button type="button" class="btn btn-primary" onclick="document.getElementById('command-palette').style.display='flex';">
+    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+    <span>+ Action Button</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 1200px;">
+
+  <!-- Section 1: Buttons & Actions -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Buttons & Action Variants</h2>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted);">ERPNext desk reference: black primary, subtle secondary</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+      <button type="button" class="btn btn-primary">
+        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+        <span>Primary (+ Raise Ticket)</span>
+      </button>
+      <button type="button" class="btn btn-secondary">
+        <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
+        <span>Secondary (Filter)</span>
+      </button>
+      <button type="button" class="btn btn-ghost">
+        <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+        <span>Ghost Action</span>
+      </button>
+      <button type="button" class="btn btn-danger">
+        <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i>
+        <span>Danger / Reject</span>
+      </button>
+      <div style="border-left: 1px solid var(--border); height: 28px; margin: 0 4px;"></div>
+      <button type="button" class="btn btn-secondary btn-sm">Small Button</button>
+      <button type="button" class="btn btn-primary btn-sm">Small Primary</button>
+    </div>
+  </div>
+
+  <!-- Section 2: Status Pills & Priority Dots -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Status Pills (Pastel Tones)</h2>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        {% for status in demo_statuses %}
+          {% status_pill status %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Priority Indicators & Escalation Levels</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; gap: 16px; align-items: center;">
+          {% for prio in demo_priorities %}
+            {% priority_dot prio %}
+          {% endfor %}
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
+          <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-right: 8px;">Levels:</span>
+          {% level_badge 1 %}
+          {% level_badge 2 %}
+          {% level_badge 3 %}
+          {% level_badge 4 %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: SLA Progress Bars & Avatars -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">SLA Timers & Progress Bars</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: var(--fs-sm);">Healthy (22h left)</span>
+          <div class="sla-bar-container"><div class="sla-bar green" style="width: 25%;"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: var(--fs-sm);">Warning (4h left)</span>
+          <div class="sla-bar-container"><div class="sla-bar amber" style="width: 70%;"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: var(--fs-sm); color: var(--st-open-fg); font-weight: 500;">Breached (Overdue 2h)</span>
+          <div class="sla-bar-container"><div class="sla-bar red" style="width: 100%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Avatars & Segmented Controls</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="avatar"><span>RK</span></div>
+          <div class="avatar" style="background: #E8F1FD; color: #1D5FB4;"><span>JD</span></div>
+          <div class="avatar avatar-sm"><span>AD</span></div>
+          <span style="font-size: var(--fs-xs); color: var(--text-muted);">Initials or uploaded photos</span>
+        </div>
+        <div class="segmented-control" style="width: fit-content;">
+          <button type="button" class="segmented-option">Low</button>
+          <button type="button" class="segmented-option active">Medium</button>
+          <button type="button" class="segmented-option">High</button>
+          <button type="button" class="segmented-option">Urgent</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: ERPNext Style Dense Table -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h2 class="card-title" style="margin: 0;">Sample Ticket List View</h2>
+        <span style="font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle); padding: 2px 6px; border-radius: 4px;">20 of 37</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" class="form-control" placeholder="Filter Title..." style="width: 180px; padding: 4px 8px; font-size: var(--fs-xs);">
+        <button class="btn btn-secondary btn-sm">Filter</button>
+      </div>
+    </div>
+
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th style="width: 32px;"><input type="checkbox"></th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Hostel / Room</th>
+            <th>Level</th>
+            <th>SLA</th>
+            <th>Ticket ID</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td style="font-weight: 600;">Water leakage in 2nd floor bathroom</td>
+            <td>{% status_pill "OPEN" %}</td>
+            <td>Plumbing</td>
+            <td>{% priority_dot "HIGH" %}</td>
+            <td>Boys Hostel A / Room 204</td>
+            <td>{% level_badge 1 %}</td>
+            <td><div class="sla-bar-container"><div class="sla-bar amber" style="width: 65%;"></div></div></td>
+            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00001</td>
+            <td style="font-size: var(--fs-xs); color: var(--text-muted);">12m</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td style="font-weight: 600;">Wi-Fi router down in corridor 3B</td>
+            <td>{% status_pill "IN_PROGRESS" %}</td>
+            <td>Internet / Wi-Fi</td>
+            <td>{% priority_dot "URGENT" %}</td>
+            <td>Girls Hostel B / Block B</td>
+            <td>{% level_badge 2 %}</td>
+            <td><div class="sla-bar-container"><div class="sla-bar red" style="width: 90%;"></div></div></td>
+            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00002</td>
+            <td style="font-size: var(--fs-xs); color: var(--text-muted);">2h</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td style="font-weight: 600;">Ceiling fan capacitor replaced</td>
+            <td>{% status_pill "RESOLVED" %}</td>
+            <td>Electrical</td>
+            <td>{% priority_dot "MEDIUM" %}</td>
+            <td>Boys Hostel A / Room 102</td>
+            <td>{% level_badge 1 %}</td>
+            <td><div class="sla-bar-container"><div class="sla-bar green" style="width: 100%;"></div></div></td>
+            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00003</td>
+            <td style="font-size: var(--fs-xs); color: var(--text-muted);">1d</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Sample -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-muted);">
+      <div>Showing 1 to 3 of 3 demo tickets</div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn btn-secondary btn-sm" disabled style="opacity: 0.5;">Previous</button>
+        <span style="display: inline-flex; align-items: center; padding: 0 8px; font-weight: 500;">Page 1 of 1</span>
+        <button class="btn btn-secondary btn-sm" disabled style="opacity: 0.5;">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Empty State Component -->
+  <div class="card">
+    {% include 'components/_empty_state.html' with icon="ticket" title="No tickets in this view" message="Try adjusting your filters or raise a new ticket to get started." action_url="#" action_label="+ Raise Ticket" action_icon="plus" %}
+  </div>
+
+</div>
+{% endblock %}

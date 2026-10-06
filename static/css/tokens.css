@@ -1,0 +1,58 @@
+:root {
+  /* Surfaces */
+  --bg-app:        #F4F5F6;   /* page background */
+  --bg-surface:    #FFFFFF;   /* cards, tables */
+  --bg-subtle:     #F3F3F3;   /* inputs, hover rows, filter chips */
+  --border:        #E5E7EB;
+  --border-strong: #D1D5DB;
+
+  /* Text */
+  --text-primary:   #171717;
+  --text-secondary: #525252;
+  --text-muted:     #8D8D8D;
+
+  /* Brand / actions */
+  --primary:        #171717;  /* black "+ Add" button, like reference */
+  --primary-text:   #FFFFFF;
+  --accent:         #2490EF;  /* links, focus ring, logo tile */
+  --accent-light:   #EAF4FD;
+
+  /* Status pills: bg / text */
+  --st-open-bg:     #FDE8E8;  --st-open-fg:     #C53030;  /* red-ish */
+  --st-assigned-bg: #E8F1FD;  --st-assigned-fg: #1D5FB4;  /* blue */
+  --st-progress-bg: #FFF3E0;  --st-progress-fg: #B45309;  /* orange */
+  --st-hold-bg:     #EFE7FB;  --st-hold-fg:     #6B3FA0;  /* purple */
+  --st-resolved-bg: #E3F5EA;  --st-resolved-fg: #1F7A4D;  /* green */
+  --st-closed-bg:   #EDEDED;  --st-closed-fg:   #525252;  /* grey */
+  --st-escalated-bg:#FFE4EC;  --st-escalated-fg:#B4234F;  /* pink */
+  --st-rejected-bg: #F5E8E8;  --st-rejected-fg: #742A2A;
+
+  /* Kanban column tints (very light) */
+  --col-open:      #FBECEC;
+  --col-assigned:  #EAF1FB;
+  --col-progress:  #FDF2E4;
+  --col-hold:      #F1ECFA;
+  --col-resolved:  #E8F5EC;
+
+  /* Priority dots */
+  --prio-urgent: #E03E3E;
+  --prio-high:   #F08C00;
+  --prio-medium: #2490EF;
+  --prio-low:    #8D8D8D;
+
+  /* Shape and spacing */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.05);
+  --shadow-pop:  0 8px 24px rgba(0,0,0,.12);
+
+  /* Type */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 13px;
+  --fs-md: 14px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+}

@@ -1,0 +1,48 @@
+<aside class="app-rail">
+  <a href="{% url 'core:home' %}" class="rail-logo" title="Hostel Ticket System">
+    H
+  </a>
+
+  <nav class="rail-nav">
+    <a href="{% url 'dashboard:index' %}" class="rail-item {% if current_section == 'dashboard' %}active{% endif %}">
+      <i data-lucide="layout-dashboard" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Dashboard</span>
+    </a>
+
+    <a href="{% url 'tickets:list' %}" class="rail-item {% if current_section == 'tickets' and not is_kanban %}active{% endif %}">
+      <i data-lucide="ticket" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Tickets</span>
+    </a>
+
+    {% if request.user.is_authenticated and not request.user.is_hosteler %}
+    <a href="{% url 'tickets:kanban' %}" class="rail-item {% if is_kanban %}active{% endif %}">
+      <i data-lucide="columns-3" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Kanban Board</span>
+    </a>
+    {% endif %}
+
+    {% if request.user.is_authenticated and request.user.is_admin %}
+    <a href="{% url 'hostels:manage_hostels' %}" class="rail-item {% if current_section == 'manage_hostels' %}active{% endif %}">
+      <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Hostels & Rooms</span>
+    </a>
+
+    <a href="{% url 'tickets:manage_routing' %}" class="rail-item {% if current_section == 'manage_config' %}active{% endif %}">
+      <i data-lucide="sliders-horizontal" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Routing & SLA</span>
+    </a>
+    {% endif %}
+
+    <a href="{% url 'notifications:list' %}" class="rail-item {% if current_section == 'notifications' %}active{% endif %}">
+      <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Notifications</span>
+    </a>
+  </nav>
+
+  <div class="rail-bottom">
+    <a href="{% url 'accounts:profile' %}" class="rail-item {% if current_section == 'profile' %}active{% endif %}">
+      <i data-lucide="user-circle" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Profile</span>
+    </a>
+  </div>
+</aside>

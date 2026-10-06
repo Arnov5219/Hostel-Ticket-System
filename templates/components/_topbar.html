@@ -1,0 +1,53 @@
+{% load ui %}
+<header class="top-bar">
+  <div class="top-bar-left">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      {% block breadcrumbs %}
+      <a href="{% url 'core:home' %}">Home</a>
+      {% endblock %}
+    </nav>
+  </div>
+
+  <div class="top-bar-right">
+    <button type="button" class="search-trigger" onclick="document.getElementById('command-palette').style.display='flex'; document.getElementById('search-input')?.focus();">
+      <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+      <span>Search tickets...</span>
+      <span class="search-kbd">⌘K</span>
+    </button>
+
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" id="notification-bell">
+      <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+      {% if unread_notifications_count > 0 %}
+      <span class="notification-badge"></span>
+      {% endif %}
+    </a>
+
+    <div class="dropdown">
+      <button type="button" class="top-bar-btn" data-dropdown-toggle style="padding: 2px;">
+        {% user_avatar request.user size="sm" %}
+      </button>
+      <div class="dropdown-menu">
+        <div style="padding: 8px 12px; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; font-size: var(--fs-sm);">{{ request.user.full_name|default:request.user.login_id }}</div>
+          <div style="font-size: var(--fs-xs); color: var(--text-muted);">{{ request.user.get_role_display }}</div>
+        </div>
+        <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+          <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+          <span>Profile</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0;">
+          {% csrf_token %}
+          <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left;">
+            <i data-lucide="log-out" style="width: 14px; height: 14px; color: var(--st-open-fg);"></i>
+            <span style="color: var(--st-open-fg);">Log Out</span>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-sm">Log In</a>
+    {% endif %}
+  </div>
+</header>

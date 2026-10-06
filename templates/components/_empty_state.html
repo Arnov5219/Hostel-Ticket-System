@@ -1,0 +1,13 @@
+<div class="empty-state">
+  <div class="empty-state-icon">
+    <i data-lucide="{{ icon|default:'inbox' }}" style="width: 48px; height: 48px;"></i>
+  </div>
+  <h3 class="empty-state-title">{{ title|default:'No items found' }}</h3>
+  <p class="empty-state-text">{{ message|default:'There are no records matching your criteria.' }}</p>
+  {% if action_url %}
+  <a href="{{ action_url }}" class="btn btn-secondary">
+    {% if action_icon %}<i data-lucide="{{ action_icon }}" style="width: 14px; height: 14px;"></i>{% endif %}
+    <span>{{ action_label|default:'Create New' }}</span>
+  </a>
+  {% endif %}
+</div>
