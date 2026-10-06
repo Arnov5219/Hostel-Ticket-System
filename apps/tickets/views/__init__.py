@@ -2,6 +2,7 @@ from .actions import (
     add_comment,
     change_status,
     manual_escalate,
+    move_ticket,
     rate_ticket,
     reassign,
     toggle_follow,
@@ -22,6 +23,7 @@ __all__ = [
     "change_status",
     "reassign",
     "manual_escalate",
+    "move_ticket",
     "toggle_follow",
     "rate_ticket",
 ]

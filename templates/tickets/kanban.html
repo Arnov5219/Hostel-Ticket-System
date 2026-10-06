@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static ui %}
+
+{% block title %}Kanban Board | Hostel Ticket System{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'vendor/sortable.min.js' %}"></script>
+  <script src="{% static 'js/kanban.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Kanban</span>
+{% endblock %}
+
+{% block page_title %}Ticket Kanban Board{% endblock %}
+
+{% block page_actions %}
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" title="List View">
+      <i data-lucide="list" style="width: 14px; height: 14px;"></i>
+      <span>List View</span>
+    </a>
+
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" title="Refresh">
+      <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+    </a>
+
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+      <span>Raise Ticket</span>
+    </a>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="kanban-board">
+  {% for col in columns %}
+    <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
+      
+      <!-- Column Header -->
+      <div class="kanban-col-header">
+        <div class="kanban-col-title-wrap">
+          <span class="prio-dot {{ col.status|lower }}"></span>
+          <span class="kanban-col-title">{{ col.title }}</span>
+          <span class="kanban-col-count">({{ col.tickets.count }})</span>
+        </div>
+      </div>
+
+      <!-- Add Ticket ghost button for Open/Assigned column -->
+      {% if col.status == 'OPEN' %}
+        <a href="{% url 'tickets:create' %}" class="kanban-add-btn">
+          <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+          <span>Add Ticket</span>
+        </a>
+      {% endif %}
+
+      <!-- Cards Container (SortableJS Target) -->
+      <div class="kanban-cards-container" data-status="{{ col.status }}">
+        {% for ticket in col.tickets %}
+          {% include 'tickets/_kanban_card.html' with ticket=ticket %}
+        {% endfor %}
+      </div>
+
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

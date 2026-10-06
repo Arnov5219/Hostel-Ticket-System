@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.models import User
@@ -91,6 +91,24 @@ def change_status(request, ticket_no):
             messages.error(request, str(e.message if hasattr(e, "message") else e))
 
     return redirect("tickets:detail", ticket_no=ticket.ticket_no)
+
+
+@login_required
+def move_ticket(request, ticket_no):
+    ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if request.method == "POST":
+        new_status = request.POST.get("status")
+        try:
+            service_change_status(
+                ticket, new_status, actor=request.user, note="Moved on Kanban board"
+            )
+            return JsonResponse(
+                {"success": True, "ticket_no": ticket.ticket_no, "status": new_status}
+            )
+        except ValidationError as e:
+            err_msg = e.message if hasattr(e, "message") else str(e)
+            return JsonResponse({"error": err_msg}, status=400)
+    return JsonResponse({"error": "POST method required"}, status=405)
 
 
 @login_required

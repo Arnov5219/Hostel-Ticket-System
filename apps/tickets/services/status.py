@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -85,3 +87,28 @@ def change_status(ticket: Ticket, new_status: str, actor, note: str = "") -> Tic
         )
 
     return ticket
+
+
+def auto_close_resolved_tickets(hours_threshold: int = 72) -> int:
+    """Automatically closes tickets that were marked RESOLVED more than 72h ago."""
+    threshold = timezone.now() - timedelta(hours=hours_threshold)
+    resolved_tickets = Ticket.objects.filter(
+        status=Status.RESOLVED,
+        resolved_at__lt=threshold,
+    )
+    count = 0
+    for ticket in resolved_tickets:
+        ticket.status = Status.CLOSED
+        ticket.closed_at = timezone.now()
+        ticket.save()
+
+        TicketActivity.objects.create(
+            ticket=ticket,
+            actor=None,
+            action=ActivityAction.CLOSED,
+            from_value=Status.RESOLVED,
+            to_value=Status.CLOSED,
+            note=f"Automatically closed {hours_threshold}h after resolution",
+        )
+        count += 1
+    return count

@@ -1,0 +1,40 @@
+{% load ui %}
+
+<div class="kanban-card" data-ticket-no="{{ ticket.ticket_no }}" onclick="if(!event.target.closest('button') && !event.target.closest('a')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
+  
+  <div class="kanban-card-top">
+    <span class="kanban-ticket-no">{{ ticket.ticket_no }}</span>
+    {% priority_dot ticket.priority %}
+  </div>
+
+  <div class="kanban-card-title">{{ ticket.title }}</div>
+
+  <div class="kanban-card-location">
+    <i data-lucide="map-pin" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+    <span>{{ ticket.hostel.name }}{% if ticket.room %} · Room {{ ticket.room.room_number }}{% endif %}</span>
+  </div>
+
+  <div class="kanban-card-footer">
+    <div class="kanban-card-meta">
+      {% if ticket.assigned_to %}
+        {% user_avatar ticket.assigned_to size="sm" %}
+      {% else %}
+        <span class="avatar avatar-sm" style="font-size: 9px;">?</span>
+      {% endif %}
+
+      <span class="kanban-sla-badge {% if ticket.is_overdue %}overdue{% endif %}">
+        <i data-lucide="clock" style="width: 11px; height: 11px;"></i>
+        {% if ticket.is_overdue %}
+          Overdue
+        {% else %}
+          {% time_ago ticket.due_at %} left
+        {% endif %}
+      </span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 4px;">
+      {% level_badge ticket.current_level %}
+    </div>
+  </div>
+
+</div>
