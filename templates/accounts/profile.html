@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}User Profile | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Profile</span>
+{% endblock %}
+
+{% block page_title %}User Profile{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; max-width: 900px;">
+
+  <!-- Profile Details Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Profile Information</h2>
+      <span class="level-badge l{{ request.user.escalation_level|default:'1' }}">{{ request.user.get_role_display }}</span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_profile">
+
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+        {% user_avatar request.user size="lg" %}
+        <div>
+          <div style="font-weight: 600;">{{ request.user.full_name|default:request.user.login_id }}</div>
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ request.user.login_id }}</div>
+          {% if request.user.hostel %}
+            <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 2px;">{{ request.user.hostel.name }} {% if request.user.room %}- Room {{ request.user.room.room_number }}{% endif %}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        {{ profile_form.full_name }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        {{ profile_form.email }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        {{ profile_form.phone }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Update Avatar</label>
+        {{ profile_form.avatar }}
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
+        Save Profile
+      </button>
+    </form>
+  </div>
+
+  <!-- Change Password Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Change Password</h2>
+    </div>
+
+    <form method="post" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="change_password">
+
+      {% for field in password_form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" class="form-control" required>
+          {% if field.errors %}
+            <span class="form-error">{{ field.errors.0 }}</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn btn-secondary" style="align-self: flex-start;">
+        Update Password
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
