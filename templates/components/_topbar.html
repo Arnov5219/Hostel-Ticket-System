@@ -16,11 +16,14 @@
     </button>
 
     {% if request.user.is_authenticated %}
-    <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" id="notification-bell">
+    <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" id="notification-bell"
+       hx-get="{% url 'notifications:poll' %}" hx-trigger="every 30s" hx-target="#notification-badge-target" hx-swap="innerHTML">
       <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-      {% if unread_notifications_count > 0 %}
-      <span class="notification-badge"></span>
-      {% endif %}
+      <span id="notification-badge-target">
+        {% if unread_notifications_count > 0 %}
+        <span class="notification-badge"></span>
+        {% endif %}
+      </span>
     </a>
 
     <div class="dropdown">

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Notifications | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Notifications</span>
+{% endblock %}
+
+{% block page_title %}Notifications{% endblock %}
+
+{% block page_actions %}
+  {% if unread_count > 0 %}
+    <form method="post" action="{% url 'notifications:read_all' %}" style="margin: 0;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary btn-sm">
+        <i data-lucide="check-check" style="width: 14px; height: 14px;"></i>
+        <span>Mark All as Read</span>
+      </button>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 860px;">
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: var(--fs-sm); font-weight: 600;">All Activity Notifications</span>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted);">{{ unread_count }} unread</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column;">
+      {% for notif in notifications %}
+        <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; background-color: {% if not notif.is_read %}var(--accent-light){% else %}var(--bg-surface){% endif %}; transition: background 0.15s ease;">
+          
+          <div style="margin-top: 3px;">
+            {% if not notif.is_read %}
+              <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent);"></div>
+            {% else %}
+              <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--border-strong);"></div>
+            {% endif %}
+          </div>
+
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">{{ notif.verb }}</span>
+              <span style="font-size: var(--fs-xs); color: var(--text-muted);">{% time_ago notif.created_at %}</span>
+            </div>
+
+            <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4;">{{ notif.message }}</div>
+
+            {% if notif.ticket %}
+              <div style="margin-top: 4px;">
+                <a href="{% url 'notifications:mark_read' notif.id %}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;">
+                  View Ticket ({{ notif.ticket.ticket_no }}) ➔
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+        </div>
+      {% empty %}
+        <div style="padding: 48px; text-align: center; color: var(--text-muted);">
+          <div class="empty-state">
+            <i data-lucide="bell-off" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 8px;"></i>
+            <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary);">No notifications yet</h3>
+            <p style="font-size: var(--fs-sm); color: var(--text-muted);">You're all caught up!</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% include 'components/_pagination.html' with page_obj=page_obj %}
+  </div>
+
+</div>
+{% endblock %}
