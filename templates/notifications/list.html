@@ -10,6 +10,7 @@
 {% endblock %}
 
 {% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}Activity logs and status updates on your tickets{% endblock %}
 
 {% block page_actions %}
   {% if unread_count > 0 %}
@@ -17,45 +18,66 @@
       {% csrf_token %}
       <button type="submit" class="btn btn-secondary btn-sm">
         <i data-lucide="check-check" style="width: 14px; height: 14px;"></i>
-        <span>Mark All as Read</span>
+        <span>Mark all as read</span>
       </button>
     </form>
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 16px; max-width: 860px;">
+<div style="max-width: 760px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px;">
 
-  <div class="card" style="padding: 0; overflow: hidden;">
-    <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: var(--fs-sm); font-weight: 600;">All Activity Notifications</span>
-      <span style="font-size: var(--fs-xs); color: var(--text-muted);">{{ unread_count }} unread</span>
+  <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
+      <span style="font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary);">All activity</span>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums;">
+        {% if unread_count > 0 %}
+          <span style="color: var(--accent); font-weight: 600;">{{ unread_count }} unread</span>
+        {% else %}
+          0 unread
+        {% endif %}
+      </span>
     </div>
 
     <div style="display: flex; flex-direction: column;">
       {% for notif in notifications %}
-        <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; background-color: {% if not notif.is_read %}var(--accent-light){% else %}var(--bg-surface){% endif %}; transition: background 0.15s ease;">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: flex-start; gap: 14px; background-color: {% if not notif.is_read %}rgba(26, 86, 219, 0.04){% else %}var(--bg-surface){% endif %}; border-left: 3px solid {% if not notif.is_read %}var(--accent){% else %}transparent{% endif %}; transition: background var(--duration-fast);">
           
-          <div style="margin-top: 3px;">
-            {% if not notif.is_read %}
-              <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent);"></div>
+          <!-- Event Icon -->
+          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; background: {% if not notif.is_read %}rgba(26, 86, 219, 0.1){% else %}var(--bg-subtle){% endif %}; color: {% if not notif.is_read %}var(--accent){% else %}var(--text-muted){% endif %};">
+            {% if "status" in notif.verb|lower %}
+              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+            {% elif "assign" in notif.verb|lower %}
+              <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+            {% elif "escalat" in notif.verb|lower %}
+              <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i>
+            {% elif "comment" in notif.verb|lower or "note" in notif.verb|lower %}
+              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
             {% else %}
-              <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--border-strong);"></div>
+              <i data-lucide="bell" style="width: 14px; height: 14px;"></i>
             {% endif %}
           </div>
 
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">{{ notif.verb }}</span>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted);">{% time_ago notif.created_at %}</span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+              {# Fix B-06, U-15: Humanize status/verb copy #}
+              <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
+                {{ notif.verb|humanize_status }}
+              </span>
+              <span style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+                {% time_ago notif.created_at %}
+              </span>
             </div>
 
-            <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4;">{{ notif.message }}</div>
+            <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.45;">
+              {{ notif.message }}
+            </div>
 
             {% if notif.ticket %}
-              <div style="margin-top: 4px;">
-                <a href="{% url 'notifications:mark_read' notif.id %}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;">
-                  View Ticket ({{ notif.ticket.ticket_no }}) ➔
+              <div style="margin-top: 6px;">
+                <a href="{% url 'notifications:mark_read' notif.id %}" class="btn btn-secondary btn-sm" style="padding: 2px 10px; font-size: 11px; height: 24px; font-family: var(--font-mono);">
+                  <span>View ticket {{ notif.ticket.ticket_no }}</span>
+                  <i data-lucide="arrow-right" style="width: 11px; height: 11px;"></i>
                 </a>
               </div>
             {% endif %}
@@ -63,12 +85,12 @@
 
         </div>
       {% empty %}
-        <div style="padding: 48px; text-align: center; color: var(--text-muted);">
-          <div class="empty-state">
-            <i data-lucide="bell-off" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 8px;"></i>
-            <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary);">No notifications yet</h3>
-            <p style="font-size: var(--fs-sm); color: var(--text-muted);">You're all caught up!</p>
+        <div class="empty-state" style="padding: 56px 20px;">
+          <div class="empty-state-icon">
+            <i data-lucide="bell-off" style="width: 22px; height: 22px;"></i>
           </div>
+          <h3 class="empty-state-title">You are all caught up</h3>
+          <p class="empty-state-text">No unread notifications at this time.</p>
         </div>
       {% endfor %}
     </div>
