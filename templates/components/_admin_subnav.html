@@ -1,0 +1,16 @@
+{% if request.user.is_authenticated and request.user.is_admin %}
+<nav class="admin-subnav" aria-label="Administration sections" style="margin-bottom: var(--space-4);">
+  <a href="{% url 'hostels:manage_hostels' %}" class="admin-subnav__item {% if current_section == 'manage_hostels' %}active{% endif %}">
+    Hostels
+  </a>
+  <a href="{% url 'hostels:manage_staff' %}" class="admin-subnav__item {% if current_section == 'manage_staff' %}active{% endif %}">
+    Staff Management
+  </a>
+  <a href="{% url 'hostels:manage_responsibility' %}" class="admin-subnav__item {% if current_section == 'manage_responsibility' %}active{% endif %}">
+    Hostel Responsibility
+  </a>
+  <a href="{% url 'tickets:manage_routing' %}" class="admin-subnav__item {% if current_section == 'manage_config' %}active{% endif %}">
+    Categories & SLA
+  </a>
+</nav>
+{% endif %}
