@@ -1,4 +1,4 @@
-{% load static %}
+{% load static ui %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 
   <!-- Core Design System CSS -->
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
@@ -26,33 +26,105 @@
   {% block extra_js %}{% endblock %}
 </head>
 <body>
+  <!-- Fixed Layered Background (Off-white + dot mesh + subtle glows) -->
+  <div class="app-background" aria-hidden="true"></div>
+
+  {% block body_layout %}
   <div class="app-container">
     {% include 'components/_sidebar.html' %}
 
     <div class="app-main">
-      {% include 'components/_topbar.html' %}
-      
+      <!-- Top Bar with Real Breadcrumbs -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            {% block breadcrumbs %}
+              {% block breadcrumb %}
+                <a href="{% url 'core:home' %}">Home</a>
+              {% endblock %}
+            {% endblock %}
+          </nav>
+        </div>
+
+        <div class="top-bar-right">
+          <button type="button" class="search-trigger" onclick="document.getElementById('command-palette').style.display='flex'; document.getElementById('search-input')?.focus();" aria-label="Search tickets">
+            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+            <span>Search tickets...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" id="notification-bell"
+               hx-get="{% url 'notifications:poll' %}" hx-trigger="every 30s" hx-target="#notification-badge-target" hx-swap="innerHTML" aria-label="Notifications">
+              <i data-lucide="bell" style="width: 17px; height: 17px;"></i>
+              <span id="notification-badge-target">
+                {% if unread_notifications_count > 0 %}
+                  <span class="notification-badge"></span>
+                {% endif %}
+              </span>
+            </a>
+
+            <!-- User Menu Dropdown -->
+            <div class="dropdown" x-data="{ open: false }">
+              <button type="button" class="top-bar-btn user-btn" @click="open = !open" @click.outside="open = false" style="padding: 2px;" aria-label="User menu">
+                {% user_avatar request.user size="sm" %}
+                <span class="user-role-hint">{{ request.user.get_role_display|slice:":15" }}</span>
+              </button>
+              <div class="dropdown-menu" x-show="open" x-transition style="display: none;">
+                <div style="padding: 10px 14px; border-bottom: 1px solid var(--border);">
+                  <div style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
+                    {{ request.user.full_name|default:request.user.login_id }}
+                  </div>
+                  <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 2px;">
+                    {{ request.user.get_role_display }} {% if request.user.hostel %}· {{ request.user.hostel.name }}{% endif %}
+                  </div>
+                </div>
+                <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+                  <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+                  <span>Profile</span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item danger" style="width: 100%; border: none; background: transparent; text-align: left;">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    <span>Log Out</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-sm">Sign In</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- 64px Page Header -->
       <div class="page-header">
         <div class="page-header-title">
           <h1 class="page-title">{% block page_title %}Hostel Ticket System{% endblock %}</h1>
-          {% block page_title_extra %}{% endblock %}
+          {% block page_subtitle %}{% endblock %}
         </div>
 
         <div class="page-header-actions">
           {% block page_actions %}
-            <a href="{% url 'tickets:create' %}" class="btn btn-primary">
-              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-              <span>Raise Ticket</span>
-            </a>
+            {% if request.user.is_authenticated and not request.user.is_staff_member %}
+              <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span>Raise Ticket</span>
+              </a>
+            {% endif %}
           {% endblock %}
         </div>
       </div>
 
+      <!-- Main Content Block -->
       <main class="app-content">
         {% block content %}{% endblock %}
       </main>
     </div>
   </div>
+  {% endblock %}
 
   <!-- Command Palette Modal (⌘K / Ctrl+K) -->
   <div id="command-palette" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
@@ -87,15 +159,31 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container">
+  <!-- Toast Notification Stack (Bottom-right, non-overlapping B-09) -->
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite">
     {% if messages %}
       {% for message in messages %}
-        <div class="toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+        <div class="toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" onclick="dismissToast(this);">
           <span>{{ message }}</span>
+          <button type="button" class="toast-close" aria-label="Close message">✕</button>
         </div>
       {% endfor %}
     {% endif %}
   </div>
+
+  <script>
+    // Global toast dismisser & auto-clear
+    function dismissToast(el) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(8px)';
+      setTimeout(() => el.remove(), 200);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('#toast-container .toast').forEach((toast, idx) => {
+        setTimeout(() => dismissToast(toast), 4000 + (idx * 500));
+      });
+    });
+  </script>
 </body>
 </html>
