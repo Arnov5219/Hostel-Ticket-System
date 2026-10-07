@@ -14,113 +14,141 @@
 {% endblock %}
 
 {% block page_title %}My Helpdesk{% endblock %}
+{% block page_subtitle %}Track and submit hostel maintenance requests{% endblock %}
 
-{% block page_actions %}
-  <a href="{% url 'tickets:create' %}" class="btn btn-primary">
-    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-    <span>Raise Ticket</span>
-  </a>
-{% endblock %}
+{# B-08: No duplicate CTA in header. Single primary CTA lives in the welcome panel #}
+{% block page_actions %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-grid">
 
-  <!-- Hosteler Profile Context Strip -->
-  <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-    <div style="display: flex; align-items: center; gap: 12px;">
-      {% user_avatar user size="md" %}
+  <!-- Welcome Banner with Primary CTA (Fix B-08) -->
+  <div style="position: relative; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-card); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <!-- Faint background decorative glow & ring -->
+    <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; border: 28px solid rgba(26, 86, 219, 0.04); pointer-events: none;"></div>
+    <div style="position: absolute; left: 20%; top: -60px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none;"></div>
+
+    <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
+      {% user_avatar user size="lg" %}
       <div>
-        <div style="font-weight: 600; font-size: var(--fs-md);">Welcome, {{ user.full_name|default:user.login_id }}</div>
-        <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; gap: 12px; margin-top: 2px;">
-          <span>Hostel: <strong>{{ user.hostel.name|default:"Not assigned" }}</strong></span>
-          <span>Roll / ID: <strong>{{ user.login_id }}</strong></span>
+        <div style="font-weight: 700; font-size: var(--fs-md); color: var(--text-primary); letter-spacing: -0.01em;">
+          Welcome, {{ user.full_name|default:user.login_id }}
+        </div>
+        <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+          <span>{{ user.hostel.name|default:"Campus" }}</span>
+          {% if user.room %}<span style="opacity: 0.6;">·</span><span>Room {{ user.room }}</span>{% endif %}
+          <span style="opacity: 0.6;">·</span>
+          <span style="font-family: var(--font-mono); font-size: 11px;">{{ user.login_id }}</span>
         </div>
       </div>
     </div>
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
-      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-      <span>New Complaint</span>
+
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="padding: 8px 18px; height: 38px; font-weight: 600; position: relative; z-index: 1; box-shadow: 0 2px 8px rgba(26, 86, 219, 0.25);">
+      <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+      <span>Raise ticket</span>
     </a>
   </div>
 
-  <!-- 3 Hosteler KPI Cards -->
-  <div class="kpi-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-    <div class="kpi-card">
-      <span class="kpi-label">Active / In Progress</span>
-      <div class="kpi-value open">{{ kpis.my_open }}</div>
-      <span class="kpi-subtext">Currently being worked on</span>
-    </div>
+  <!-- 3 Hosteler Clickable Stat Cards Linking to Filtered List -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="stat-card" style="cursor: pointer;">
+      <div class="stat-card-header">
+        <span class="stat-label">In progress</span>
+        <div class="stat-icon" style="color: var(--st-assigned-fg); background-color: var(--st-assigned-bg);">
+          <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+        </div>
+      </div>
+      <div class="stat-value" style="color: var(--st-assigned-fg);">{{ kpis.my_open }}</div>
+      <div class="stat-hint">Active and currently being worked on</div>
+    </a>
 
-    <div class="kpi-card">
-      <span class="kpi-label">Resolved Tickets</span>
-      <div class="kpi-value resolved">{{ kpis.my_resolved }}</div>
-      <span class="kpi-subtext">Fixed — awaiting your confirmation</span>
-    </div>
+    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="stat-card" style="cursor: pointer;">
+      <div class="stat-card-header">
+        <span class="stat-label">Resolved</span>
+        <div class="stat-icon" style="color: var(--st-resolved-fg); background-color: var(--st-resolved-bg);">
+          <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i>
+        </div>
+      </div>
+      <div class="stat-value" style="color: var(--st-resolved-fg);">{{ kpis.my_resolved }}</div>
+      <div class="stat-hint">Awaiting your confirmation to close</div>
+    </a>
 
-    <div class="kpi-card">
-      <span class="kpi-label">Closed Tickets</span>
-      <div class="kpi-value">{{ kpis.my_closed }}</div>
-      <span class="kpi-subtext">Completed history</span>
-    </div>
+    <a href="{% url 'tickets:list' %}?status=CLOSED" class="stat-card" style="cursor: pointer;">
+      <div class="stat-card-header">
+        <span class="stat-label">Closed</span>
+        <div class="stat-icon" style="color: var(--text-muted); background-color: var(--bg-subtle);">
+          <i data-lucide="archive" style="width: 14px; height: 14px;"></i>
+        </div>
+      </div>
+      <div class="stat-value">{{ kpis.my_closed }}</div>
+      <div class="stat-hint">Completed historical tickets</div>
+    </a>
   </div>
 
-  <!-- Recent Tickets Table -->
-  <div class="card" style="padding: 0;">
-    <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+  <!-- Recent Tickets Table (Fix B-01: Full width, proper alignment, no wrapping) -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
       <div>
-        <h3 class="card-title" style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Recent Tickets</h3>
-        <span style="font-size: var(--fs-xs); color: var(--text-muted);">Your recent maintenance and grievance submissions</span>
+        <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--text-primary);">Recent tickets</h3>
+        <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 2px 0 0;">Your recent maintenance and grievance submissions</p>
       </div>
       <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm">
-        <span>View All</span>
+        <span>View all</span>
         <i data-lucide="arrow-right" style="width: 12px; height: 12px;"></i>
       </a>
     </div>
 
     {% if recent_tickets %}
       <div class="table-container" style="border: none; border-radius: 0;">
-        <table class="table">
+        <table class="app-table">
           <thead>
             <tr>
-              <th style="width: 140px;">Ticket No</th>
+              <th style="width: 130px;">Ticket</th>
               <th>Title</th>
-              <th style="width: 130px;">Category</th>
+              <th style="width: 160px;">Category</th>
               <th style="width: 100px;">Priority</th>
               <th style="width: 120px;">Status</th>
-              <th style="width: 130px;">Assigned To</th>
-              <th style="width: 110px;">Raised</th>
+              <th style="width: 140px;">Assigned to</th>
+              <th style="width: 110px; text-align: right;">Raised</th>
             </tr>
           </thead>
           <tbody>
             {% for ticket in recent_tickets %}
               <tr style="cursor: pointer;" onclick="window.location='{% url 'tickets:detail' ticket.ticket_no %}'">
-                <td>
-                  <a href="{% url 'tickets:detail' ticket.ticket_no %}" class="ticket-link" style="font-weight: 600;" onclick="event.stopPropagation();">
+                <td style="white-space: nowrap;">
+                  <a href="{% url 'tickets:detail' ticket.ticket_no %}" class="ticket-link" onclick="event.stopPropagation();">
                     {{ ticket.ticket_no }}
                   </a>
                 </td>
                 <td>
-                  <div style="font-weight: 500; color: var(--text-primary);">{{ ticket.title }}</div>
+                  <div style="font-weight: 500; color: var(--text-primary); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ ticket.title }}
+                  </div>
                 </td>
-                <td>
-                  <span style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <span style="font-size: var(--fs-xs); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 5px;">
+                    {% if ticket.category.icon %}
+                      <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+                    {% endif %}
                     {{ ticket.category.name|default:"—" }}
                   </span>
                 </td>
-                <td>
+                <td style="white-space: nowrap;">
                   {% priority_dot ticket.priority %}
                 </td>
-                <td>
+                <td style="white-space: nowrap;">
                   {% status_pill ticket.status %}
                 </td>
-                <td>
+                <td style="white-space: nowrap;">
                   {% if ticket.assigned_to %}
-                    <span style="font-size: var(--fs-xs);">{{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}</span>
+                    <span style="font-size: var(--fs-xs); color: var(--text-primary); font-weight: 500;">
+                      {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}
+                    </span>
                   {% else %}
                     <span style="color: var(--text-muted); font-size: var(--fs-xs);">Unassigned</span>
                   {% endif %}
                 </td>
-                <td style="color: var(--text-muted); font-size: var(--fs-xs);">
+                <td style="color: var(--text-muted); font-size: var(--fs-xs); text-align: right; white-space: nowrap;">
                   {% time_ago ticket.created_at %}
                 </td>
               </tr>
@@ -129,17 +157,17 @@
         </table>
       </div>
     {% else %}
-      <div style="padding: 48px 16px; text-align: center;">
-        <div style="width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-          <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
+      <div class="empty-state" style="padding: 48px 16px;">
+        <div class="empty-state-icon">
+          <i data-lucide="ticket" style="width: 20px; height: 20px;"></i>
         </div>
-        <h4 style="font-size: var(--fs-md); font-weight: 600; margin: 0 0 6px;">No Tickets Raised Yet</h4>
-        <p style="font-size: var(--fs-sm); color: var(--text-muted); margin: 0 0 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+        <div class="empty-state-title">You have not raised any tickets</div>
+        <p class="empty-state-text">
           Have an issue with electricity, plumbing, Wi-Fi, or carpentry in your room or hostel? Submit a ticket and our staff will attend to it.
         </p>
-        <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
           <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-          <span>Raise Your First Ticket</span>
+          <span>Raise ticket</span>
         </a>
       </div>
     {% endif %}

@@ -1,61 +1,63 @@
 {% load ui %}
 
-<div id="activity-container" style="display: flex; flex-direction: column; gap: 16px;">
+<div id="activity-container" style="display: flex; flex-direction: column; gap: 16px;" x-data="{ tab: 'comments' }">
   
-  <!-- Activity Tabs -->
-  <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;" x-data="{ tab: 'comments' }">
-    <button type="button" class="btn btn-sm" :class="tab === 'comments' ? 'btn-primary' : 'btn-ghost'" @click="tab = 'comments'">
-      <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+  <!-- Activity Tabs Bar -->
+  <div class="segmented-nav" style="align-self: flex-start;">
+    <button type="button" class="segmented-nav__item" :class="tab === 'comments' ? 'active' : ''" @click="tab = 'comments'">
+      <i data-lucide="message-square" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
       <span>Comments ({{ comments.count }})</span>
     </button>
-    <button type="button" class="btn btn-sm" :class="tab === 'history' ? 'btn-primary' : 'btn-ghost'" @click="tab = 'history'">
-      <i data-lucide="history" style="width: 14px; height: 14px;"></i>
-      <span>History Timeline ({{ activities.count }})</span>
+    <button type="button" class="segmented-nav__item" :class="tab === 'history' ? 'active' : ''" @click="tab = 'history'">
+      <i data-lucide="history" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
+      <span>History timeline ({{ activities.count }})</span>
     </button>
+  </div>
 
-    <!-- Comments Tab Content -->
-    <div x-show="tab === 'comments'" style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 12px;">
-      {% for comment in comments %}
-        <div style="background-color: {% if comment.is_internal %}var(--st-hold-bg){% else %}var(--bg-surface){% endif %}; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              {% user_avatar comment.author size="sm" %}
-              <span style="font-weight: 600; font-size: var(--fs-sm);">{{ comment.author.full_name|default:comment.author.login_id }}</span>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted);">{{ comment.author.get_role_display }}</span>
-              {% if comment.is_internal %}
-                <span class="status-pill on_hold" style="font-size: 10px;">Internal Staff Note</span>
-              {% endif %}
-            </div>
-            <span style="font-size: var(--fs-xs); color: var(--text-muted);">{% time_ago comment.created_at %}</span>
-          </div>
-          <div style="font-size: var(--fs-base); color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">{{ comment.body }}</div>
-        </div>
-      {% empty %}
-        <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: var(--fs-sm);">
-          No comments yet. Start the conversation below.
-        </div>
-      {% endfor %}
-    </div>
-
-    <!-- History Tab Content -->
-    <div x-show="tab === 'history'" style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 12px;">
-      <div style="display: flex; flex-direction: column; gap: 8px; border-left: 2px solid var(--border); margin-left: 12px; padding-left: 16px;">
-        {% for act in activities %}
-          <div style="position: relative; margin-bottom: 8px;">
-            <div style="position: absolute; left: -22px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background-color: var(--accent); border: 2px solid var(--bg-surface);"></div>
-            <div style="display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm);">
-              <span style="font-weight: 600;">{{ act.actor.full_name|default:act.actor.login_id|default:"System" }}</span>
-              <span style="color: var(--text-secondary);">{{ act.get_action_display }}</span>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-left: auto;">{% time_ago act.created_at %}</span>
-            </div>
-            {% if act.note %}
-              <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 2px;">{{ act.note }}</div>
+  <!-- Comments Tab Content -->
+  <div x-show="tab === 'comments'" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+    {% for comment in comments %}
+      <div style="background-color: {% if comment.is_internal %}rgba(240, 140, 0, 0.06){% else %}var(--bg-surface){% endif %}; border: 1px solid {% if comment.is_internal %}rgba(240, 140, 0, 0.25){% else %}var(--border){% endif %}; border-radius: var(--radius-md); padding: 14px 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            {% user_avatar comment.author size="sm" %}
+            <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">{{ comment.author.full_name|default:comment.author.login_id }}</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-muted);">{{ comment.author.get_role_display }}</span>
+            {% if comment.is_internal %}
+              <span class="status-pill on_hold" style="font-size: 10px; padding: 2px 6px;">Internal Staff Note</span>
             {% endif %}
           </div>
-        {% empty %}
-          <div style="color: var(--text-muted); font-size: var(--fs-xs);">No activity logged.</div>
-        {% endfor %}
+          <span style="font-size: var(--fs-xs); color: var(--text-muted);">{% time_ago comment.created_at %}</span>
+        </div>
+        <div style="font-size: var(--fs-base); color: var(--text-primary); line-height: 1.55; white-space: pre-wrap;">{{ comment.body }}</div>
       </div>
+    {% empty %}
+      <div style="padding: 28px 16px; text-align: center; color: var(--text-muted); font-size: var(--fs-sm); background: var(--bg-subtle); border-radius: var(--radius-md);">
+        No comments yet. Start the conversation below.
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- History Tab Content -->
+  <div x-show="tab === 'history'" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+    <div style="display: flex; flex-direction: column; gap: 12px; border-left: 2px solid var(--border); margin-left: 12px; padding-left: 18px; padding-top: 4px; padding-bottom: 4px;">
+      {% for act in activities %}
+        <div style="position: relative;">
+          <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: var(--accent); border: 2px solid var(--bg-surface);"></div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); flex-wrap: wrap;">
+            <span style="font-weight: 600; color: var(--text-primary);">{{ act.actor.full_name|default:act.actor.login_id|default:"System" }}</span>
+            <span style="color: var(--text-secondary);">{{ act.get_action_display }}</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-left: auto;">{% time_ago act.created_at %}</span>
+          </div>
+          {% if act.note %}
+            <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 3px; background: var(--bg-subtle); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              {{ act.note }}
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div style="color: var(--text-muted); font-size: var(--fs-xs);">No activity logged.</div>
+      {% endfor %}
     </div>
   </div>
 
