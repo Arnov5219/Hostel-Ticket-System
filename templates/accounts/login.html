@@ -3,34 +3,41 @@
 
 {% block title %}Sign In | Hostel Ticket System{% endblock %}
 
-{% block full_header %}{% endblock %}
+{% block body_layout %}
+<!-- Bare Auth Layout without App Shell (Fix B-04) -->
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; z-index: 1;">
 
-{% block content %}
-<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px 0;">
-  <div style="width: 100%; max-width: 420px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: 32px; display: flex; flex-direction: column; gap: 20px;">
+  <!-- Subtle glow halo behind the card -->
+  <div style="position: absolute; width: 440px; height: 440px; background: radial-gradient(circle, rgba(36, 144, 239, 0.12) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
+
+  <div class="card" style="width: 100%; max-width: 400px; padding: 32px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-modal); position: relative; z-index: 2;">
     
-    <!-- Logo & Title -->
-    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;">
-      <div class="rail-logo" style="width: 44px; height: 44px; font-size: var(--fs-lg); margin-bottom: 4px;">
+    <!-- Header with Identity Tile -->
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
+      <div class="rail-logo" style="width: 44px; height: 44px; font-size: 18px; margin-bottom: 6px;">
         H
       </div>
-      <h1 style="font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);">Hostel Ticket System</h1>
-      <p style="font-size: var(--fs-sm); color: var(--text-muted);">Sign in with your Roll No or Employee ID</p>
+      <h1 style="font-size: var(--fs-title); font-weight: 650; color: var(--text-primary); letter-spacing: -0.01em;">
+        Hostel Ticket System
+      </h1>
+      <p style="font-size: var(--fs-base); color: var(--text-secondary); margin: 0;">
+        Sign in with Roll No or Employee ID
+      </p>
     </div>
 
     <!-- Login Form -->
-    <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="display: flex; flex-direction: column; gap: 14px;">
+    <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="display: flex; flex-direction: column; gap: 14px;" x-data="{ showPass: false }">
       {% csrf_token %}
 
       {% if form.non_field_errors %}
-        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs);">
+        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); border: 1px solid rgba(197, 48, 48, 0.2);">
           {% for error in form.non_field_errors %}
             <div>{{ error }}</div>
           {% endfor %}
         </div>
       {% endif %}
 
-      <div class="form-group" style="margin-bottom: 0;">
+      <div class="form-group">
         <label class="form-label" for="id_login_id">Roll No / Employee ID</label>
         {{ form.login_id }}
         {% if form.login_id.errors %}
@@ -38,48 +45,60 @@
         {% endif %}
       </div>
 
-      <div class="form-group" style="margin-bottom: 4px;">
+      <div class="form-group" style="position: relative;">
         <label class="form-label" for="id_password">Password</label>
-        {{ form.password }}
+        <div style="position: relative; display: flex; align-items: center;">
+          <input :type="showPass ? 'text' : 'password'" name="password" id="id_password" class="form-control" placeholder="••••••••" required style="padding-right: 36px;">
+          <button type="button" @click="showPass = !showPass" style="position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center;" aria-label="Toggle password visibility">
+            <svg x-show="!showPass" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg x-show="showPass" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         {% if form.password.errors %}
           <span class="form-error">{{ form.password.errors.0 }}</span>
         {% endif %}
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 9px; font-weight: 600; font-size: var(--fs-base); margin-top: 6px;">
+      <button type="submit" class="btn btn-primary" style="width: 100%; height: 38px; font-weight: 600; font-size: var(--fs-base); margin-top: 4px;">
         Sign In
       </button>
     </form>
 
-    <!-- Quick Demo Accounts Switcher -->
-    <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
-      <span style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500; text-transform: uppercase;">Quick Demo Fill:</span>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('admin', 'admin123')">
-          Admin (L4)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('chief_warden', 'pass1234')">
-          Chief Warden (L3)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('warden_a', 'pass1234')">
-          Warden (L2)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('caretaker_a1', 'pass1234')">
-          Caretaker (L1)
+    <!-- Collapsible Demo Accounts (Fix U-18) -->
+    <details style="border-top: 1px solid var(--border); padding-top: 14px; font-size: var(--fs-xs);">
+      <summary style="cursor: pointer; color: var(--text-muted); font-weight: 500; user-select: none;">
+        Quick demo accounts ▾
+      </summary>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('admin', 'admin123')">
+            Admin (L4)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('chief_warden', 'pass1234')">
+            Chief Warden (L3)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('warden_bha', 'pass1234')">
+            Warden (L2)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('caretaker_bha1', 'pass1234')">
+            Caretaker (L1)
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="setCreds('student_01', 'pass1234')">
+          Hosteler (Student)
         </button>
       </div>
-      <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="setCreds('student1', 'pass1234')">
-        Hosteler (Student)
-      </button>
-    </div>
+    </details>
 
   </div>
 </div>
 
 <script>
 function setCreds(id, pwd) {
-  document.getElementById('id_login_id').value = id;
-  document.getElementById('id_password').value = pwd;
+  const idEl = document.getElementById('id_login_id');
+  const pwdEl = document.getElementById('id_password');
+  if (idEl) idEl.value = id;
+  if (pwdEl) pwdEl.value = pwd;
 }
 </script>
 {% endblock %}
