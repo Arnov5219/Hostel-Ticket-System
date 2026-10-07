@@ -17,18 +17,18 @@
   <div class="kanban-card-footer">
     <div class="kanban-card-meta">
       {% if ticket.assigned_to %}
-        {% user_avatar ticket.assigned_to size="sm" %}
+        {% user_avatar ticket.assigned_to size="xs" %}
       {% else %}
-        <span class="avatar avatar-sm" style="font-size: 9px;">?</span>
+        {# Fix U-16: Dashed circle avatar for unassigned card #}
+        <span class="avatar--unassigned" title="Unassigned">
+          <i data-lucide="user" style="width: 11px; height: 11px; opacity: 0.5;"></i>
+        </span>
       {% endif %}
 
       <span class="kanban-sla-badge {% if ticket.is_overdue %}overdue{% endif %}">
         <i data-lucide="clock" style="width: 11px; height: 11px;"></i>
-        {% if ticket.is_overdue %}
-          Overdue
-        {% else %}
-          {% time_ago ticket.due_at %} left
-        {% endif %}
+        {# Fix B-07: Humanized kanban time copy without countdown on resolved #}
+        <span>{% kanban_time_copy ticket %}</span>
       </span>
     </div>
 

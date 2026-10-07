@@ -15,59 +15,84 @@
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>
+  <a href="{% url 'tickets:list' %}">Tickets</a>
+  <span class="separator">/</span>
   <span class="current">Kanban</span>
 {% endblock %}
 
 {% block page_title %}Ticket Kanban Board{% endblock %}
+{% block page_subtitle %}Visual workflow pipeline and drag-to-update status{% endblock %}
 
 {% block page_actions %}
-  <div style="display: flex; align-items: center; gap: 8px;">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
     <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" title="List View">
       <i data-lucide="list" style="width: 14px; height: 14px;"></i>
-      <span>List View</span>
+      <span>List view</span>
     </a>
 
     <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" title="Refresh">
       <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
     </a>
 
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+    {% if request.user.is_admin %}
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
       <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-      <span>Raise Ticket</span>
+      <span>Raise ticket</span>
     </a>
+    {% endif %}
   </div>
 {% endblock %}
 
 {% block content %}
-<div class="kanban-board">
-  {% for col in columns %}
-    <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
-      
-      <!-- Column Header -->
-      <div class="kanban-col-header">
-        <div class="kanban-col-title-wrap">
-          <span class="prio-dot {{ col.status|lower }}"></span>
-          <span class="kanban-col-title">{{ col.title }}</span>
-          <span class="kanban-col-count">({{ col.tickets.count }})</span>
-        </div>
-      </div>
-
-      <!-- Add Ticket ghost button for Open/Assigned column -->
-      {% if col.status == 'OPEN' %}
-        <a href="{% url 'tickets:create' %}" class="kanban-add-btn">
-          <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
-          <span>Add Ticket</span>
-        </a>
-      {% endif %}
-
-      <!-- Cards Container (SortableJS Target) -->
-      <div class="kanban-cards-container" data-status="{{ col.status }}">
-        {% for ticket in col.tickets %}
-          {% include 'tickets/_kanban_card.html' with ticket=ticket %}
-        {% endfor %}
-      </div>
-
+<div x-data="{ search: '' }" style="display: flex; flex-direction: column; gap: 14px; height: 100%;">
+  
+  <!-- Kanban Search Filter Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 8px 14px; box-shadow: var(--shadow-card);">
+    <div style="position: relative; max-width: 300px; width: 100%;">
+      <i data-lucide="search" style="position: absolute; left: 10px; top: 8px; width: 13px; height: 13px; color: var(--text-muted);"></i>
+      <input type="text" x-model="search" placeholder="Filter cards on board..."
+             class="form-control" style="padding-left: 28px; font-size: var(--fs-xs); height: 28px;">
     </div>
-  {% endfor %}
+    <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+      <i data-lucide="move" style="width: 12px; height: 12px;"></i>
+      <span>Drag card between columns to update status</span>
+    </div>
+  </div>
+
+  <!-- Board Columns -->
+  <div class="kanban-board">
+    {% for col in columns %}
+      <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
+        
+        <!-- Column Header -->
+        <div class="kanban-col-header">
+          <div class="kanban-col-title-wrap">
+            <span class="prio-dot {{ col.status|lower }}"></span>
+            <span class="kanban-col-title">{{ col.title }}</span>
+            <span class="kanban-col-count">{{ col.tickets.count }}</span>
+          </div>
+        </div>
+
+        <!-- Add Ticket ghost button for Open column -->
+        {% if col.status == 'OPEN' and request.user.is_admin %}
+          <a href="{% url 'tickets:create' %}" class="kanban-add-btn">
+            <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+            <span>Add ticket</span>
+          </a>
+        {% endif %}
+
+        <!-- Cards Container (SortableJS Target) -->
+        <div class="kanban-cards-container" data-status="{{ col.status }}">
+          {% for ticket in col.tickets %}
+            <div x-show="!search || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+              {% include 'tickets/_kanban_card.html' with ticket=ticket %}
+            </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
 </div>
 {% endblock %}

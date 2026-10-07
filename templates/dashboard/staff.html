@@ -19,6 +19,7 @@
 {% endblock %}
 
 {% block page_title %}Operational Dashboard{% endblock %}
+{% block page_subtitle %}Live ticket health across your hostels{% endblock %}
 
 {% block page_actions %}
   <div style="display: flex; gap: 8px;">
@@ -36,30 +37,52 @@
 {% block content %}
 <div class="dashboard-grid">
 
-  <!-- 1. Top KPI Cards Row -->
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <span class="kpi-label">Created This Month</span>
-      <div class="kpi-value">{{ kpis.total_month }}</div>
-      <span class="kpi-subtext">Active operational month</span>
+  <!-- 1. Top 4 Stat Cards Row -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <span class="stat-label">Created this month</span>
+        <div class="stat-icon" style="color: var(--accent); background: rgba(26, 86, 219, 0.08);">
+          <i data-lucide="plus-circle" style="width: 15px; height: 15px;"></i>
+        </div>
+      </div>
+      <div class="stat-value">{{ kpis.total_month }}</div>
+      <div class="stat-hint">Active operational month</div>
     </div>
 
-    <div class="kpi-card">
-      <span class="kpi-label">Resolved Tickets</span>
-      <div class="kpi-value resolved">{{ kpis.resolved_count }}</div>
-      <span class="kpi-subtext">Fixed and confirmed</span>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <span class="stat-label">Resolved tickets</span>
+        <div class="stat-icon" style="color: var(--st-resolved-fg); background: var(--st-resolved-bg);">
+          <i data-lucide="check-circle-2" style="width: 15px; height: 15px;"></i>
+        </div>
+      </div>
+      <div class="stat-value" style="color: var(--st-resolved-fg);">{{ kpis.resolved_count }}</div>
+      <div class="stat-hint">Fixed and confirmed</div>
     </div>
 
-    <div class="kpi-card">
-      <span class="kpi-label">Open / In Progress</span>
-      <div class="kpi-value open">{{ kpis.open_count }}</div>
-      <span class="kpi-subtext">Currently assigned to staff</span>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <span class="stat-label">Open / in progress</span>
+        <div class="stat-icon" style="color: var(--st-assigned-fg); background: var(--st-assigned-bg);">
+          <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
+        </div>
+      </div>
+      <div class="stat-value" style="color: var(--st-assigned-fg);">{{ kpis.open_count }}</div>
+      <div class="stat-hint">Currently assigned to staff</div>
     </div>
 
-    <div class="kpi-card">
-      <span class="kpi-label">Overdue SLA Breaches</span>
-      <div class="kpi-value overdue">{{ kpis.overdue_count }}</div>
-      <span class="kpi-subtext">Attention needed</span>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <span class="stat-label">Overdue SLA breaches</span>
+        <div class="stat-icon" style="color: {% if kpis.overdue_count > 0 %}var(--st-open-fg){% else %}var(--text-muted){% endif %}; background: {% if kpis.overdue_count > 0 %}var(--st-open-bg){% else %}var(--bg-subtle){% endif %};">
+          <i data-lucide="alert-triangle" style="width: 15px; height: 15px;"></i>
+        </div>
+      </div>
+      <div class="stat-value" style="color: {% if kpis.overdue_count > 0 %}var(--st-open-fg){% else %}var(--text-primary){% endif %};">
+        {{ kpis.overdue_count }}
+      </div>
+      <div class="stat-hint">Attention needed immediately</div>
     </div>
   </div>
 
@@ -67,9 +90,10 @@
   <div class="chart-card">
     <div class="chart-header">
       <div class="chart-title-wrap">
-        <h3 class="chart-title">Tickets Created vs Resolved vs Overdue</h3>
+        <h3 class="chart-title">Tickets created vs resolved vs overdue</h3>
         <span class="chart-subtitle">Monthly ticket resolution performance</span>
       </div>
+      <div class="chart-controls"></div>
     </div>
     <div class="chart-canvas-wrap" style="height: 240px;">
       <canvas id="chart-trend"></canvas>
@@ -81,9 +105,10 @@
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-title-wrap">
-          <h3 class="chart-title">Tickets by Category</h3>
+          <h3 class="chart-title">Tickets by category</h3>
           <span class="chart-subtitle">Distribution across maintenance domains</span>
         </div>
+        <div class="chart-controls"></div>
       </div>
       <div class="chart-canvas-wrap">
         <canvas id="chart-category"></canvas>
@@ -93,9 +118,10 @@
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-title-wrap">
-          <h3 class="chart-title">Average Resolution Time (Hours)</h3>
+          <h3 class="chart-title">Average resolution time (hours)</h3>
           <span class="chart-subtitle">Turnaround duration grouped by hostel</span>
         </div>
+        <div class="chart-controls"></div>
       </div>
       <div class="chart-canvas-wrap">
         <canvas id="chart-resolution"></canvas>
@@ -107,46 +133,58 @@
   <div class="widgets-grid">
     
     <!-- Widget 1: Escalations by Tier -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Active Tickets by Escalation Tier</h3>
+    <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary);">Active tickets by escalation tier</h3>
       </div>
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border);">
-          <span class="level-badge l1">Level 1 (Caretakers)</span>
-          <span style="font-weight: 600; font-size: var(--fs-md);">{{ escalations.L1 }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="level-chip l1">L1</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Caretakers</span>
+          </div>
+          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L1 }}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border);">
-          <span class="level-badge l2">Level 2 (Hostel Wardens)</span>
-          <span style="font-weight: 600; font-size: var(--fs-md);">{{ escalations.L2 }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="level-chip l2">L2</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Hostel Wardens</span>
+          </div>
+          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L2 }}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border);">
-          <span class="level-badge l3">Level 3 (Chief Warden)</span>
-          <span style="font-weight: 600; font-size: var(--fs-md);">{{ escalations.L3 }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="level-chip l3">L3</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Chief Warden</span>
+          </div>
+          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L3 }}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
-          <span class="level-badge l4">Level 4 (Dean / Admin)</span>
-          <span style="font-weight: 600; font-size: var(--fs-md); color: var(--st-open-fg);">{{ escalations.L4 }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="level-chip l4">L4</span>
+            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Dean / Admin</span>
+          </div>
+          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: {% if escalations.L4 > 0 %}var(--st-open-fg){% else %}inherit{% endif %};">{{ escalations.L4 }}</span>
         </div>
       </div>
     </div>
 
     <!-- Widget 2: Top Staff Resolvers -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Top Staff Resolvers</h3>
+    <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary);">Top staff resolvers</h3>
       </div>
       <div style="display: flex; flex-direction: column; gap: 10px;">
         {% for staff in top_staff %}
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; {% if not forloop.last %}border-bottom: 1px solid var(--border-subtle);{% endif %}">
             <div style="display: flex; align-items: center; gap: 8px;">
               {% user_avatar staff size="sm" %}
               <div>
-                <div style="font-weight: 600; font-size: var(--fs-sm);">{{ staff.full_name|default:staff.login_id }}</div>
-                <div style="font-size: var(--fs-xs); color: var(--text-muted);">{{ staff.get_role_display }}</div>
+                <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary);">{{ staff.full_name|default:staff.login_id }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ staff.get_role_display }}</div>
               </div>
             </div>
-            <span style="font-weight: 600; color: var(--st-resolved-fg); font-size: var(--fs-sm);">{{ staff.resolved_count }} resolved</span>
+            <span style="font-weight: 600; color: var(--st-resolved-fg); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;">{{ staff.resolved_count }} resolved</span>
           </div>
         {% empty %}
           <span style="color: var(--text-muted); font-size: var(--fs-xs);">No resolution records yet.</span>
@@ -154,19 +192,19 @@
       </div>
     </div>
 
-    <!-- Widget 3: Critical Overdue Tickets -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Critical Overdue Attention</h3>
+    <!-- Widget 3: Critical Overdue Tickets (Fix: white card with 3px red left edge) -->
+    <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary);">Critical overdue attention</h3>
       </div>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         {% for ticket in overdue_tickets %}
-          <a href="{% url 'tickets:detail' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: var(--radius-sm); background: var(--st-open-bg); color: var(--text-primary); text-decoration: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 600; font-size: var(--fs-xs);">{{ ticket.ticket_no }}</span>
-              <span style="font-size: 10px; color: var(--st-open-fg); font-weight: 600;">OVERDUE</span>
+          <a href="{% url 'tickets:detail' ticket.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); border-left: 3px solid var(--st-open-fg); color: var(--text-primary); text-decoration: none; transition: transform var(--duration-fast), box-shadow var(--duration-fast);" onmouseover="this.style.boxShadow='var(--shadow-card)'" onmouseout="this.style.boxShadow='none'">
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-weight: 600; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--accent);">{{ ticket.ticket_no }}</div>
+              <div style="font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">{{ ticket.title }}</div>
             </div>
-            <span style="font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ ticket.title }}</span>
+            <span style="font-size: 11px; color: var(--st-open-fg); font-weight: 600; white-space: nowrap;">Overdue</span>
           </a>
         {% empty %}
           <div style="padding: 16px; text-align: center; color: var(--st-resolved-fg); font-size: var(--fs-sm);">
