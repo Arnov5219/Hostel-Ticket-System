@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load ui %}
 
 {% block title %}Staff Management | Hostel Ticket System{% endblock %}
 
@@ -9,23 +10,17 @@
 {% endblock %}
 
 {% block page_title %}Staff Management{% endblock %}
-
-{% block page_actions %}
-  <a href="{% url 'hostels:manage_hostels' %}" class="btn btn-secondary">
-    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i>
-    <span>Hostels</span>
-  </a>
-  <a href="{% url 'hostels:manage_responsibility' %}" class="btn btn-secondary">
-    <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
-    <span>Hostel Responsibility</span>
-  </a>
-{% endblock %}
+{% block page_subtitle %}Manage staff assignments, roles, and operational capacity{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 16px;">
+<div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Admin Sub-Navigation (Fix U-09) -->
+  {% include 'components/_admin_subnav.html' %}
 
   <!-- Staff Overview Card -->
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
     <div class="table-container" style="border: none;">
       <table class="app-table">
         <thead>
@@ -33,8 +28,8 @@
             <th>Name</th>
             <th>Role</th>
             <th style="text-align: center;">Level</th>
-            <th>Assigned Hostel</th>
-            <th style="text-align: center;">Active Tickets</th>
+            <th>Assigned hostel</th>
+            <th style="text-align: center;">Active tickets</th>
             <th>Status</th>
             <th style="text-align: right;">Actions</th>
           </tr>
@@ -43,13 +38,11 @@
           {% for member in staff_members %}
             <tr>
               <td>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">
-                    {{ member.login_id|slice:":2"|upper }}
-                  </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  {% user_avatar member size="sm" %}
                   <div>
-                    <div style="font-weight: 600;">{{ member.full_name|default:member.login_id }}</div>
-                    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ member.login_id }}</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">{{ member.full_name|default:member.login_id }}</div>
+                    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ member.login_id }}</div>
                   </div>
                 </div>
               </td>
@@ -57,23 +50,31 @@
                 <span class="role-badge" style="font-size: var(--fs-xs);">{{ member.get_role_display }}</span>
               </td>
               <td style="text-align: center;">
-                <span style="font-weight: 600; font-size: var(--fs-xs); padding: 2px 6px; border-radius: 4px; background: var(--bg-subtle);">
-                  L{{ member.escalation_level|default:"-" }}
+                <span class="level-chip l{{ member.escalation_level|default:'1' }}">
+                  L{{ member.escalation_level|default:"1" }}
                 </span>
               </td>
               <td>
                 {% if member.hostel %}
-                  <span style="font-weight: 500;">{{ member.hostel.name }}</span>
+                  <span style="font-weight: 500; font-size: var(--fs-sm);">{{ member.hostel.name }}</span>
                 {% elif member.role == "CHIEF_WARDEN" or member.role == "ADMIN" %}
-                  <span style="color: var(--text-muted); font-style: italic;">All Hostels (Campus-wide)</span>
+                  <span style="color: var(--text-muted); font-style: italic; font-size: var(--fs-xs);">All Hostels (Campus-wide)</span>
                 {% else %}
-                  <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                  <span style="color: var(--text-muted); font-style: italic; font-size: var(--fs-xs);">Unassigned</span>
                 {% endif %}
               </td>
               <td style="text-align: center;">
-                <span style="font-weight: 600; color: {% if member.active_tickets > 0 %}var(--st-progress-fg){% else %}var(--text-muted){% endif %};">
-                  {{ member.active_tickets }}
-                </span>
+                {# Fix U-12: Neutral text for normal ticket counts, amber warning only if >= 6 #}
+                {% if member.active_tickets >= 6 %}
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: #b45309; font-variant-numeric: tabular-nums;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></span>
+                    {{ member.active_tickets }}
+                  </span>
+                {% else %}
+                  <span style="font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums;">
+                    {{ member.active_tickets }}
+                  </span>
+                {% endif %}
               </td>
               <td>
                 {% if member.is_active %}
@@ -83,22 +84,35 @@
                 {% endif %}
               </td>
               <td style="text-align: right;">
-                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                <div style="display: inline-flex; gap: 4px; align-items: center;">
                   <button type="button" class="btn btn-ghost btn-sm" onclick="openAssignHostelModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', '{{ member.get_role_display|escapejs }}', '{{ member.hostel.id|default:'' }}');">
-                    <i data-lucide="building" style="width: 13px; height: 13px;"></i>
-                    <span>Assign Hostel</span>
+                    <i data-lucide="building" style="width: 12px; height: 12px;"></i>
+                    <span>Assign hostel</span>
                   </button>
 
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', {{ member.is_active|yesno:'true,false' }}, {{ member.active_tickets }}, {{ member.responsible_hostels.count }});" style="color: {% if member.is_active %}var(--st-open-fg){% else %}var(--st-resolved-fg){% endif %};">
-                    <span>{% if member.is_active %}Deactivate{% else %}Activate{% endif %}</span>
-                  </button>
+                  {# Fix U-11: Quiet row action danger-ghost for deactivation #}
+                  {% if member.is_active %}
+                    <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', true, {{ member.active_tickets }}, {{ member.responsible_hostels.count }});">
+                      <span>Deactivate</span>
+                    </button>
+                  {% else %}
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', false, 0, 0);" style="color: var(--st-resolved-fg);">
+                      <span>Activate</span>
+                    </button>
+                  {% endif %}
                 </div>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                No staff members found.
+              <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div class="empty-state">
+                  <div class="empty-state-icon">
+                    <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">No staff members found</h3>
+                  <p class="empty-state-text">No staff profiles registered in the system yet.</p>
+                </div>
               </td>
             </tr>
           {% endfor %}
@@ -113,18 +127,18 @@
 <div id="assign-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
   <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600;">Change Staff Assignment</h2>
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Change Staff Assignment</h2>
       <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('assign-hostel-modal').style.display='none';">✕</button>
     </div>
 
-    <form id="assign-hostel-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+    <form id="assign-hostel-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
-      <div style="padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: var(--fs-sm);">
+      <div style="padding: 10px 14px; background: var(--bg-subtle); border-radius: var(--radius-md); font-size: var(--fs-sm); border: 1px solid var(--border);">
         <div>Staff: <strong id="assign-modal-staff-name"></strong></div>
         <div style="color: var(--text-secondary); margin-top: 2px;">Role: <span id="assign-modal-staff-role"></span></div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="margin: 0;">
         <label class="form-label">Assigned Hostel</label>
         <select name="hostel_id" id="assign-hostel-select" class="form-select">
           <option value="">-- No Hostel / All Hostels --</option>
@@ -134,11 +148,11 @@
         </select>
       </div>
 
-      <p style="font-size: var(--fs-xs); color: var(--text-muted);">
+      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 0;">
         The updated hostel assignment will immediately be used for ticket routing and escalation scope.
       </p>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('assign-hostel-modal').style.display='none';">Cancel</button>
         <button type="submit" class="btn btn-primary">Save Assignment</button>
       </div>
@@ -150,28 +164,28 @@
 <div id="toggle-staff-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
   <div class="command-palette-modal" style="padding: 24px; max-width: 500px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 id="toggle-staff-title" style="font-size: var(--fs-md); font-weight: 600;">Deactivate Staff Member</h2>
+      <h2 id="toggle-staff-title" style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Deactivate Staff Member</h2>
       <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('toggle-staff-modal').style.display='none';">✕</button>
     </div>
 
-    <form id="toggle-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+    <form id="toggle-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
 
-      <div id="deactivate-warnings" style="display: flex; flex-direction: column; gap: 8px;">
-        <p style="font-size: var(--fs-sm);">
+      <div id="deactivate-warnings" style="display: flex; flex-direction: column; gap: 10px;">
+        <p style="font-size: var(--fs-sm); margin: 0;">
           Are you sure you want to deactivate <strong id="toggle-staff-name"></strong>?
         </p>
 
-        <div id="active-tickets-warning" style="display: none; padding: 10px; background: #FFF3E0; color: #B45309; border-radius: var(--radius-sm); font-size: var(--fs-xs);">
+        <div id="active-tickets-warning" style="display: none; padding: 10px 14px; background: rgba(245, 158, 11, 0.1); color: #92400e; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); font-size: var(--fs-xs);">
           ⚠️ This staff member currently has <strong id="toggle-staff-tickets-count">0</strong> active tickets assigned.
         </div>
 
         <div id="replacement-staff-block" style="display: none;">
-          <div style="padding: 10px; background: #FDE8E8; color: #C53030; border-radius: var(--radius-sm); font-size: var(--fs-xs); margin-bottom: 8px;">
+          <div style="padding: 10px 14px; background: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid rgba(224, 49, 49, 0.25); border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 10px;">
             ⚠️ This staff member is currently the responsible Level 1 staff member for one or more active hostels. You must assign a replacement Level 1 staff member before deactivating.
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="margin: 0;">
             <label class="form-label">Replacement Level 1 Staff Member *</label>
             <select name="replacement_staff" id="toggle-replacement-select" class="form-select">
               <option value="">-- Select Replacement Caretaker --</option>
@@ -183,7 +197,7 @@
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('toggle-staff-modal').style.display='none';">Cancel</button>
         <button type="submit" id="toggle-staff-submit-btn" class="btn btn-primary" style="background: var(--st-open-fg); border-color: var(--st-open-fg);">Confirm Deactivation</button>
       </div>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load ui %}
 
 {% block title %}Hostel Responsibility | Hostel Ticket System{% endblock %}
 
@@ -11,41 +12,35 @@
 {% endblock %}
 
 {% block page_title %}Hostel Responsibility{% endblock %}
-
-{% block page_actions %}
-  <a href="{% url 'hostels:manage_hostels' %}" class="btn btn-secondary">
-    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i>
-    <span>Hostels</span>
-  </a>
-  <a href="{% url 'hostels:manage_staff' %}" class="btn btn-secondary">
-    <i data-lucide="users" style="width: 14px; height: 14px;"></i>
-    <span>Staff Management</span>
-  </a>
-{% endblock %}
+{% block page_subtitle %}Designate primary Level 1 staff caretakers for each hostel residence{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 16px;">
+<div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
 
-  <!-- Information Banner -->
-  <div class="card" style="background: var(--bg-subtle); border-left: 3px solid var(--accent); padding: 16px 20px;">
-    <div style="display: flex; align-items: flex-start; gap: 12px;">
-      <i data-lucide="info" style="width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; margin-top: 2px;"></i>
-      <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.5;">
-        <strong style="color: var(--text-primary);">Level 1 Hostel Responsibility Model</strong><br>
-        Each hostel has one Level 1 responsible staff member. All ticket categories (Electrical, Plumbing, Cleaning, etc.) for that hostel are automatically assigned to this responsible caretaker.
-      </div>
+  <!-- Admin Sub-Navigation (Fix U-09) -->
+  {% include 'components/_admin_subnav.html' %}
+
+  <!-- Shared Info Callout Component -->
+  <div class="info-callout">
+    <div class="info-callout__icon">
+      <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+    </div>
+    <div class="info-callout__content">
+      <strong style="color: var(--text-primary);">Level 1 hostel responsibility model:</strong>
+      Each hostel has one primary responsible staff caretaker. All newly submitted tickets for that hostel automatically route directly to them.
     </div>
   </div>
 
   <!-- Responsibility Table -->
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
     <div class="table-container" style="border: none;">
       <table class="app-table">
         <thead>
           <tr>
             <th>Hostel</th>
-            <th>Level 1 Responsible Staff</th>
-            <th>Hostel Status</th>
+            <th>Level 1 responsible staff</th>
+            <th>Hostel status</th>
             <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
@@ -53,22 +48,20 @@
           {% for hostel in hostels %}
             <tr>
               <td>
-                <div style="font-weight: 600;">{{ hostel.name }}</div>
-                <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ hostel.code }} · {{ hostel.get_gender_type_display }}</div>
+                <div style="font-weight: 600; color: var(--text-primary);">{{ hostel.name }}</div>
+                <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">{{ hostel.code }} · {{ hostel.get_gender_type_display }}</div>
               </td>
               <td>
                 {% if hostel.responsible_staff %}
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="user-avatar" style="width: 26px; height: 26px; font-size: 11px;">
-                      {{ hostel.responsible_staff.login_id|slice:":2"|upper }}
-                    </div>
+                    {% user_avatar hostel.responsible_staff size="sm" %}
                     <div>
-                      <div style="font-weight: 500;">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
-                      <div style="font-size: var(--fs-xs); color: var(--text-muted);">Caretaker (L1) · {{ hostel.responsible_staff.login_id }}</div>
+                      <div style="font-weight: 500; font-size: var(--fs-sm); color: var(--text-primary);">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
+                      <div style="font-size: var(--fs-xs); color: var(--text-muted);">Caretaker (L1) · <span style="font-family: var(--font-mono);">{{ hostel.responsible_staff.login_id }}</span></div>
                     </div>
                   </div>
                 {% else %}
-                  <div style="display: flex; align-items: center; gap: 6px; color: var(--st-progress-fg);">
+                  <div style="display: flex; align-items: center; gap: 6px; color: var(--st-progress-fg); font-size: var(--fs-xs);">
                     <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
                     <span style="font-style: italic;">Unassigned (Falls back to caretaker/warden)</span>
                   </div>
@@ -82,16 +75,21 @@
                 {% endif %}
               </td>
               <td style="text-align: right;">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
-                  <i data-lucide="user-check" style="width: 13px; height: 13px;"></i>
-                  <span>{% if hostel.responsible_staff %}Change Staff{% else %}Assign Staff{% endif %}</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
+                  <i data-lucide="user-check" style="width: 12px; height: 12px;"></i>
+                  <span>{% if hostel.responsible_staff %}Change staff{% else %}Assign staff{% endif %}</span>
                 </button>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                No hostels configured yet.
+              <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div class="empty-state">
+                  <div class="empty-state-icon">
+                    <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">No hostels configured yet</h3>
+                </div>
               </td>
             </tr>
           {% endfor %}
@@ -106,19 +104,19 @@
 <div id="change-resp-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
   <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600;">Assign Level 1 Responsible Staff</h2>
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Assign Level 1 Responsible Staff</h2>
       <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('change-resp-modal').style.display='none';">✕</button>
     </div>
 
-    <form id="change-resp-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+    <form id="change-resp-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
       <input type="hidden" name="next" value="{% url 'hostels:manage_responsibility' %}">
 
-      <p style="font-size: var(--fs-sm); color: var(--text-secondary);">
+      <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0;">
         Choose the Level 1 staff member who will receive and handle all tickets for <strong id="resp-hostel-name"></strong>:
       </p>
 
-      <div class="form-group">
+      <div class="form-group" style="margin: 0;">
         <label class="form-label">Level 1 Staff (Caretaker) *</label>
         <select name="responsible_staff" id="resp-staff-select" class="form-select" required>
           <option value="">-- Select Caretaker --</option>
@@ -128,7 +126,7 @@
         </select>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('change-resp-modal').style.display='none';">Cancel</button>
         <button type="submit" class="btn btn-primary">Save Assignment</button>
       </div>
