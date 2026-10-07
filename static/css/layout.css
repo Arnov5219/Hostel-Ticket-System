@@ -494,6 +494,12 @@ input:-webkit-autofill:active {
 }
 
 /* Responsive adjustments */
+@media (max-width: 1024px) {
+  .charts-grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .user-role-hint {
     display: none;
@@ -503,8 +509,54 @@ input:-webkit-autofill:active {
   }
   .page-header {
     padding: 10px var(--space-4);
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .app-content {
     padding: var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  /* Hide dot grid on small screens; keep glows at lower opacity */
+  .app-background::before {
+    display: none;
+  }
+  .app-background::after {
+    opacity: 0.35;
+  }
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Accessibility Focus Visible */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* HTMX Loading Indicator */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
