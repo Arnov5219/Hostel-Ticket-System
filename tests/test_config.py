@@ -3,8 +3,8 @@ from django.urls import reverse
 
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role
-from apps.hostels.factories import BlockFactory, HostelFactory
-from apps.hostels.models import Hostel, Room
+from apps.hostels.factories import HostelFactory
+from apps.hostels.models import Hostel
 from apps.tickets.models import Category, Priority, RoutingRule, SLAPolicy
 
 
@@ -47,22 +47,15 @@ def test_manage_hostels_view(client):
 
 
 @pytest.mark.django_db
-def test_manage_rooms_view(client):
+def test_manage_staff_and_responsibility_views(client):
     admin = UserFactory(role=Role.ADMIN, password="admin_password")
     client.login(username=admin.login_id, password="admin_password")
 
-    block = BlockFactory()
-    response = client.post(
-        reverse("hostels:manage_rooms"),
-        {
-            "block": block.id,
-            "room_number": "305",
-            "floor": 3,
-            "capacity": 3,
-        },
-    )
-    assert response.status_code == 302
-    assert Room.objects.filter(block=block, room_number="305").exists()
+    staff_res = client.get(reverse("hostels:manage_staff"))
+    assert staff_res.status_code == 200
+
+    resp_res = client.get(reverse("hostels:manage_responsibility"))
+    assert resp_res.status_code == 200
 
 
 @pytest.mark.django_db

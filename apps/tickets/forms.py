@@ -2,7 +2,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from apps.accounts.models import Role, User
-from apps.hostels.models import Room
 from apps.tickets.models import (
     Category,
     Priority,
@@ -78,7 +77,6 @@ class TicketCreateForm(forms.ModelForm):
             "priority",
             "description",
             "hostel",
-            "room",
         ]
         widgets = {
             "title": forms.TextInput(
@@ -95,11 +93,10 @@ class TicketCreateForm(forms.ModelForm):
                 attrs={
                     "class": "form-textarea",
                     "rows": 4,
-                    "placeholder": "Provide detailed description of the problem, exact location, symptoms...",
+                    "placeholder": "Provide detailed description of the problem, exact physical location (room/floor/corridor), symptoms...",
                 }
             ),
             "hostel": forms.Select(attrs={"class": "form-select"}),
-            "room": forms.Select(attrs={"class": "form-select"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -107,6 +104,7 @@ class TicketCreateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["sub_category"].queryset = SubCategory.objects.none()
         self.fields["sub_category"].required = False
+        self.fields["hostel"].queryset = self.fields["hostel"].queryset.filter(is_active=True)
 
         if "category" in self.data:
             try:
@@ -122,14 +120,15 @@ class TicketCreateForm(forms.ModelForm):
         if user and user.is_authenticated:
             if user.hostel:
                 self.fields["hostel"].initial = user.hostel
-                self.fields["room"].queryset = Room.objects.filter(block__hostel=user.hostel)
-                if user.room:
-                    self.fields["room"].initial = user.room
-            else:
-                self.fields["room"].queryset = Room.objects.all()
 
         if not self.initial.get("priority"):
             self.initial["priority"] = Priority.MEDIUM
+
+    def clean_hostel(self):
+        hostel = self.cleaned_data.get("hostel")
+        if hostel and not hostel.is_active:
+            raise ValidationError("Cannot create tickets for an inactive hostel.")
+        return hostel
 
     def clean_images(self, files):
         uploaded_files = files.getlist("images")

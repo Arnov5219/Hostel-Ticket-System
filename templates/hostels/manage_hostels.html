@@ -11,13 +11,13 @@
 {% block page_title %}Hostels Management{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'hostels:manage_blocks' %}" class="btn btn-secondary">
-    <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
-    <span>Blocks</span>
+  <a href="{% url 'hostels:manage_staff' %}" class="btn btn-secondary">
+    <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+    <span>Staff Management</span>
   </a>
-  <a href="{% url 'hostels:manage_rooms' %}" class="btn btn-secondary">
-    <i data-lucide="door-closed" style="width: 14px; height: 14px;"></i>
-    <span>Rooms</span>
+  <a href="{% url 'hostels:manage_responsibility' %}" class="btn btn-secondary">
+    <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+    <span>Hostel Responsibility</span>
   </a>
   <button type="button" class="btn btn-primary" onclick="document.getElementById('add-hostel-modal').style.display='flex';">
     <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
@@ -37,9 +37,9 @@
             <th>Hostel Name</th>
             <th>Code</th>
             <th>Type</th>
-            <th>Blocks</th>
-            <th>Total Rooms</th>
+            <th>Level 1 Responsible Staff</th>
             <th>Status</th>
+            <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -48,15 +48,18 @@
               <td style="font-weight: 600;">{{ hostel.name }}</td>
               <td style="font-family: monospace; font-size: var(--fs-xs);">{{ hostel.code }}</td>
               <td>{{ hostel.get_gender_type_display }}</td>
-              <td>{{ hostel.blocks.count }}</td>
               <td>
-                {% with total=0 %}
-                  {% for block in hostel.blocks.all %}
-                    {{ block.rooms.count }}
-                  {% empty %}
-                    0
-                  {% endfor %}
-                {% endwith %}
+                {% if hostel.responsible_staff %}
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <div class="user-avatar" style="width: 22px; height: 22px; font-size: 10px;">
+                      {{ hostel.responsible_staff.login_id|slice:":2"|upper }}
+                    </div>
+                    <span>{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</span>
+                    <span class="role-badge" style="font-size: 9px; padding: 1px 4px;">L1 Caretaker</span>
+                  </div>
+                {% else %}
+                  <span style="color: var(--text-muted); font-style: italic;">Unassigned (Auto-fallback)</span>
+                {% endif %}
               </td>
               <td>
                 {% if hostel.is_active %}
@@ -64,6 +67,32 @@
                 {% else %}
                   <span class="status-pill closed">Inactive</span>
                 {% endif %}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openEditModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.code|escapejs }}', '{{ hostel.gender_type }}', '{{ hostel.address|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}', {{ hostel.is_active|yesno:'true,false' }});">
+                    <i data-lucide="pencil" style="width: 13px; height: 13px;"></i>
+                    <span>Edit</span>
+                  </button>
+
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openStaffModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
+                    <i data-lucide="user-plus" style="width: 13px; height: 13px;"></i>
+                    <span>Change Staff</span>
+                  </button>
+
+                  <form method="post" action="{% url 'hostels:toggle_hostel_status' hostel.id %}" style="display: inline;" onsubmit="return confirmStatusToggle({{ hostel.is_active|yesno:'true,false' }}, '{{ hostel.name|escapejs }}', {{ hostel.active_ticket_count|default:0 }});">
+                    {% csrf_token %}
+                    {% if hostel.is_active %}
+                      <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--st-open-fg);">
+                        <span>Deactivate</span>
+                      </button>
+                    {% else %}
+                      <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--st-resolved-fg);">
+                        <span>Activate</span>
+                      </button>
+                    {% endif %}
+                  </form>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -82,7 +111,7 @@
 
 <!-- Add Hostel Modal -->
 <div id="add-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px;">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 520px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="font-size: var(--fs-md); font-weight: 600;">Add New Hostel</h2>
       <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('add-hostel-modal').style.display='none';">✕</button>
@@ -93,30 +122,177 @@
       <input type="hidden" name="action" value="create">
 
       <div class="form-group">
-        <label class="form-label">Hostel Name</label>
-        {{ form.name }}
+        <label class="form-label">Hostel Name *</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g. Boys Hostel A" required>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Code (Unique)</label>
-        {{ form.code }}
+        <label class="form-label">Hostel Code *</label>
+        <input type="text" name="code" class="form-control" placeholder="e.g. BH-A" required>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Gender Type</label>
-        {{ form.gender_type }}
+        <label class="form-label">Hostel Type *</label>
+        <select name="gender_type" class="form-select" required>
+          <option value="BOYS">Boys</option>
+          <option value="GIRLS">Girls</option>
+          <option value="COED">Co-ed</option>
+        </select>
       </div>
 
       <div class="form-group">
         <label class="form-label">Address</label>
-        {{ form.address }}
+        <textarea name="address" class="form-textarea" rows="2" placeholder="Hostel location/address..."></textarea>
       </div>
 
-      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+      <div class="form-group">
+        <label class="form-label">Level 1 Responsible Staff</label>
+        <select name="responsible_staff" class="form-select">
+          <option value="">-- Select Responsible Caretaker --</option>
+          {% for ct in available_caretakers %}
+            <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
+          {% endfor %}
+        </select>
+        <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
+          All new tickets for this hostel will automatically route to this staff member.
+        </span>
+      </div>
+
+      <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="is_active" id="id_is_active_create" checked>
+        <label for="id_is_active_create" style="margin: 0; font-size: var(--fs-sm);">Active</label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-hostel-modal').style.display='none';">Cancel</button>
         <button type="submit" class="btn btn-primary">Save Hostel</button>
       </div>
     </form>
   </div>
 </div>
+
+<!-- Edit Hostel Modal -->
+<div id="edit-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 520px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Edit Hostel</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-hostel-modal').style.display='none';">✕</button>
+    </div>
+
+    <form method="post" action="{% url 'hostels:manage_hostels' %}" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" name="hostel_id" id="edit-hostel-id">
+
+      <div class="form-group">
+        <label class="form-label">Hostel Name *</label>
+        <input type="text" name="name" id="edit-hostel-name" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Hostel Code *</label>
+        <input type="text" name="code" id="edit-hostel-code" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Hostel Type *</label>
+        <select name="gender_type" id="edit-hostel-type" class="form-select" required>
+          <option value="BOYS">Boys</option>
+          <option value="GIRLS">Girls</option>
+          <option value="COED">Co-ed</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <textarea name="address" id="edit-hostel-address" class="form-textarea" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Level 1 Responsible Staff</label>
+        <select name="responsible_staff" id="edit-hostel-staff" class="form-select">
+          <option value="">-- Select Responsible Caretaker --</option>
+          {% for ct in available_caretakers %}
+            <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="is_active" id="edit-hostel-active">
+        <label for="edit-hostel-active" style="margin: 0; font-size: var(--fs-sm);">Active</label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-hostel-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Change Staff Modal -->
+<div id="change-staff-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Change Responsible Staff</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('change-staff-modal').style.display='none';">✕</button>
+    </div>
+
+    <form id="change-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+      <p style="font-size: var(--fs-sm); color: var(--text-secondary);">
+        Select the Level 1 staff member responsible for <strong id="staff-modal-hostel-name"></strong>:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Responsible Staff (Level 1) *</label>
+        <select name="responsible_staff" id="change-staff-select" class="form-select" required>
+          {% for ct in available_caretakers %}
+            <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <p style="font-size: var(--fs-xs); color: var(--text-muted);">
+        Note: Existing tickets will remain with their current assignee. All newly created tickets will route to the selected staff member.
+      </p>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('change-staff-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Assignment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, name, code, gender, address, staffId, isActive) {
+  document.getElementById('edit-hostel-id').value = id;
+  document.getElementById('edit-hostel-name').value = name;
+  document.getElementById('edit-hostel-code').value = code;
+  document.getElementById('edit-hostel-type').value = gender;
+  document.getElementById('edit-hostel-address').value = address;
+  document.getElementById('edit-hostel-staff').value = staffId;
+  document.getElementById('edit-hostel-active').checked = isActive;
+  document.getElementById('edit-hostel-modal').style.display = 'flex';
+}
+
+function openStaffModal(id, name, staffId) {
+  document.getElementById('staff-modal-hostel-name').innerText = name;
+  document.getElementById('change-staff-select').value = staffId;
+  document.getElementById('change-staff-form').action = '/hostels/hostels/' + id + '/change-responsible/';
+  document.getElementById('change-staff-modal').style.display = 'flex';
+}
+
+function confirmStatusToggle(isActive, name, activeCount) {
+  if (isActive) {
+    if (activeCount > 0) {
+      return confirm('Warning: "' + name + '" has ' + activeCount + ' active unresolved ticket(s)!\n\nAre you sure you want to deactivate this hostel? Historical tickets will remain accessible.');
+    }
+    return confirm('Are you sure you want to deactivate "' + name + '"?');
+  }
+  return confirm('Are you sure you want to activate "' + name + '"?');
+}
+</script>
 {% endblock %}

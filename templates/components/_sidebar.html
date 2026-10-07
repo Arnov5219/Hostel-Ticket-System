@@ -24,12 +24,22 @@
     {% if request.user.is_authenticated and request.user.is_admin %}
     <a href="{% url 'hostels:manage_hostels' %}" class="rail-item {% if current_section == 'manage_hostels' %}active{% endif %}">
       <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Hostels & Rooms</span>
+      <span class="rail-tooltip">Hostels</span>
+    </a>
+
+    <a href="{% url 'hostels:manage_staff' %}" class="rail-item {% if current_section == 'manage_staff' %}active{% endif %}">
+      <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Staff Management</span>
+    </a>
+
+    <a href="{% url 'hostels:manage_responsibility' %}" class="rail-item {% if current_section == 'manage_responsibility' %}active{% endif %}">
+      <i data-lucide="user-check" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Hostel Responsibility</span>
     </a>
 
     <a href="{% url 'tickets:manage_routing' %}" class="rail-item {% if current_section == 'manage_config' %}active{% endif %}">
       <i data-lucide="sliders-horizontal" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Routing & SLA</span>
+      <span class="rail-tooltip">Categories & SLA</span>
     </a>
     {% endif %}
 

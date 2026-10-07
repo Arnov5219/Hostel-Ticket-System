@@ -19,7 +19,6 @@ def ticket_detail(request, ticket_no):
             "category",
             "sub_category",
             "hostel",
-            "room",
             "reporter",
             "assigned_to",
         ).prefetch_related(

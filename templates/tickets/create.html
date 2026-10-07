@@ -75,17 +75,14 @@
         {% if form.description.errors %}<span class="form-error">{{ form.description.errors.0 }}</span>{% endif %}
       </div>
 
-      <!-- Location (Hostel & Room) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div class="form-group" style="margin: 0;">
-          <label class="form-label">Hostel *</label>
-          {{ form.hostel }}
-          {% if form.hostel.errors %}<span class="form-error">{{ form.hostel.errors.0 }}</span>{% endif %}
-        </div>
-        <div class="form-group" style="margin: 0;">
-          <label class="form-label">Room / Specific Location</label>
-          {{ form.room }}
-        </div>
+      <!-- Location (Hostel) -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Hostel *</label>
+        {{ form.hostel }}
+        {% if form.hostel.errors %}<span class="form-error">{{ form.hostel.errors.0 }}</span>{% endif %}
+        <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
+          Specify your room number, floor, or wing details in the issue description above.
+        </span>
       </div>
 
       <!-- Image Attachments (up to 3 images, 5 MB each) -->

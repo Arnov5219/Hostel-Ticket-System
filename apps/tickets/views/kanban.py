@@ -12,7 +12,7 @@ def ticket_kanban(request):
         raise PermissionDenied("Hostelers do not have access to the Kanban board.")
 
     tickets = Ticket.objects.visible_to(request.user).select_related(
-        "category", "hostel", "room", "assigned_to"
+        "category", "hostel", "assigned_to"
     )
 
     columns = [

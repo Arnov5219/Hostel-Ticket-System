@@ -19,7 +19,7 @@ def get_filtered_tickets(request):
     user = request.user
     qs = (
         Ticket.objects.visible_to(user)
-        .select_related("category", "hostel", "room", "assigned_to", "reporter")
+        .select_related("category", "hostel", "assigned_to", "reporter")
         .prefetch_related("tags")
         .annotate(comment_count=Count("comments"))
     )
@@ -150,7 +150,6 @@ def export_tickets_csv(request):
             "Priority",
             "Category",
             "Hostel",
-            "Room",
             "Reporter Roll ID",
             "Reporter Name",
             "Assigned To",
@@ -171,7 +170,6 @@ def export_tickets_csv(request):
                 t.get_priority_display(),
                 t.category.name if t.category else "",
                 t.hostel.name if t.hostel else "",
-                t.room.room_number if t.room else "",
                 t.reporter.login_id if t.reporter else "",
                 t.reporter.full_name if t.reporter else "",
                 (

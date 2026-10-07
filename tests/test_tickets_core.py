@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role
-from apps.hostels.factories import HostelFactory, RoomFactory
+from apps.hostels.factories import HostelFactory
 from apps.tickets.factories import CategoryFactory, TicketFactory
 from apps.tickets.models import (
     ActivityAction,
@@ -86,12 +86,12 @@ def test_ticket_visible_to():
 @pytest.mark.django_db
 def test_raise_ticket_and_comment_flow(client):
     hostel = HostelFactory()
-    room = RoomFactory(block__hostel=hostel)
     caretaker = UserFactory(role=Role.CARETAKER, hostel=hostel, password="caretaker_pwd")
+    hostel.responsible_staff = caretaker
+    hostel.save()
     student = UserFactory(
         role=Role.HOSTELER,
         hostel=hostel,
-        room=room,
         password="student_pwd",
     )
     category = CategoryFactory()
@@ -108,7 +108,6 @@ def test_raise_ticket_and_comment_flow(client):
             "description": "Geyser does not heat water in room 201",
             "priority": "MEDIUM",
             "hostel": hostel.id,
-            "room": room.id,
         },
     )
     assert response.status_code == 302

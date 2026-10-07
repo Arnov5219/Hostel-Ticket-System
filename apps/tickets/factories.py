@@ -1,7 +1,7 @@
 import factory
 
 from apps.accounts.factories import UserFactory
-from apps.hostels.factories import HostelFactory, RoomFactory
+from apps.hostels.factories import HostelFactory
 from apps.tickets.models import (
     Category,
     Priority,
@@ -35,7 +35,6 @@ class TicketFactory(factory.django.DjangoModelFactory):
     status = Status.OPEN
     reporter = factory.SubFactory(UserFactory)
     hostel = factory.SubFactory(HostelFactory)
-    room = factory.SubFactory(RoomFactory)
     current_level = 1
 
 

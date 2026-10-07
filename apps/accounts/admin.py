@@ -27,7 +27,7 @@ class UserAdmin(BaseUserAdmin):
         ),
         (
             "Role & Hostel Assignment",
-            {"fields": ("role", "escalation_level", "hostel", "room")},
+            {"fields": ("role", "escalation_level", "hostel")},
         ),
         (
             "Permissions",

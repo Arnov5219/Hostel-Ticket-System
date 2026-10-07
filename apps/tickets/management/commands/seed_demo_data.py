@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.hostels.models import Block, GenderType, Hostel, Room
+from apps.hostels.models import GenderType, Hostel
 from apps.tickets.models import (
     ActivityAction,
     Category,
@@ -42,27 +42,8 @@ class Command(BaseCommand):
             },
         )
 
-        # 2. Seed Blocks & Rooms (2 blocks each, 10 rooms each = 20 rooms per hostel)
-        rooms_a = []
-        rooms_b = []
-
-        for hostel, r_list, blk_names in [
-            (hostel_a, rooms_a, ["Block 1", "Block 2"]),
-            (hostel_b, rooms_b, ["Block A", "Block B"]),
-        ]:
-            for b_idx, b_name in enumerate(blk_names, start=1):
-                block, _ = Block.objects.get_or_create(hostel=hostel, name=b_name)
-                for floor in [1, 2]:
-                    for r_num in range(1, 6):
-                        room_no = f"{b_idx}{floor}0{r_num}"
-                        room, _ = Room.objects.get_or_create(
-                            block=block,
-                            room_number=room_no,
-                            defaults={"floor": floor, "capacity": 2},
-                        )
-                        r_list.append(room)
-
-        self.stdout.write(f"Created {len(rooms_a)} rooms in BH-A and {len(rooms_b)} rooms in GH-B.")
+        # 2. Hostels created
+        self.stdout.write("Hostels initialized (BH-A and GH-B).")
 
         # 3. Seed Users
         # Admin
@@ -158,18 +139,22 @@ class Command(BaseCommand):
             u.save()
             caretakers_b.append(u)
 
+        # Set Level 1 responsible staff for hostels
+        hostel_a.responsible_staff = caretakers_a[0]
+        hostel_a.save()
+        hostel_b.responsible_staff = caretakers_b[0]
+        hostel_b.save()
+
         # 15 Hostelers
         students_a = []
         for i in range(1, 9):
             lid = f"student_{i:02d}"
-            room = rooms_a[i - 1]
             u, _ = User.objects.get_or_create(
                 login_id=lid,
                 defaults={
                     "full_name": f"Hosteler {i} (Boys)",
                     "role": Role.HOSTELER,
                     "hostel": hostel_a,
-                    "room": room,
                 },
             )
             u.set_password("pass1234")
@@ -179,14 +164,12 @@ class Command(BaseCommand):
         students_b = []
         for i in range(9, 16):
             lid = f"student_{i:02d}"
-            room = rooms_b[i - 9]
             u, _ = User.objects.get_or_create(
                 login_id=lid,
                 defaults={
                     "full_name": f"Hosteler {i} (Girls)",
                     "role": Role.HOSTELER,
                     "hostel": hostel_b,
-                    "room": room,
                 },
             )
             u.set_password("pass1234")
@@ -431,7 +414,6 @@ class Command(BaseCommand):
                     "priority": prio,
                     "status": status,
                     "hostel": hostel,
-                    "room": reporter.room,
                     "reporter": reporter,
                     "assigned_to": assignee,
                     "current_level": current_level,

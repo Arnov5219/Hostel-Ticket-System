@@ -71,13 +71,6 @@ class User(AbstractUser):
         on_delete=models.SET_NULL,
         related_name="users",
     )
-    room = models.ForeignKey(
-        "hostels.Room",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="residents",
-    )
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
     USERNAME_FIELD = "login_id"

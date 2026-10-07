@@ -1,12 +1,12 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
 from apps.notifications.models import Notification
 from apps.tickets.models import (
     ActivityAction,
-    RoutingRule,
     SLAPolicy,
     Status,
     Ticket,
@@ -22,45 +22,40 @@ def calculate_due_date(priority: str, level: int) -> timezone.datetime:
 
 
 def find_initial_assignee(ticket: Ticket) -> User | None:
-    """Finds the responsible staff assignee using hierarchy fallback rules."""
-    # 1. Matching hostel and category rule
-    rule = RoutingRule.objects.filter(
-        hostel=ticket.hostel, category=ticket.category, level=1
-    ).first()
-    if rule and rule.assignee and rule.assignee.is_active:
-        return rule.assignee
+    """
+    Finds the responsible Level 1 staff assignee for the ticket.
+    Rule: The hostel determines who receives a Level 1 ticket.
+    The category only describes what the problem is.
+    """
+    if not ticket.hostel:
+        return User.objects.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN], is_active=True).first()
 
-    # 2. Matching hostel rule (any category)
-    rule = RoutingRule.objects.filter(hostel=ticket.hostel, category__isnull=True, level=1).first()
-    if rule and rule.assignee and rule.assignee.is_active:
-        return rule.assignee
+    # 1. Primary Level 1 staff member configured on the hostel
+    if ticket.hostel.responsible_staff and ticket.hostel.responsible_staff.is_active:
+        return ticket.hostel.responsible_staff
 
-    # 3. Matching category rule (any hostel)
-    rule = RoutingRule.objects.filter(
-        hostel__isnull=True, category=ticket.category, level=1
-    ).first()
-    if rule and rule.assignee and rule.assignee.is_active:
-        return rule.assignee
-
-    # 4. Caretaker in that hostel
+    # 2. Caretaker assigned to that hostel
     caretaker = User.objects.filter(
         hostel=ticket.hostel, role=Role.CARETAKER, is_active=True
     ).first()
     if caretaker:
         return caretaker
 
-    # 5. Warden in that hostel
+    # 3. Warden in that hostel
     warden = User.objects.filter(hostel=ticket.hostel, role=Role.WARDEN, is_active=True).first()
     if warden:
         return warden
 
-    # 6. Global fallback: Chief Warden or Admin
+    # 4. Global fallback: Chief Warden or Admin
     fallback = User.objects.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN], is_active=True).first()
     return fallback
 
 
 def assign_initial(ticket: Ticket, actor: User | None = None) -> Ticket:
     """Performs initial routing assignment, SLA deadline calculation, and notification."""
+    if ticket.hostel and not ticket.hostel.is_active:
+        raise ValidationError("Cannot assign ticket for an inactive hostel.")
+
     assignee = find_initial_assignee(ticket)
 
     ticket.assigned_to = assignee

@@ -9,7 +9,7 @@
         <th>Status</th>
         <th>Category</th>
         <th>Priority</th>
-        <th>Hostel / Room</th>
+        <th>Hostel</th>
         <th>Level</th>
         <th>SLA</th>
         <th>Ticket ID</th>
@@ -37,10 +37,7 @@
             </span>
           </td>
           <td>{% priority_dot ticket.priority %}</td>
-          <td>
-            {{ ticket.hostel.name }}
-            {% if ticket.room %}- Rm {{ ticket.room.room_number }}{% endif %}
-          </td>
+          <td>{{ ticket.hostel.name }}</td>
           <td>{% level_badge ticket.current_level %}</td>
           <td>
             <div class="sla-bar-container" title="{{ ticket.due_at|date:'M d, H:i' }}">

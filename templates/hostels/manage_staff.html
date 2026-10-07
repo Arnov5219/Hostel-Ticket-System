@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Management | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Staff Management</span>
+{% endblock %}
+
+{% block page_title %}Staff Management{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'hostels:manage_hostels' %}" class="btn btn-secondary">
+    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i>
+    <span>Hostels</span>
+  </a>
+  <a href="{% url 'hostels:manage_responsibility' %}" class="btn btn-secondary">
+    <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+    <span>Hostel Responsibility</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Staff Overview Card -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-container" style="border: none;">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th style="text-align: center;">Level</th>
+            <th>Assigned Hostel</th>
+            <th style="text-align: center;">Active Tickets</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in staff_members %}
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">
+                    {{ member.login_id|slice:":2"|upper }}
+                  </div>
+                  <div>
+                    <div style="font-weight: 600;">{{ member.full_name|default:member.login_id }}</div>
+                    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ member.login_id }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="role-badge" style="font-size: var(--fs-xs);">{{ member.get_role_display }}</span>
+              </td>
+              <td style="text-align: center;">
+                <span style="font-weight: 600; font-size: var(--fs-xs); padding: 2px 6px; border-radius: 4px; background: var(--bg-subtle);">
+                  L{{ member.escalation_level|default:"-" }}
+                </span>
+              </td>
+              <td>
+                {% if member.hostel %}
+                  <span style="font-weight: 500;">{{ member.hostel.name }}</span>
+                {% elif member.role == "CHIEF_WARDEN" or member.role == "ADMIN" %}
+                  <span style="color: var(--text-muted); font-style: italic;">All Hostels (Campus-wide)</span>
+                {% else %}
+                  <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                <span style="font-weight: 600; color: {% if member.active_tickets > 0 %}var(--st-progress-fg){% else %}var(--text-muted){% endif %};">
+                  {{ member.active_tickets }}
+                </span>
+              </td>
+              <td>
+                {% if member.is_active %}
+                  <span class="status-pill resolved">Active</span>
+                {% else %}
+                  <span class="status-pill closed">Inactive</span>
+                {% endif %}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openAssignHostelModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', '{{ member.get_role_display|escapejs }}', '{{ member.hostel.id|default:'' }}');">
+                    <i data-lucide="building" style="width: 13px; height: 13px;"></i>
+                    <span>Assign Hostel</span>
+                  </button>
+
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', {{ member.is_active|yesno:'true,false' }}, {{ member.active_tickets }}, {{ member.responsible_hostels.count }});" style="color: {% if member.is_active %}var(--st-open-fg){% else %}var(--st-resolved-fg){% endif %};">
+                    <span>{% if member.is_active %}Deactivate{% else %}Activate{% endif %}</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                No staff members found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Assign Hostel Modal -->
+<div id="assign-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600;">Change Staff Assignment</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('assign-hostel-modal').style.display='none';">✕</button>
+    </div>
+
+    <form id="assign-hostel-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+      <div style="padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: var(--fs-sm);">
+        <div>Staff: <strong id="assign-modal-staff-name"></strong></div>
+        <div style="color: var(--text-secondary); margin-top: 2px;">Role: <span id="assign-modal-staff-role"></span></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Assigned Hostel</label>
+        <select name="hostel_id" id="assign-hostel-select" class="form-select">
+          <option value="">-- No Hostel / All Hostels --</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}">{{ h.name }} ({{ h.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <p style="font-size: var(--fs-xs); color: var(--text-muted);">
+        The updated hostel assignment will immediately be used for ticket routing and escalation scope.
+      </p>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('assign-hostel-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Assignment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Deactivate / Activate Staff Modal -->
+<div id="toggle-staff-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 500px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 id="toggle-staff-title" style="font-size: var(--fs-md); font-weight: 600;">Deactivate Staff Member</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('toggle-staff-modal').style.display='none';">✕</button>
+    </div>
+
+    <form id="toggle-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+      {% csrf_token %}
+
+      <div id="deactivate-warnings" style="display: flex; flex-direction: column; gap: 8px;">
+        <p style="font-size: var(--fs-sm);">
+          Are you sure you want to deactivate <strong id="toggle-staff-name"></strong>?
+        </p>
+
+        <div id="active-tickets-warning" style="display: none; padding: 10px; background: #FFF3E0; color: #B45309; border-radius: var(--radius-sm); font-size: var(--fs-xs);">
+          ⚠️ This staff member currently has <strong id="toggle-staff-tickets-count">0</strong> active tickets assigned.
+        </div>
+
+        <div id="replacement-staff-block" style="display: none;">
+          <div style="padding: 10px; background: #FDE8E8; color: #C53030; border-radius: var(--radius-sm); font-size: var(--fs-xs); margin-bottom: 8px;">
+            ⚠️ This staff member is currently the responsible Level 1 staff member for one or more active hostels. You must assign a replacement Level 1 staff member before deactivating.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Replacement Level 1 Staff Member *</label>
+            <select name="replacement_staff" id="toggle-replacement-select" class="form-select">
+              <option value="">-- Select Replacement Caretaker --</option>
+              {% for ct in available_caretakers %}
+                <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('toggle-staff-modal').style.display='none';">Cancel</button>
+        <button type="submit" id="toggle-staff-submit-btn" class="btn btn-primary" style="background: var(--st-open-fg); border-color: var(--st-open-fg);">Confirm Deactivation</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAssignHostelModal(userId, name, role, currentHostelId) {
+  document.getElementById('assign-modal-staff-name').innerText = name;
+  document.getElementById('assign-modal-staff-role').innerText = role;
+  document.getElementById('assign-hostel-select').value = currentHostelId;
+  document.getElementById('assign-hostel-form').action = '/hostels/staff/' + userId + '/assign-hostel/';
+  document.getElementById('assign-hostel-modal').style.display = 'flex';
+}
+
+function openStaffToggleModal(userId, name, isActive, activeTickets, responsibleHostelsCount) {
+  const form = document.getElementById('toggle-staff-form');
+  form.action = '/hostels/staff/' + userId + '/toggle-status/';
+
+  document.getElementById('toggle-staff-name').innerText = name;
+
+  if (isActive) {
+    document.getElementById('toggle-staff-title').innerText = 'Deactivate Staff Member';
+    document.getElementById('toggle-staff-submit-btn').innerText = 'Confirm Deactivation';
+    document.getElementById('toggle-staff-submit-btn').style.background = 'var(--st-open-fg)';
+
+    if (activeTickets > 0) {
+      document.getElementById('active-tickets-warning').style.display = 'block';
+      document.getElementById('toggle-staff-tickets-count').innerText = activeTickets;
+    } else {
+      document.getElementById('active-tickets-warning').style.display = 'none';
+    }
+
+    if (responsibleHostelsCount > 0) {
+      document.getElementById('replacement-staff-block').style.display = 'block';
+      document.getElementById('toggle-replacement-select').required = true;
+    } else {
+      document.getElementById('replacement-staff-block').style.display = 'none';
+      document.getElementById('toggle-replacement-select').required = false;
+    }
+  } else {
+    document.getElementById('toggle-staff-title').innerText = 'Activate Staff Member';
+    document.getElementById('toggle-staff-submit-btn').innerText = 'Confirm Activation';
+    document.getElementById('toggle-staff-submit-btn').style.background = 'var(--primary)';
+    document.getElementById('active-tickets-warning').style.display = 'none';
+    document.getElementById('replacement-staff-block').style.display = 'none';
+    document.getElementById('toggle-replacement-select').required = false;
+  }
+
+  document.getElementById('toggle-staff-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

@@ -158,13 +158,6 @@ class Ticket(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="tickets",
     )
-    room = models.ForeignKey(
-        "hostels.Room",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="tickets",
-    )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
