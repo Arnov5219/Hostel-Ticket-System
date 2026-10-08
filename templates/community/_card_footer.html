@@ -73,7 +73,7 @@
   {% endif %}
 </div>
 
-<div id="affected-line-{{ ticket.ticket_no }}" hx-swap-oob="outerHTML" class="post-affected-line">
+<div id="affected-line-{{ ticket.ticket_no }}" hx-swap-oob="outerHTML" class="post-affected-line" aria-live="polite">
   <i data-lucide="users" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
   <span><strong>{{ ticket.affected_count }}</strong> hosteler{{ ticket.affected_count|pluralize }} affected</span>
 </div>
