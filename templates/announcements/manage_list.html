@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static ui %}
+
+{% block title %}Manage Announcements | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'announcements:list' %}">Announcements</a>
+  <span class="separator">/</span>
+  <span class="current">Staff Management</span>
+{% endblock %}
+
+{% block page_title %}Manage Announcements{% endblock %}
+{% block page_subtitle %}Publish, schedule, and moderate official notices for hostels{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'announcements:manage_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+    <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+    <span>New Announcement</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 16px;">
+
+  {# Filter Row #}
+  <div class="card" style="padding: 12px 18px; background: var(--bg-surface-glass);">
+    <form method="get" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <select name="status" class="form-select" style="height: 34px; padding: 2px 10px; font-size: var(--fs-xs);" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          <option value="PUBLISHED" {% if current_status == "PUBLISHED" %}selected{% endif %}>Published</option>
+          <option value="DRAFT" {% if current_status == "DRAFT" %}selected{% endif %}>Draft</option>
+          <option value="SCHEDULED" {% if current_status == "SCHEDULED" %}selected{% endif %}>Scheduled</option>
+          <option value="ARCHIVED" {% if current_status == "ARCHIVED" %}selected{% endif %}>Archived</option>
+        </select>
+
+        {% if request.user.role == "ADMIN" or request.user.role == "CHIEF_WARDEN" %}
+          <select name="hostel" class="form-select" style="height: 34px; padding: 2px 10px; font-size: var(--fs-xs);" onchange="this.form.submit()">
+            <option value="">All Hostels</option>
+            {% for h in hostels %}
+              <option value="{{ h.id }}" {% if current_hostel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+
+      <div style="font-size: var(--fs-xs); color: var(--text-muted);">
+        Showing {{ items|length }} announcement{{ items|pluralize }}
+      </div>
+    </form>
+  </div>
+
+  {# Announcements Table #}
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th style="width: 120px;">Type</th>
+            <th style="width: 110px;">Severity</th>
+            <th style="width: 150px;">Audience</th>
+            <th style="width: 120px;">Status</th>
+            <th style="width: 150px;">Published / Scheduled</th>
+            <th style="width: 120px;">Read count</th>
+            <th style="width: 140px; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            {% with ann=item.announcement %}
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    {% if ann.is_pinned %}
+                      <i data-lucide="pin" style="width: 12px; height: 12px; color: var(--accent); flex-shrink: 0;" title="Pinned"></i>
+                    {% endif %}
+                    <a href="{% url 'announcements:detail' ann.id %}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                      {{ ann.title }}
+                    </a>
+                  </div>
+                </td>
+                <td style="white-space: nowrap;">
+                  <span style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                    {{ ann.get_kind_display }}
+                  </span>
+                </td>
+                <td style="white-space: nowrap;">
+                  {% if ann.severity == "URGENT" %}
+                    <span class="crit-pill-urgent">Urgent</span>
+                  {% elif ann.severity == "IMPORTANT" %}
+                    <span class="badge" style="background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
+                  {% else %}
+                    <span class="badge" style="background-color: var(--ann-info-bg); color: var(--ann-info-fg); font-size: 11px;">Info</span>
+                  {% endif %}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                  {% if ann.all_hostels %}
+                    All hostels
+                  {% else %}
+                    {{ ann.hostels.all|join:", "|truncatechars:25|default:"Targeted" }}
+                  {% endif %}
+                </td>
+                <td style="white-space: nowrap;">
+                  {% if ann.status == "PUBLISHED" %}
+                    <span class="badge" style="background-color: var(--st-resolved-bg); color: var(--st-resolved-fg); font-weight: 600;">Published</span>
+                  {% elif ann.status == "SCHEDULED" %}
+                    <span class="badge" style="background-color: #f3e8ff; color: #7e22ce; font-weight: 600;">Scheduled</span>
+                  {% elif ann.status == "ARCHIVED" %}
+                    <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-muted);">Archived</span>
+                  {% else %}
+                    <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary);">Draft</span>
+                  {% endif %}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+                  {% if ann.status == "SCHEDULED" %}
+                    {{ ann.publish_at|date:"M d, H:i" }}
+                  {% elif ann.published_at %}
+                    {{ ann.published_at|date:"M d, H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td style="font-size: var(--fs-xs); font-family: var(--font-mono); white-space: nowrap;">
+                  {{ item.read_count }} / {{ item.total_audience }}
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="{% url 'announcements:manage_edit' ann.id %}" class="btn btn-ghost btn-xs" title="Edit">
+                      <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i>
+                    </a>
+                    <form method="post" action="{% url 'announcements:manage_action' ann.id 'pin' %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-ghost btn-xs" title="Toggle Pin">
+                        <i data-lucide="pin" style="width: 12px; height: 12px;"></i>
+                      </button>
+                    </form>
+                    {% if ann.status != "PUBLISHED" %}
+                      <form method="post" action="{% url 'announcements:manage_action' ann.id 'publish' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-xs" title="Publish Now" style="color: var(--st-resolved-fg);">
+                          <i data-lucide="send" style="width: 12px; height: 12px;"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                    {% if ann.status != "ARCHIVED" %}
+                      <form method="post" action="{% url 'announcements:manage_action' ann.id 'archive' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-xs" title="Archive" style="color: var(--text-muted);">
+                          <i data-lucide="archive" style="width: 12px; height: 12px;"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                No announcements found matching the filters.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static ui %}
+
+{% block title %}{% if is_edit %}Edit Announcement{% else %}New Announcement{% endif %} | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'announcements:manage_list' %}">Manage Notices</a>
+  <span class="separator">/</span>
+  <span class="current">{% if is_edit %}Edit{% else %}New{% endif %}</span>
+{% endblock %}
+
+{% block page_title %}{% if is_edit %}Edit Announcement{% else %}Create Announcement{% endif %}{% endblock %}
+{% block page_subtitle %}Compose official updates and broadcasts for hostel residents{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'announcements:manage_list' %}" class="btn btn-secondary">
+    <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+    <span>Back</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 980px; margin: 0 auto;"
+     x-data="{
+       title: '{{ form.title.value|default:''|escapejs }}',
+       body: '{{ form.body.value|default:''|escapejs }}',
+       kind: '{{ form.kind.value|default:'NOTICE' }}',
+       severity: '{{ form.severity.value|default:'INFO' }}',
+       allHostels: {% if form.all_hostels.value %}true{% else %}false{% endif %},
+       actionType: 'publish',
+       charsLeft: 2000 - ('{{ form.body.value|default:''|escapejs }}'.length),
+       setSeverity(val) {
+         this.severity = val;
+         document.getElementById('id_severity').value = val;
+       },
+       confirmUrgent(event) {
+         if (this.severity === 'URGENT' && this.actionType === 'publish') {
+           if (!confirm('This announcement is marked URGENT. It will trigger high-priority alerts and an immediate top banner for all targeted hostelers. Proceed?')) {
+             event.preventDefault();
+           }
+         }
+       }
+     }">
+
+  {% if form.non_field_errors %}
+    <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid rgba(224, 49, 49, 0.2); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
+      {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" @submit="confirmUrgent($event)">
+    {% csrf_token %}
+    <input type="hidden" name="action" :value="actionType">
+    {{ form.severity }}
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 20px; align-items: start;">
+      
+      {# Left Column: Core Fields #}
+      <div class="card" style="padding: 22px; background: var(--bg-surface-glass); display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Title -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="{{ form.title.id_for_label }}">Headline / Title *</label>
+          {{ form.title }}
+          {% if form.title.errors %}<span class="form-error" style="color: var(--danger); font-size: var(--fs-xs);">{{ form.title.errors.0 }}</span>{% endif %}
+        </div>
+
+        <!-- Kind & Severity -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="{{ form.kind.id_for_label }}">Type *</label>
+            {{ form.kind }}
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Severity Level</label>
+            <div class="segmented-control" style="display: flex; background-color: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm);">
+              <button type="button" class="segmented-btn" :class="{ 'active': severity === 'INFO' }" @click="setSeverity('INFO')">Info</button>
+              <button type="button" class="segmented-btn" :class="{ 'active': severity === 'IMPORTANT' }" @click="setSeverity('IMPORTANT')">Important</button>
+              <button type="button" class="segmented-btn" :class="{ 'active': severity === 'URGENT' }" @click="setSeverity('URGENT')">Urgent</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="form-group" style="margin: 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <label class="form-label" for="{{ form.body.id_for_label }}" style="margin: 0;">Message Content *</label>
+            <span style="font-size: 11px; color: var(--text-muted);" x-text="charsLeft + ' chars left'"></span>
+          </div>
+          {{ form.body }}
+          {% if form.body.errors %}<span class="form-error" style="color: var(--danger); font-size: var(--fs-xs);">{{ form.body.errors.0 }}</span>{% endif %}
+        </div>
+
+        <!-- Attachment -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="{{ form.attachment.id_for_label }}">Attachment (PDF / Image, Max 5 MB)</label>
+          {{ form.attachment }}
+          {% if form.attachment.errors %}<span class="form-error" style="color: var(--danger); font-size: var(--fs-xs);">{{ form.attachment.errors.0 }}</span>{% endif %}
+        </div>
+
+        <!-- Related Ticket -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="{{ form.related_ticket.id_for_label }}">Related Ticket (Optional)</label>
+          {{ form.related_ticket }}
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px; display: block;">Link this announcement to a relevant maintenance issue</span>
+        </div>
+
+      </div>
+
+      {# Right Column: Audience, Schedule, and Live Preview #}
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Audience Settings -->
+        <div class="card" style="padding: 18px; background: var(--bg-surface-glass);">
+          <h4 style="font-size: var(--fs-base); font-weight: 700; margin: 0 0 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="users" style="width: 15px; height: 15px; color: var(--accent);"></i>
+            <span>Audience Scope</span>
+          </h4>
+
+          {% if request.user.role == "WARDEN" %}
+            <div style="padding: 8px 12px; background-color: var(--bg-subtle); border-radius: var(--radius-sm); font-size: var(--fs-xs); color: var(--text-secondary);">
+              <span>Locked to your hostel:</span>
+              <strong style="display: block; color: var(--text-primary); margin-top: 2px;">{{ request.user.hostel.name }}</strong>
+            </div>
+            <div style="display: none;">
+              {{ form.all_hostels }}
+              {{ form.hostels }}
+            </div>
+          {% else %}
+            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              {{ form.all_hostels }}
+              <label for="{{ form.all_hostels.id_for_label }}" style="font-size: var(--fs-xs); font-weight: 600; cursor: pointer;">
+                Broadcast to all hostels
+              </label>
+            </div>
+            <div x-show="!allHostels" style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="form-label" style="margin: 0; font-size: 11.5px;">Select Specific Hostels</label>
+              {{ form.hostels }}
+            </div>
+          {% endif %}
+          {% if form.hostels.errors %}<span class="form-error" style="color: var(--danger); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.hostels.errors.0 }}</span>{% endif %}
+
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+            {{ form.is_pinned }}
+            <label for="{{ form.is_pinned.id_for_label }}" style="font-size: var(--fs-xs); font-weight: 500; cursor: pointer;">
+              Pin to top of hosteler feed
+            </label>
+          </div>
+        </div>
+
+        <!-- Schedule & Timing -->
+        <div class="card" style="padding: 18px; background: var(--bg-surface-glass);">
+          <h4 style="font-size: var(--fs-base); font-weight: 700; margin: 0 0 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="clock" style="width: 15px; height: 15px; color: var(--accent);"></i>
+            <span>Publishing & Expiry</span>
+          </h4>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 11.5px;">Schedule for later (Optional)</label>
+              {{ form.publish_at }}
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 11.5px;">Expiration date (Optional)</label>
+              {{ form.expires_at }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview Card (Section 7.5) -->
+        <div class="card" style="padding: 16px; background: var(--bg-surface); border: 1px dashed var(--border-strong);">
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px;">
+            Resident Card Live Preview
+          </div>
+
+          <div class="card" style="padding: 14px; box-shadow: var(--shadow-sm);"
+               :style="severity === 'URGENT' ? 'border-left: 3px solid var(--danger); background-color: rgba(220, 38, 38, 0.02);' : ''">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <div class="ann-icon-chip"
+                   :class="{ 'urgent': severity === 'URGENT', 'important': severity === 'IMPORTANT', 'info': severity === 'INFO' }">
+                <i data-lucide="bell" style="width: 13px; height: 13px;"></i>
+              </div>
+              <div style="font-weight: 700; font-size: var(--fs-xs); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                   x-text="title || 'Your announcement title'"></div>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+               x-text="body || 'Your message preview will appear here...'"></p>
+            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 6px;">
+              {{ request.user.full_name|default:request.user.login_id }} · Just now
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;" @click="actionType = 'publish'">
+            <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+            <span>Publish Now</span>
+          </button>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="submit" class="btn btn-secondary" style="justify-content: center;" @click="actionType = 'draft'">
+              <span>Save draft</span>
+            </button>
+            <button type="submit" class="btn btn-secondary" style="justify-content: center;" @click="actionType = 'schedule'">
+              <span>Schedule</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </form>
+
+</div>
+{% endblock %}
