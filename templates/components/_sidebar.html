@@ -53,6 +53,13 @@
     </a>
     {% endif %}
 
+    {% if request.user.is_authenticated and request.user.is_warden or request.user.is_chief_warden or request.user.is_admin %}
+    <a href="{% url 'tickets:trash' %}" class="rail-item {% if current_section == 'trash' %}active{% endif %}">
+      <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Trash</span>
+    </a>
+    {% endif %}
+
     <a href="{% url 'notifications:list' %}" class="rail-item {% if current_section == 'notifications' %}active{% endif %}">
       <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
       <span class="rail-tooltip">Notifications</span>

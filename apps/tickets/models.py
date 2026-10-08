@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
-from apps.tickets.querysets import TicketManager
+from apps.tickets.querysets import ActiveTicketManager, AllTicketManager
 
 
 class Priority(models.TextChoices):
@@ -226,7 +226,20 @@ class Ticket(TimeStampedModel):
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="tickets")
 
-    objects = TicketManager()
+    # Soft-delete audit fields (Feature B)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="deleted_tickets",
+    )
+    delete_reason = models.CharField(max_length=200, blank=True, default="")
+
+    objects = ActiveTicketManager()
+    all_objects = AllTicketManager()
 
     class Meta:
         ordering = ["-created_at"]
@@ -361,6 +374,9 @@ class ActivityAction(models.TextChoices):
     COMMENT_HIDDEN = "COMMENT_HIDDEN", "Comment Hidden"
     VISIBILITY_CHANGED = "VISIBILITY_CHANGED", "Visibility Changed"
     COMMUNITY_HIDDEN = "COMMUNITY_HIDDEN", "Community Hidden"
+    DELETED = "DELETED", "Deleted"
+    RESTORED = "RESTORED", "Restored"
+    PURGED = "PURGED", "Purged"
 
 
 class TicketActivity(TimeStampedModel):

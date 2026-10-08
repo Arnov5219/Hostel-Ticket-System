@@ -86,6 +86,26 @@
         </form>
       {% endif %}
     {% endif %}
+
+    <!-- Delete Ticket Actions -->
+    {% if user_can_delete %}
+      {% if request.user.is_hosteler %}
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="document.getElementById('hosteler-delete-modal').style.display='flex';" title="Delete ticket">
+          <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+          <span>Delete ticket</span>
+        </button>
+      {% else %}
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="document.getElementById('staff-delete-modal').style.display='flex';" title="Delete ticket">
+          <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+          <span>Delete</span>
+        </button>
+      {% endif %}
+    {% elif delete_block_reason and request.user.is_hosteler and request.user == ticket.reporter %}
+      <span style="font-size: var(--fs-xs); color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--bg-subtle); border-radius: var(--radius-sm);" title="{{ delete_block_reason }}">
+        <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+        {{ delete_block_reason }}
+      </span>
+    {% endif %}
   </div>
 {% endblock %}
 
@@ -416,6 +436,75 @@
       <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('escalate-modal').style.display='none';">Cancel</button>
         <button type="submit" class="btn btn-primary" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">Escalate Ticket</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Hosteler Delete Modal -->
+{% if user_can_delete and request.user.is_hosteler %}
+<div id="hosteler-delete-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 440px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--st-open-fg);">Delete Ticket</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('hosteler-delete-modal').style.display='none';">✕</button>
+    </div>
+
+    <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0 0 16px; line-height: 1.5;">
+      Delete this ticket? Staff will no longer see it. This can't be undone by you.
+    </p>
+
+    <form method="post" action="{% url 'tickets:delete' ticket.ticket_no %}" style="display: flex; gap: 8px; justify-content: flex-end; margin: 0;">
+      {% csrf_token %}
+      <input type="hidden" name="from_detail" value="true">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('hosteler-delete-modal').style.display='none';">Cancel</button>
+      <button type="submit" class="btn btn-primary" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">Delete</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Staff Delete Modal -->
+{% if user_can_delete and not request.user.is_hosteler %}
+<div id="staff-delete-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';" x-data="{ reasonChoice: '', otherReason: '', get fullReason() { return this.reasonChoice === 'Other' ? this.otherReason.trim() : this.reasonChoice; } }">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--st-open-fg);">Delete Ticket</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('staff-delete-modal').style.display='none';">✕</button>
+    </div>
+
+    <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0 0 16px;">
+      As staff, deleting this ticket will remove it from all views and move it to trash. A reason is required.
+    </p>
+
+    <form method="post" action="{% url 'tickets:delete' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="from_detail" value="true">
+      <input type="hidden" name="reason" :value="fullReason">
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Reason *</label>
+        <select class="form-select" x-model="reasonChoice" required>
+          <option value="">Select a reason...</option>
+          <option value="Duplicate">Duplicate</option>
+          <option value="Spam or test">Spam or test</option>
+          <option value="Raised by mistake">Raised by mistake</option>
+          <option value="Inappropriate">Inappropriate</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin: 0;" x-show="reasonChoice === 'Other'" x-transition>
+        <label class="form-label">Specify Reason (minimum 5 characters) *</label>
+        <textarea class="form-textarea" rows="2" x-model="otherReason" placeholder="Please specify why this ticket is being deleted..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('staff-delete-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary" :disabled="fullReason.length < 5" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">
+          Delete ticket
+        </button>
       </div>
     </form>
   </div>

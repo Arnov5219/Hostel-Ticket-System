@@ -11,4 +11,6 @@ def global_ui_context(request):
         context["unread_notifications_count"] = Notification.objects.filter(
             recipient=request.user, is_read=False
         ).count()
+        if hasattr(request, "session"):
+            context["undo_delete"] = request.session.pop("undo_delete", None)
     return context

@@ -19,6 +19,12 @@ from .list import (
     ticket_list,
 )
 from .manage import manage_criticality, manage_routing
+from .deletion import (
+    ticket_delete_view,
+    ticket_undo_delete_view,
+    ticket_restore_view,
+    trash_list_view,
+)
 
 __all__ = [
     "ticket_list",
@@ -39,4 +45,8 @@ __all__ = [
     "save_filter",
     "delete_filter",
     "bulk_action",
+    "ticket_delete_view",
+    "ticket_undo_delete_view",
+    "ticket_restore_view",
+    "trash_list_view",
 ]

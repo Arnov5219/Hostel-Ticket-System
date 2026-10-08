@@ -17,6 +17,7 @@ from apps.tickets.models import (
     Ticket,
     TicketVisibility,
 )
+from apps.tickets.services.deletion import can_delete
 
 
 @login_required
@@ -97,6 +98,8 @@ def ticket_detail(request, ticket_no):
     if can_repost_view and (ticket.visibility == TicketVisibility.HOSTEL or ticket.repost_count > 0):
         reposts_qs = ticket.reposts.select_related("user").order_by("-created_at")
 
+    user_can_delete, delete_block_reason = can_delete(request.user, ticket)
+
     context = {
         "ticket": ticket,
         "comments": comments_qs,
@@ -114,5 +117,7 @@ def ticket_detail(request, ticket_no):
         "can_view_reposters": can_repost_view,
         "reposts": reposts_qs,
         "affected_count": ticket.repost_count + 1 if ticket.visibility == TicketVisibility.HOSTEL else 1,
+        "user_can_delete": user_can_delete,
+        "delete_block_reason": delete_block_reason,
     }
     return render(request, "tickets/detail.html", context)

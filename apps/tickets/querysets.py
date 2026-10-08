@@ -50,5 +50,14 @@ class TicketQuerySet(models.QuerySet):
         return qs
 
 
-class TicketManager(models.Manager.from_queryset(TicketQuerySet)):
+class ActiveTicketManager(models.Manager.from_queryset(TicketQuerySet)):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class AllTicketManager(models.Manager.from_queryset(TicketQuerySet)):
     pass
+
+
+# Backwards compatibility alias
+TicketManager = ActiveTicketManager

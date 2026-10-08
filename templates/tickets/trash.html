@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Trash | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Trash</span>
+{% endblock %}
+
+{% block page_title %}Trash{% endblock %}
+{% block page_subtitle %}Soft-deleted tickets log (retained for 90 days){% endblock %}
+
+{% block content %}
+<div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+  {% if tickets %}
+    <div class="table-container" style="border: none; border-radius: 0; overflow-x: auto;">
+      <table class="app-table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border); background: var(--bg-subtle);">
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Ticket ID</th>
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Title</th>
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Hostel</th>
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Deleted by</th>
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Reason</th>
+            <th style="padding: var(--sp-3) var(--sp-4); text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Deleted at</th>
+            {% if can_restore %}
+              <th style="padding: var(--sp-3) var(--sp-4); text-align: right; font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary);">Action</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for ticket in tickets %}
+            <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s ease;">
+              <td style="padding: var(--sp-3) var(--sp-4); font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted); font-weight: 600;">
+                #{{ ticket.ticket_no }}
+              </td>
+              <td style="padding: var(--sp-3) var(--sp-4); font-weight: 500; color: var(--text-primary); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ ticket.title }}
+              </td>
+              <td style="padding: var(--sp-3) var(--sp-4); font-size: var(--fs-xs); color: var(--text-secondary);">
+                {{ ticket.hostel.name|default:"—" }}
+              </td>
+              <td style="padding: var(--sp-3) var(--sp-4); font-size: var(--fs-xs); color: var(--text-secondary);">
+                {{ ticket.deleted_by.get_full_name|default:ticket.deleted_by.username|default:"System" }}
+              </td>
+              <td style="padding: var(--sp-3) var(--sp-4); font-size: var(--fs-xs); color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ ticket.delete_reason|default:"—" }}
+              </td>
+              <td style="padding: var(--sp-3) var(--sp-4); font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+                {{ ticket.deleted_at|date:"M d, Y H:i" }}
+              </td>
+              {% if can_restore %}
+                <td style="padding: var(--sp-3) var(--sp-4); text-align: right; white-space: nowrap;">
+                  <form method="post" action="{% url 'tickets:restore' ticket_no=ticket.ticket_no %}" style="display: inline; margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline" style="padding: 4px 10px; font-size: var(--fs-xs); font-weight: 500; color: var(--accent); border-color: var(--border-strong);">
+                      <i data-lucide="rotate-ccw" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                      <span>Restore</span>
+                    </button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 48px 24px;">
+      <i data-lucide="trash-2" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: var(--sp-2);"></i>
+      <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--sp-1);">Nothing in the trash.</h3>
+      <p style="font-size: var(--fs-sm); color: var(--text-muted); margin: 0;">Deleted tickets will appear here before being permanently purged.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ urlpatterns = [
     path("filter/<int:filter_id>/delete/", views.delete_filter, name="delete_filter"),
     path("manage/routing/", views.manage_routing, name="manage_routing"),
     path("manage/criticality/", views.manage_criticality, name="manage_criticality"),
+    path("trash/", views.trash_list_view, name="trash"),
     path("<str:ticket_no>/", views.ticket_detail, name="detail"),
     path("<str:ticket_no>/status/", views.change_status, name="change_status"),
     path("<str:ticket_no>/move/", views.move_ticket, name="move"),
@@ -25,4 +26,7 @@ urlpatterns = [
     path("<str:ticket_no>/community-comments/", community_views.community_comments_view, name="community_comments"),
     path("<str:ticket_no>/follow/", views.toggle_follow, name="follow"),
     path("<str:ticket_no>/rate/", views.rate_ticket, name="rate"),
+    path("<str:ticket_no>/delete/", views.ticket_delete_view, name="delete"),
+    path("<str:ticket_no>/undo-delete/", views.ticket_undo_delete_view, name="undo_delete"),
+    path("<str:ticket_no>/restore/", views.ticket_restore_view, name="restore"),
 ]

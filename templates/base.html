@@ -161,6 +161,9 @@
 
   <!-- Toast Notification Stack (Bottom-right, non-overlapping B-09) -->
   <div id="toast-container" class="toast-container" role="status" aria-live="polite">
+    {% if undo_delete %}
+      {% include "tickets/partials/_delete_toast.html" with ticket_no=undo_delete.ticket_no undo_token=undo_delete.token is_oob=False %}
+    {% endif %}
     {% if messages %}
       {% for message in messages %}
         <div class="toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" onclick="dismissToast(this);">
