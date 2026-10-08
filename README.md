@@ -6,6 +6,32 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
 
 ## 🌟 Key Features
 
+- **Mandatory Residence Onboarding Gate**:
+  - Enforced Hostel → Block → Room chain for all hostelers prior to app usage.
+  - Cascading dependent selects via HTMX with server-side validation.
+  - Location prefilled on tickets with optional location details and "Outside own hostel" detection.
+  - Resident room capacity warnings (warn-only or hard block).
+- **Safe Ticket Soft-Delete & Trash Management**:
+  - Soft-delete audit trail preserving SLA reporting and historical ticket numbering.
+  - Hosteler D7 delete rules (own tickets only while Open/Assigned, 0 reposts, no staff comments) with an **8-second undo countdown toast**.
+  - Warden/Admin delete with mandatory reason selection and note.
+  - Admin trash bin (`/manage/trash/`) with one-click restore and `purge_deleted` retention pruning command.
+- **Dark Mode & Theming**:
+  - Zero-flash top-of-head inline script with instant theme switching.
+  - Choices: **Light**, **Dark**, and **System** (persisted in DB and `localStorage`).
+  - Strict tokens-only design system (`tokens.css`), audited by automated test guards (`test_no_hardcoded_colors.py`).
+  - Live Chart.js theme re-render on `themechange` events.
+- **Comprehensive Mobile-First Usability**:
+  - Responsive bottom navigation bar with raised accent action button and "More" action sheet.
+  - Card-list responsive conversions for data tables on phones (< 768px).
+  - Touch-friendly swipeable Kanban with status tab quick-jump strip and "Move to..." action menu fallback.
+  - Full-screen/bottom-sheet filter and modal drawers.
+  - Camera direct capture (`capture="environment"`) and gallery picker for attachments.
+  - 44×44px minimum touch targets and 16px input font size to eliminate iOS auto-zoom.
+  - Web Application Manifest (`manifest.webmanifest`) and responsive meta viewport.
+- **Community Feed & Announcements**:
+  - Hostel-wide shared issues feed with one-click reposting, affected counter, and privacy safeguards.
+  - Campus announcements banner with severities (`Info`, `Important`, `Urgent`), pinned posts, read tracking, and scheduled publishing.
 - **Multi-Tier SLA Escalation Engine**: Automated hierarchical escalation across 4 operational levels (`L1 Caretaker` → `L2 Hostel Warden` → `L3 Chief Warden` → `L4 Admin / Dean`) with overdue countdowns and alert triggers.
 - **Strict Role-Based Access Control**:
   - **Hostelers**: Submit tickets with attachments, track status, add comments, confirm resolution, and rate service (internal notes are strictly masked).
@@ -13,7 +39,7 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
   - **Wardens (L2)**: Handle L1 escalations, monitor hostel-wide maintenance, reassign, and override statuses.
   - **Chief Warden (L3)**: Campus-wide operational oversight across all hostels, handle L2 escalations.
   - **Administrators (L4)**: System configuration, routing rules, SLA matrices, user management, and critical overdue escalations.
-- **Interactive Kanban Board**: Drag-and-drop ticket status transitions powered by SortableJS with server-side validation, error snap-back, and activity auditing.
+- **Interactive Kanban Board**: Drag-and-drop ticket status transitions powered by SortableJS with touch long-press delay, server-side validation, error snap-back, and activity auditing.
 - **Real-Time Operational Analytics**:
   - Staff operational dashboard with Chart.js visualization (monthly trends, category distribution, turnaround duration per hostel).
   - Hosteler personalized helpdesk with quick complaint actions.
@@ -126,6 +152,18 @@ The system includes management commands designed to be triggered via cron or Cel
    ```
    Automatically closes tickets that have been in `RESOLVED` status for more than 72 hours without student reopen.
 
+3. **Purge Soft-Deleted Tickets (Retention Pruning)**:
+   ```bash
+   python manage.py purge_deleted            # Dry run: previews eligible tickets older than 90 days
+   python manage.py purge_deleted --confirm  # Permanently removes soft-deleted tickets past retention
+   ```
+
+4. **Publish Scheduled Announcements**:
+   ```bash
+   python manage.py publish_scheduled_announcements
+   ```
+   Publishes scheduled announcements that have reached their target publication timestamp.
+
 ---
 
 ## 🐳 Docker Deployment
@@ -149,16 +187,19 @@ The application will be accessible at **`http://localhost:8000/`**.
 Run the comprehensive test suite with `pytest`:
 
 ```bash
-# Run all 35 test cases
+# Run all 107 test cases
 pytest
 
-# Code formatting and linting
-ruff check .
-black --check .
+# Hardcoded color audit test
+pytest tests/test_no_hardcoded_colors.py
 ```
 
-All 35 tests cover:
-- Authentication & custom user role permissions.
+All 107 tests cover:
+- Mandatory residence onboarding gate and room-block-hostel chain validation.
+- Safe soft-delete rules (D7 status/repost/comment checks), 8s undo toast tokens, and admin restoration.
+- Theme switching persistence, zero-flash top-of-head script, and automated CSS/template color token guards.
+- Mobile bottom navigation, card-list table transformations, touch Kanban fallbacks, and photo uploads.
+- Community feed reposting, comment moderation, and scheduled announcements.
 - Race-condition safe sequential ticket numbering (`HTL-YYYY-00001`).
 - SLA policy lookup and fallback routing rules.
 - Status workflow matrix with illegal transition rejection.
@@ -166,7 +207,7 @@ All 35 tests cover:
 - Notification dispatch and polling endpoints.
 - Analytics selectors and Chart.js JSON APIs.
 - Filtered CSV exports, quick search, and staff bulk actions.
-- Custom error page handlers.
+- Custom branded error page handlers.
 
 ---
 

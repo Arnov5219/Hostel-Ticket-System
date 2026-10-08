@@ -4,7 +4,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.accounts.models import Role, User
+from apps.accounts.models import Role, User, Theme, ResidenceHistory
 from apps.announcements.models import (
     Announcement,
     AnnouncementKind,
@@ -28,6 +28,7 @@ from apps.tickets.models import (
     TicketVisibility,
 )
 from apps.tickets.services.criticality import recompute_criticality
+from apps.tickets.services.deletion import soft_delete
 
 
 class Command(BaseCommand):
@@ -96,6 +97,7 @@ class Command(BaseCommand):
             },
         )
         admin_user.set_password("admin123")
+        admin_user.theme = Theme.DARK
         admin_user.save()
 
         # Chief Warden
@@ -109,6 +111,7 @@ class Command(BaseCommand):
             },
         )
         chief_warden.set_password("pass1234")
+        chief_warden.theme = Theme.SYSTEM
         chief_warden.save()
 
         # Wardens
@@ -123,6 +126,8 @@ class Command(BaseCommand):
             },
         )
         warden_a.set_password("pass1234")
+        warden_a.theme = Theme.LIGHT
+        warden_a.hostel = hostel_a
         warden_a.save()
 
         warden_b, _ = User.objects.get_or_create(
@@ -136,6 +141,8 @@ class Command(BaseCommand):
             },
         )
         warden_b.set_password("pass1234")
+        warden_b.theme = Theme.DARK
+        warden_b.hostel = hostel_b
         warden_b.save()
 
         # Caretakers
@@ -155,6 +162,8 @@ class Command(BaseCommand):
                 },
             )
             u.set_password("pass1234")
+            u.theme = Theme.DARK if cid == "caretaker_bha1" else Theme.SYSTEM
+            u.hostel = hostel_a
             u.save()
             caretakers_a.append(u)
 
@@ -174,6 +183,8 @@ class Command(BaseCommand):
                 },
             )
             u.set_password("pass1234")
+            u.theme = Theme.LIGHT if cid == "caretaker_ghb1" else Theme.SYSTEM
+            u.hostel = hostel_b
             u.save()
             caretakers_b.append(u)
 
@@ -186,6 +197,7 @@ class Command(BaseCommand):
         # 22 Hostelers (allows up to 11+ reposters in Hostel A)
         # Note: student_14 and student_22 are deliberately unassigned to demo onboarding gate
         now = timezone.now()
+        theme_cycle = [Theme.SYSTEM, Theme.DARK, Theme.LIGHT]
         students_a = []
         for i in range(1, 15):
             lid = f"student_{i:02d}"
@@ -198,6 +210,7 @@ class Command(BaseCommand):
                     "hostel": hostel_a if i < 14 else None,
                     "room": assigned_room,
                     "residence_set_at": now if assigned_room else None,
+                    "theme": theme_cycle[i % 3],
                 },
             )
             u.set_password("pass1234")
@@ -205,7 +218,15 @@ class Command(BaseCommand):
                 u.hostel = hostel_a
                 u.room = assigned_room
                 u.residence_set_at = now
+            u.theme = theme_cycle[i % 3]
             u.save()
+            if assigned_room:
+                ResidenceHistory.objects.get_or_create(
+                    user=u,
+                    hostel=hostel_a,
+                    room=assigned_room,
+                    defaults={"changed_by": admin_user},
+                )
             students_a.append(u)
 
         students_b = []
@@ -220,6 +241,7 @@ class Command(BaseCommand):
                     "hostel": hostel_b if i < 22 else None,
                     "room": assigned_room,
                     "residence_set_at": now if assigned_room else None,
+                    "theme": theme_cycle[i % 3],
                 },
             )
             u.set_password("pass1234")
@@ -227,7 +249,15 @@ class Command(BaseCommand):
                 u.hostel = hostel_b
                 u.room = assigned_room
                 u.residence_set_at = now
+            u.theme = theme_cycle[i % 3]
             u.save()
+            if assigned_room:
+                ResidenceHistory.objects.get_or_create(
+                    user=u,
+                    hostel=hostel_b,
+                    room=assigned_room,
+                    defaults={"changed_by": admin_user},
+                )
             students_b.append(u)
 
         self.stdout.write(
@@ -717,8 +747,61 @@ class Command(BaseCommand):
                 for s in students_a[:6]:
                     AnnouncementRead.objects.get_or_create(announcement=ann, user=s)
 
+        # ==============================================================================
+        # 9. Seed Soft-Deleted Tickets for Trash Management Demo
+        # ==============================================================================
+        self.stdout.write("Seeding soft-deleted tickets for trash management demo...")
+        del_samples = [
+            (
+                "Duplicate: Ceiling fan speed regulator broken",
+                "Accidentally created duplicate ticket for ceiling fan",
+                students_a[0],
+                hostel_a,
+                students_a[0],
+                "Created duplicate ticket by mistake",
+            ),
+            (
+                "Spam test ticket - please delete",
+                "Checking if ticket notification works",
+                students_a[1],
+                hostel_a,
+                warden_a,
+                "Spam or test ticket submitted by student",
+            ),
+            (
+                "Obsolete item: Old cafeteria feedback",
+                "Cafeteria menu suggestion from past semester",
+                students_b[0],
+                hostel_b,
+                admin_user,
+                "Raised by mistake in maintenance category",
+            ),
+        ]
+
+        elec_cat = Category.objects.filter(name="Electrical").first() or categories[0]
+        for idx, (title, desc, rep, hst, actor, rsn) in enumerate(del_samples, start=1):
+            t_no = f"HTL-{now.year}-{80+idx:05d}"
+            rep_room = rep.room if (rep and rep.room) else (rooms_a[0] if hst == hostel_a else rooms_b[0])
+            del_ticket, created = Ticket.all_objects.get_or_create(
+                ticket_no=t_no,
+                defaults={
+                    "title": title,
+                    "description": desc,
+                    "category": elec_cat,
+                    "hostel": hst,
+                    "block": rep_room.block if rep_room else None,
+                    "room": rep_room,
+                    "reporter": rep,
+                    "priority": Priority.LOW,
+                    "status": Status.OPEN,
+                    "is_deleted": False,
+                },
+            )
+            if created or not del_ticket.is_deleted:
+                soft_delete(del_ticket, actor=actor, reason=rsn)
+
         self.stdout.write(
             self.style.SUCCESS(
-                f"Successfully seeded demo dataset with {created_count} realistic tickets, 12 community tickets (0-11 reposts), 25 comments, and 5 announcements!"
+                f"Successfully seeded demo dataset with {created_count} realistic tickets, 3 soft-deleted trash tickets, 12 community tickets (0-11 reposts), 25 comments, and 5 announcements!"
             )
         )
