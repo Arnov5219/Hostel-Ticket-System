@@ -209,7 +209,7 @@
     <!-- Staff Bulk Actions Bar (Shown when checkboxes selected) -->
     {% if not request.user.is_hosteler %}
     <form id="bulk-action-form" action="{% url 'tickets:bulk_action' %}" method="post"
-          style="display: none; background: rgba(26, 86, 219, 0.08); border: 1px solid rgba(26, 86, 219, 0.2); border-radius: var(--radius-md); padding: 8px 14px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          style="display: none; background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius-md); padding: 8px 14px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
       {% csrf_token %}
       <div style="display: flex; align-items: center; gap: 8px;">
         <span id="bulk-count" style="font-weight: 600; font-size: var(--fs-sm); color: var(--accent);">0 tickets selected</span>

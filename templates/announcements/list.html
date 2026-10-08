@@ -35,7 +35,7 @@
         All
       </a>
       <a href="{% url 'announcements:list' %}?tab=unread" class="segmented-btn {% if current_tab == 'unread' %}active{% endif %}">
-        Unread {% if unread_total > 0 %}<span class="badge" style="background-color: var(--accent); color: #fff; font-size: 10px; padding: 1px 5px; margin-left: 4px;">{{ unread_total }}</span>{% endif %}
+        Unread {% if unread_total > 0 %}<span class="badge" style="background-color: var(--accent); color: var(--white); font-size: 10px; padding: 1px 5px; margin-left: 4px;">{{ unread_total }}</span>{% endif %}
       </a>
       <a href="{% url 'announcements:list' %}?tab=pinned" class="segmented-btn {% if current_tab == 'pinned' %}active{% endif %}">
         Pinned
@@ -46,7 +46,7 @@
   {# Announcements List #}
   <div style="display: flex; flex-direction: column; gap: 14px;">
     {% for ann in announcements %}
-      <div class="card" style="padding: 18px 20px; background: var(--bg-surface-glass); {% if ann.severity == 'URGENT' %}border-left: 4px solid var(--danger); background-color: rgba(220, 38, 38, 0.02);{% endif %}">
+      <div class="card" style="padding: 18px 20px; background: var(--bg-surface-glass); {% if ann.severity == 'URGENT' %}border-left: 4px solid var(--danger); background-color: var(--ann-urg-bg);{% endif %}">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">

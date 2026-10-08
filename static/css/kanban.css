@@ -18,7 +18,7 @@
   padding: 12px;
   max-height: calc(100vh - 140px);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
 }
 
 .kanban-column.open { background-color: var(--col-open); }
@@ -57,7 +57,7 @@
   font-size: var(--fs-xs);
   color: var(--text-muted);
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-subtle);
   padding: 1px 6px;
   border-radius: 10px;
 }
@@ -122,7 +122,7 @@
 .kanban-card.sortable-ghost {
   opacity: 0.35;
   border: 2px dashed var(--accent);
-  background: rgba(26, 86, 219, 0.04);
+  background: var(--accent-light);
 }
 
 .kanban-card.sortable-chosen {

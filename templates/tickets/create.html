@@ -27,7 +27,7 @@
     </div>
 
     {% if form.non_field_errors %}
-      <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid rgba(224, 49, 49, 0.2); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
+      <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
         {% for error in form.non_field_errors %}
           <div>{{ error }}</div>
         {% endfor %}
@@ -94,7 +94,7 @@
       <div class="form-group" style="margin: 0;" x-data="{ count: 0, names: [] }">
         <label class="form-label">Image attachments <span style="font-weight: 400; color: var(--text-muted);">(Up to 3 photos, max 5 MB each)</span></label>
         <div style="border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 18px; text-align: center; background-color: var(--bg-subtle); transition: border-color var(--duration-fast);"
-             :style="count > 0 ? 'border-color: var(--accent); background-color: rgba(26, 86, 219, 0.03);' : ''">
+             :style="count > 0 ? 'border-color: var(--accent); background-color: var(--accent-light);' : ''">
           <i data-lucide="image-plus" style="width: 24px; height: 24px; color: var(--text-muted); margin-bottom: 6px;"></i>
           <input type="file" name="images" id="ticket-images" multiple accept="image/*" class="form-control" style="border: none; background: transparent; cursor: pointer;"
                  @change="count = $event.target.files.length; names = Array.from($event.target.files).map(f => f.name)">

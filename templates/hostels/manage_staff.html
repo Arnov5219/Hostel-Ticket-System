@@ -66,8 +66,8 @@
               <td style="text-align: center;">
                 {# Fix U-12: Neutral text for normal ticket counts, amber warning only if >= 6 #}
                 {% if member.active_tickets >= 6 %}
-                  <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: #b45309; font-variant-numeric: tabular-nums;">
-                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></span>
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--st-progress-fg); font-variant-numeric: tabular-nums;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--st-progress-dot);"></span>
                     {{ member.active_tickets }}
                   </span>
                 {% else %}
@@ -176,12 +176,12 @@
           Are you sure you want to deactivate <strong id="toggle-staff-name"></strong>?
         </p>
 
-        <div id="active-tickets-warning" style="display: none; padding: 10px 14px; background: rgba(245, 158, 11, 0.1); color: #92400e; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); font-size: var(--fs-xs);">
+        <div id="active-tickets-warning" style="display: none; padding: 10px 14px; background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); border-radius: var(--radius-md); font-size: var(--fs-xs);">
           ⚠️ This staff member currently has <strong id="toggle-staff-tickets-count">0</strong> active tickets assigned.
         </div>
 
         <div id="replacement-staff-block" style="display: none;">
-          <div style="padding: 10px 14px; background: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid rgba(224, 49, 49, 0.25); border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 10px;">
+          <div style="padding: 10px 14px; background: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 10px;">
             ⚠️ This staff member is currently the responsible Level 1 staff member for one or more active hostels. You must assign a replacement Level 1 staff member before deactivating.
           </div>
 

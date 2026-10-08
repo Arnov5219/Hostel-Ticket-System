@@ -45,7 +45,7 @@
      }">
 
   {% if form.non_field_errors %}
-    <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid rgba(224, 49, 49, 0.2); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
+    <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
       {% for error in form.non_field_errors %}
         <div>{{ error }}</div>
       {% endfor %}
@@ -179,7 +179,7 @@
           </div>
 
           <div class="card" style="padding: 14px; box-shadow: var(--shadow-sm);"
-               :style="severity === 'URGENT' ? 'border-left: 3px solid var(--danger); background-color: rgba(220, 38, 38, 0.02);' : ''">
+               :style="severity === 'URGENT' ? 'border-left: 3px solid var(--danger); background-color: var(--ann-urg-bg);' : ''">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
               <div class="ann-icon-chip"
                    :class="{ 'urgent': severity === 'URGENT', 'important': severity === 'IMPORTANT', 'info': severity === 'INFO' }">

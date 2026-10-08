@@ -104,9 +104,121 @@
   --fs-title:          20px;
   --fs-stat:           28px;
 
+  /* Background & Glow Effects */
+  --bg-base:           #F6F7F9;
+  --bg-glow-accent:    rgba(36, 144, 239, 0.05);
+  --bg-glow-violet:    rgba(139, 92, 246, 0.04);
+  --bg-dot:            rgba(17, 24, 39, 0.045);
+  --border-soft:       rgba(0, 0, 0, 0.06);
+  --border-hover:      rgba(0, 0, 0, 0.15);
+  --ring:              0 0 0 3px rgba(36, 144, 239, 0.35);
+
+  /* SLA Turnaround Colors */
+  --sla-green:         #2b8a3e;
+  --sla-blue:          #1971c2;
+  --sla-amber:         #e67700;
+  --sla-red:           #c53030;
+  --white:             #ffffff;
+
   /* Motion & Transitions */
   --duration-fast:     120ms;
   --duration-normal:   160ms;
   --duration-slow:     220ms;
   --ease-standard:     cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-app:            #0F1115;
+  --bg-surface:        #161A20;
+  --bg-surface-glass:  rgba(22, 26, 32, 0.85);
+  --bg-subtle:         #1D222A;
+  --bg-subtle-hover:   #262C36;
+  --border:            #272D37;
+  --border-strong:     #353C48;
+  --border-soft:       rgba(255, 255, 255, 0.07);
+  --border-hover:      rgba(255, 255, 255, 0.16);
+  --border-glass:      rgba(39, 45, 55, 0.8);
+
+  /* Text */
+  --text-primary:      #E8EAED;
+  --text-secondary:    #A9B1BE;
+  --text-muted:        #7D8696;
+  --text-inverse:      #11141A;
+
+  /* Brand / Actions (inverts for dark mode visibility) */
+  --primary:           #F2F4F7;
+  --primary-hover:     #E5E7EB;
+  --primary-text:      #11141A;
+  --accent:            #4DA3FF;
+  --accent-hover:      #3B8FE8;
+  --accent-light:      rgba(77, 163, 255, 0.14);
+  --accent-glow:       rgba(77, 163, 255, 0.15);
+  --ring:              0 0 0 3px rgba(77, 163, 255, 0.35);
+
+  --danger:            #FF6B6B;
+  --danger-light:      rgba(224, 62, 62, 0.18);
+  --danger-hover-bg:   rgba(224, 62, 62, 0.25);
+
+  /* Status pills */
+  --st-open-bg:        rgba(224, 62, 62, 0.16);   --st-open-fg:        #FF8A8A;  --st-open-dot: #FF6B6B;
+  --st-assigned-bg:    rgba(36, 144, 239, 0.16);  --st-assigned-fg:    #7DB8FF;  --st-assigned-dot: #4DA3FF;
+  --st-progress-bg:    rgba(240, 140, 0, 0.16);   --st-progress-fg:    #FFB454;  --st-progress-dot: #FFA94D;
+  --st-hold-bg:        rgba(140, 100, 220, 0.18); --st-hold-fg:        #C3A6FF;  --st-hold-dot: #A78BFA;
+  --st-resolved-bg:    rgba(52, 160, 107, 0.16);  --st-resolved-fg:    #5FD39A;  --st-resolved-dot: #34D399;
+  --st-closed-bg:      rgba(255, 255, 255, 0.08); --st-closed-fg:      #A9B1BE;  --st-closed-dot: #9CA3AF;
+  --st-escalated-bg:   rgba(228, 70, 120, 0.16);  --st-escalated-fg:   #FF8FB1;  --st-escalated-dot: #F472B6;
+  --st-rejected-bg:    rgba(224, 62, 62, 0.16);   --st-rejected-fg:    #FF8A8A;  --st-rejected-dot: #EF4444;
+
+  /* Kanban Column Tints */
+  --col-open:          rgba(224, 62, 62, 0.07);
+  --col-assigned:      rgba(36, 144, 239, 0.07);
+  --col-progress:      rgba(240, 140, 0, 0.07);
+  --col-hold:          rgba(140, 100, 220, 0.08);
+  --col-resolved:      rgba(52, 160, 107, 0.07);
+
+  /* Priority & Criticality */
+  --prio-urgent:       #FF6B6B;
+  --prio-high:         #FFA94D;
+  --prio-medium:       #4DA3FF;
+  --prio-low:          #8A93A3;
+  --crit-low:          #8A93A3;
+  --crit-med:          #4DA3FF;
+  --crit-high:         #FFA94D;
+  --crit-urgent:       #FF6B6B;
+
+  /* Announcement Severities */
+  --ann-info-bg:       rgba(36, 144, 239, 0.16);
+  --ann-info-fg:       #7DB8FF;
+  --ann-imp-bg:        rgba(240, 140, 0, 0.16);
+  --ann-imp-fg:        #FFB454;
+  --ann-urg-bg:        rgba(224, 62, 62, 0.16);
+  --ann-urg-fg:        #FF8A8A;
+
+  /* Level Badges */
+  --lvl-1-bg:          rgba(36, 144, 239, 0.16);  --lvl-1-fg: #7DB8FF;
+  --lvl-2-bg:          rgba(240, 140, 0, 0.16);   --lvl-2-fg: #FFB454;
+  --lvl-3-bg:          rgba(249, 115, 22, 0.16);  --lvl-3-fg: #FB923C;
+  --lvl-4-bg:          rgba(228, 70, 120, 0.16);  --lvl-4-fg: #FF8FB1;
+
+  /* SLA Colors */
+  --sla-green:         #5FD39A;
+  --sla-blue:          #7DB8FF;
+  --sla-amber:         #FFA94D;
+  --sla-red:           #FF8A8A;
+
+  /* Background Layer Effects */
+  --bg-base:           #0F1115;
+  --bg-glow-accent:    rgba(77, 163, 255, 0.12);
+  --bg-glow-violet:    rgba(140, 100, 220, 0.10);
+  --bg-dot:            rgba(255, 255, 255, 0.06);
+
+  /* Shadows for Dark Mode */
+  --shadow-sm:         0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card:       0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-hover:      0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  --shadow-pop:        0 16px 40px -8px rgba(0, 0, 0, 0.7);
+  --shadow-modal:      0 24px 48px -12px rgba(0, 0, 0, 0.85);
 }

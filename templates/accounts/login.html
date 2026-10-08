@@ -8,7 +8,7 @@
 <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; z-index: 1;">
 
   <!-- Subtle glow halo behind the card -->
-  <div style="position: absolute; width: 440px; height: 440px; background: radial-gradient(circle, rgba(36, 144, 239, 0.12) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
+  <div style="position: absolute; width: 440px; height: 440px; background: radial-gradient(circle, var(--bg-glow-accent) 0%, var(--bg-glow-violet) 50%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
 
   <div class="card" style="width: 100%; max-width: 400px; padding: 32px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-modal); position: relative; z-index: 2;">
     
@@ -30,7 +30,7 @@
       {% csrf_token %}
 
       {% if form.non_field_errors %}
-        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); border: 1px solid rgba(197, 48, 48, 0.2);">
+        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); border: 1px solid var(--border);">
           {% for error in form.non_field_errors %}
             <div>{{ error }}</div>
           {% endfor %}

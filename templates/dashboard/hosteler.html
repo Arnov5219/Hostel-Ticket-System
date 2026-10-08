@@ -27,13 +27,13 @@
         <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--ann-urg-fg); flex-shrink: 0;"></i>
         <span>{{ urgent_banner.title }}</span>
         {% if urgent_more_count > 0 %}
-          <span class="badge" style="background-color: rgba(197, 48, 48, 0.15); color: var(--ann-urg-fg); font-size: 11px;">
+          <span class="badge" style="background-color: var(--st-open-bg); color: var(--ann-urg-fg); font-size: 11px;">
             +{{ urgent_more_count }} more
           </span>
         {% endif %}
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <a href="{% url 'announcements:detail' urgent_banner.id %}" class="btn btn-xs" style="background: var(--ann-urg-fg); color: #fff; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-xs);">
+        <a href="{% url 'announcements:detail' urgent_banner.id %}" class="btn btn-xs" style="background: var(--ann-urg-fg); color: var(--white); font-weight: 600; padding: 3px 10px; border-radius: var(--radius-xs);">
           Read
         </a>
         <button type="button"
@@ -50,7 +50,7 @@
 
   {# 2. Welcome Panel #}
   <div style="position: relative; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-card); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-    <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; border: 28px solid rgba(26, 86, 219, 0.04); pointer-events: none;"></div>
+    <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; border: 28px solid var(--accent-glow); pointer-events: none;"></div>
     <div style="position: absolute; left: 20%; top: -60px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none;"></div>
 
     <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="padding: 8px 18px; height: 38px; font-weight: 600; position: relative; z-index: 1; box-shadow: 0 2px 8px rgba(26, 86, 219, 0.25);">
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="padding: 8px 18px; height: 38px; font-weight: 600; position: relative; z-index: 1; box-shadow: var(--shadow-sm);">
       <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
       <span>Raise ticket</span>
     </a>

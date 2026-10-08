@@ -107,7 +107,7 @@
                   {% if ann.status == "PUBLISHED" %}
                     <span class="badge" style="background-color: var(--st-resolved-bg); color: var(--st-resolved-fg); font-weight: 600;">Published</span>
                   {% elif ann.status == "SCHEDULED" %}
-                    <span class="badge" style="background-color: #f3e8ff; color: #7e22ce; font-weight: 600;">Scheduled</span>
+                    <span class="badge" style="background-color: var(--st-hold-bg); color: var(--st-hold-fg); font-weight: 600;">Scheduled</span>
                   {% elif ann.status == "ARCHIVED" %}
                     <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-muted);">Archived</span>
                   {% else %}
