@@ -2,6 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from django.core.paginator import Paginator
+from apps.announcements.services import unread_urgent_announcements, visible_to
 from apps.dashboard.selectors import (
     get_category_data,
     get_escalation_breakdown,
@@ -12,7 +14,8 @@ from apps.dashboard.selectors import (
     get_top_staff,
     get_trend_data,
 )
-from apps.tickets.models import Ticket
+from apps.tickets.models import Category, Ticket, TicketVisibility
+from apps.tickets.services.community import feed_queryset
 
 
 @login_required
@@ -24,14 +27,44 @@ def dashboard_index(request):
         recent_tickets = (
             Ticket.objects.filter(reporter=user)
             .select_related("category", "hostel", "assigned_to")
-            .order_by("-created_at")[:8]
+            .order_by("-created_at")[:3]
         )
+
+        urgent_announcements = unread_urgent_announcements(user)
+        urgent_banner = urgent_announcements.first()
+        urgent_more_count = max(0, urgent_announcements.count() - 1)
+
+        announcements = visible_to(user)[:4]
+
+        trending_tickets = (
+            Ticket.objects.filter(
+                hostel=user.hostel,
+                visibility=TicketVisibility.HOSTEL,
+                community_hidden=False,
+                repost_count__gt=0,
+            )
+            .select_related("category")
+            .order_by("-repost_count")[:3]
+        ) if user.hostel else Ticket.objects.none()
+
+        feed_qs = feed_queryset(user)
+        paginator = Paginator(feed_qs, 10)
+        page_obj = paginator.get_page(1)
+        categories = Category.objects.filter(is_active=True, allow_community=True)
+
         return render(
             request,
             "dashboard/hosteler.html",
             {
                 "kpis": kpis,
                 "recent_tickets": recent_tickets,
+                "urgent_banner": urgent_banner,
+                "urgent_more_count": urgent_more_count,
+                "announcements": announcements,
+                "trending_tickets": trending_tickets,
+                "page_obj": page_obj,
+                "tickets": page_obj.object_list,
+                "categories": categories,
                 "current_section": "dashboard",
             },
         )

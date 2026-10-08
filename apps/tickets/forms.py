@@ -12,6 +12,7 @@ from apps.tickets.models import (
     Tag,
     Ticket,
     TicketComment,
+    TicketVisibility,
 )
 
 
@@ -69,6 +70,19 @@ class TagForm(forms.ModelForm):
 
 
 class TicketCreateForm(forms.ModelForm):
+    share_with_community = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Share this with other hostelers in my hostel",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_share_with_community"}),
+    )
+    show_reporter_name = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Show my name",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_show_reporter_name"}),
+    )
+
     class Meta:
         model = Ticket
         fields = [
@@ -78,6 +92,7 @@ class TicketCreateForm(forms.ModelForm):
             "priority",
             "description",
             "hostel",
+            "show_reporter_name",
         ]
         widgets = {
             "title": forms.TextInput(
@@ -85,9 +100,13 @@ class TicketCreateForm(forms.ModelForm):
                     "class": "form-control",
                     "placeholder": "Brief summary of the issue...",
                     "autofocus": True,
+                    "hx-get": "/community/similar/",
+                    "hx-trigger": "keyup changed delay:400ms",
+                    "hx-target": "#similar-issues-target",
+                    "hx-include": "#id_category",
                 }
             ),
-            "category": forms.Select(attrs={"class": "form-select"}),
+            "category": forms.Select(attrs={"class": "form-select", "id": "id_category"}),
             "sub_category": forms.Select(attrs={"class": "form-select"}),
             "priority": forms.HiddenInput(),
             "description": forms.Textarea(
@@ -130,6 +149,28 @@ class TicketCreateForm(forms.ModelForm):
         if hostel and not hostel.is_active:
             raise ValidationError("Cannot create tickets for an inactive hostel.")
         return hostel
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cat = cleaned_data.get("category")
+        if cat and not cat.allow_community:
+            cleaned_data["share_with_community"] = False
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        cat = self.cleaned_data.get("category")
+        share = self.cleaned_data.get("share_with_community")
+        if share and (not cat or cat.allow_community):
+            instance.visibility = TicketVisibility.HOSTEL
+        else:
+            instance.visibility = TicketVisibility.PRIVATE
+
+        instance.show_reporter_name = bool(self.cleaned_data.get("show_reporter_name"))
+        instance.base_priority = instance.priority
+        if commit:
+            instance.save()
+        return instance
 
     def clean_images(self, files):
         uploaded_files = files.getlist("images")

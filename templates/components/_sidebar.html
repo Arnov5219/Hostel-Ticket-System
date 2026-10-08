@@ -21,6 +21,16 @@
     </a>
     {% endif %}
 
+    <a href="{% url 'community:feed' %}" class="rail-item {% if current_section == 'community' %}active{% endif %}">
+      <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Community</span>
+    </a>
+
+    <a href="{% url 'announcements:list' %}" class="rail-item {% if current_section == 'announcements' %}active{% endif %}">
+      <i data-lucide="megaphone" style="width: 20px; height: 20px;"></i>
+      <span class="rail-tooltip">Announcements</span>
+    </a>
+
     {% if request.user.is_authenticated and request.user.is_admin %}
     <a href="{% url 'hostels:manage_hostels' %}" class="rail-item {% if current_section == 'manage_hostels' %}active{% endif %}">
       <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>

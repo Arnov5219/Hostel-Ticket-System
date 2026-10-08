@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}My Tickets | Hostel Ticket System{% endblock %}
+{% block title %}My Helpdesk | Hostel Ticket System{% endblock %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
@@ -15,16 +15,41 @@
 
 {% block page_title %}My Helpdesk{% endblock %}
 {% block page_subtitle %}Track and submit hostel maintenance requests{% endblock %}
-
-{# B-08: No duplicate CTA in header. Single primary CTA lives in the welcome panel #}
 {% block page_actions %}{% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
+<div style="display: flex; flex-direction: column; gap: 20px;">
 
-  <!-- Welcome Banner with Primary CTA (Fix B-08) -->
+  {# 1. Urgent Announcement Banner (Section 7.1 & 7.4) #}
+  {% if urgent_banner %}
+    <div id="urgent-banner" class="urgent-banner">
+      <div class="urgent-banner-title">
+        <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--ann-urg-fg); flex-shrink: 0;"></i>
+        <span>{{ urgent_banner.title }}</span>
+        {% if urgent_more_count > 0 %}
+          <span class="badge" style="background-color: rgba(197, 48, 48, 0.15); color: var(--ann-urg-fg); font-size: 11px;">
+            +{{ urgent_more_count }} more
+          </span>
+        {% endif %}
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="{% url 'announcements:detail' urgent_banner.id %}" class="btn btn-xs" style="background: var(--ann-urg-fg); color: #fff; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-xs);">
+          Read
+        </a>
+        <button type="button"
+                hx-post="{% url 'announcements:read' urgent_banner.id %}"
+                hx-target="#urgent-banner"
+                hx-swap="outerHTML"
+                title="Dismiss"
+                style="background: transparent; border: none; cursor: pointer; color: var(--ann-urg-fg); font-size: 16px; padding: 2px 6px;">
+          ✕
+        </button>
+      </div>
+    </div>
+  {% endif %}
+
+  {# 2. Welcome Panel #}
   <div style="position: relative; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-card); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-    <!-- Faint background decorative glow & ring -->
     <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; border: 28px solid rgba(26, 86, 219, 0.04); pointer-events: none;"></div>
     <div style="position: absolute; left: 20%; top: -60px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none;"></div>
 
@@ -49,9 +74,9 @@
     </a>
   </div>
 
-  <!-- 3 Hosteler Clickable Stat Cards Linking to Filtered List -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="stat-card" style="cursor: pointer;">
+  {# 3. Status Stats #}
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="stat-card" style="cursor: pointer; text-decoration: none;">
       <div class="stat-card-header">
         <span class="stat-label">In progress</span>
         <div class="stat-icon" style="color: var(--st-assigned-fg); background-color: var(--st-assigned-bg);">
@@ -59,10 +84,10 @@
         </div>
       </div>
       <div class="stat-value" style="color: var(--st-assigned-fg);">{{ kpis.my_open }}</div>
-      <div class="stat-hint">Active and currently being worked on</div>
+      <div class="stat-hint">Active issues in progress</div>
     </a>
 
-    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="stat-card" style="cursor: pointer;">
+    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="stat-card" style="cursor: pointer; text-decoration: none;">
       <div class="stat-card-header">
         <span class="stat-label">Resolved</span>
         <div class="stat-icon" style="color: var(--st-resolved-fg); background-color: var(--st-resolved-bg);">
@@ -70,10 +95,10 @@
         </div>
       </div>
       <div class="stat-value" style="color: var(--st-resolved-fg);">{{ kpis.my_resolved }}</div>
-      <div class="stat-hint">Awaiting your confirmation to close</div>
+      <div class="stat-hint">Awaiting your closure confirmation</div>
     </a>
 
-    <a href="{% url 'tickets:list' %}?status=CLOSED" class="stat-card" style="cursor: pointer;">
+    <a href="{% url 'tickets:list' %}?status=CLOSED" class="stat-card" style="cursor: pointer; text-decoration: none;">
       <div class="stat-card-header">
         <span class="stat-label">Closed</span>
         <div class="stat-icon" style="color: var(--text-muted); background-color: var(--bg-subtle);">
@@ -85,93 +110,235 @@
     </a>
   </div>
 
-  <!-- Recent Tickets Table (Fix B-01: Full width, proper alignment, no wrapping) -->
-  <div class="card" style="padding: 0; overflow: hidden;">
-    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
-      <div>
-        <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--text-primary);">Recent tickets</h3>
-        <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 2px 0 0;">Your recent maintenance and grievance submissions</p>
+  {# 4. Main 8/4 Grid Layout (Section 7.1) #}
+  <div class="hosteler-home-grid" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start;">
+
+    {# Left Column: Hostel Community Feed #}
+    <div>
+      {# Feed Header & Tabs #}
+      <div class="card" style="margin-bottom: 16px; padding: 14px 18px; background: var(--bg-surface-glass);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="users" style="width: 18px; height: 18px; color: var(--accent);"></i>
+            <h3 style="font-size: var(--fs-md); font-weight: 700; margin: 0; color: var(--text-primary);">
+              Hostel Feed
+            </h3>
+          </div>
+          <a href="{% url 'community:feed' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 600;">
+            Open full feed →
+          </a>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div class="segmented-control" style="display: inline-flex; background-color: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm);">
+            <button type="button"
+                    class="segmented-btn active"
+                    hx-get="{% url 'community:feed_partial' %}?sort=recent"
+                    hx-target="#community-feed-container"
+                    onclick="activateTab(this)">
+              Recent
+            </button>
+            <button type="button"
+                    class="segmented-btn"
+                    hx-get="{% url 'community:feed_partial' %}?sort=trending"
+                    hx-target="#community-feed-container"
+                    onclick="activateTab(this)">
+              Trending
+            </button>
+            <button type="button"
+                    class="segmented-btn"
+                    hx-get="{% url 'community:feed_partial' %}?sort=critical"
+                    hx-target="#community-feed-container"
+                    onclick="activateTab(this)">
+              Critical
+            </button>
+            <button type="button"
+                    class="segmented-btn"
+                    hx-get="{% url 'community:feed_partial' %}?sort=mine"
+                    hx-target="#community-feed-container"
+                    onclick="activateTab(this)">
+              Mine
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select class="form-select"
+                    style="height: 32px; padding: 2px 8px; font-size: 11.5px;"
+                    name="category"
+                    hx-get="{% url 'community:feed_partial' %}"
+                    hx-target="#community-feed-container"
+                    hx-include="[name='status']"
+                    hx-params="*">
+              <option value="">All Categories</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
       </div>
-      <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm">
-        <span>View all</span>
-        <i data-lucide="arrow-right" style="width: 12px; height: 12px;"></i>
-      </a>
+
+      {# Infinite Feed List #}
+      <div id="community-feed-container">
+        {% include 'community/_feed_list.html' %}
+      </div>
     </div>
 
-    {% if recent_tickets %}
-      <div class="table-container" style="border: none; border-radius: 0;">
-        <table class="app-table">
-          <thead>
-            <tr>
-              <th style="width: 130px;">Ticket</th>
-              <th>Title</th>
-              <th style="width: 160px;">Category</th>
-              <th style="width: 100px;">Priority</th>
-              <th style="width: 120px;">Status</th>
-              <th style="width: 140px;">Assigned to</th>
-              <th style="width: 110px; text-align: right;">Raised</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for ticket in recent_tickets %}
-              <tr style="cursor: pointer;" onclick="window.location='{% url 'tickets:detail' ticket.ticket_no %}'">
-                <td style="white-space: nowrap;">
-                  <a href="{% url 'tickets:detail' ticket.ticket_no %}" class="ticket-link" onclick="event.stopPropagation();">
-                    {{ ticket.ticket_no }}
-                  </a>
-                </td>
-                <td>
-                  <div style="font-weight: 500; color: var(--text-primary); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {{ ticket.title }}
-                  </div>
-                </td>
-                <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  <span style="font-size: var(--fs-xs); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 5px;">
-                    {% if ticket.category.icon %}
-                      <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-                    {% endif %}
-                    {{ ticket.category.name|default:"—" }}
-                  </span>
-                </td>
-                <td style="white-space: nowrap;">
-                  {% priority_dot ticket.priority %}
-                </td>
-                <td style="white-space: nowrap;">
-                  {% status_pill ticket.status %}
-                </td>
-                <td style="white-space: nowrap;">
-                  {% if ticket.assigned_to %}
-                    <span style="font-size: var(--fs-xs); color: var(--text-primary); font-weight: 500;">
-                      {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}
-                    </span>
-                  {% else %}
-                    <span style="color: var(--text-muted); font-size: var(--fs-xs);">Unassigned</span>
-                  {% endif %}
-                </td>
-                <td style="color: var(--text-muted); font-size: var(--fs-xs); text-align: right; white-space: nowrap;">
-                  {% time_ago ticket.created_at %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="empty-state" style="padding: 48px 16px;">
-        <div class="empty-state-icon">
-          <i data-lucide="ticket" style="width: 20px; height: 20px;"></i>
+    {# Right Column: Sticky Widgets #}
+    <div style="position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px;">
+
+      {# Widget 1: Announcements #}
+      <div class="right-rail-card">
+        <div class="rail-widget-title">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="megaphone" style="width: 15px; height: 15px; color: var(--accent);"></i>
+            <span>Announcements</span>
+          </div>
+          <a href="{% url 'announcements:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 500;">
+            View all →
+          </a>
         </div>
-        <div class="empty-state-title">You have not raised any tickets</div>
-        <p class="empty-state-text">
-          Have an issue with electricity, plumbing, Wi-Fi, or carpentry in your room or hostel? Submit a ticket and our staff will attend to it.
-        </p>
-        <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
-          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-          <span>Raise ticket</span>
-        </a>
+
+        {% if announcements %}
+          <div style="display: flex; flex-direction: column;">
+            {% for ann in announcements %}
+              <a href="{% url 'announcements:detail' ann.id %}" class="announcement-item-row">
+                <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">
+                  {% if ann.kind == "MAINTENANCE" %}
+                    <i data-lucide="wrench" style="width: 13px; height: 13px;"></i>
+                  {% elif ann.kind == "EMERGENCY" %}
+                    <i data-lucide="alert-triangle" style="width: 13px; height: 13px;"></i>
+                  {% elif ann.kind == "EVENT" %}
+                    <i data-lucide="calendar" style="width: 13px; height: 13px;"></i>
+                  {% else %}
+                    <i data-lucide="bell" style="width: 13px; height: 13px;"></i>
+                  {% endif %}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    {{ ann.title }}
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    {{ ann.author.get_role_display|default:"Staff" }} · {{ ann.published_at|timesince }} ago
+                  </div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 12px 0;">
+            No announcements published yet.
+          </div>
+        {% endif %}
       </div>
-    {% endif %}
+
+      {# Widget 2: Trending in your hostel #}
+      <div class="right-rail-card">
+        <div class="rail-widget-title">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>🔥 Trending in {{ user.hostel.name|default:"hostel" }}</span>
+          </div>
+        </div>
+
+        {% if trending_tickets %}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            {% for t in trending_tickets %}
+              <a href="{% url 'tickets:detail' t.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: inherit;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ t.title }}
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    {{ t.category.name }}
+                  </div>
+                </div>
+                <span class="badge" style="background-color: var(--accent-light); color: var(--accent); font-size: 11px; font-weight: 700; white-space: nowrap;">
+                  <i data-lucide="repeat" style="width: 10px; height: 10px; margin-right: 2px;"></i>
+                  {{ t.repost_count }}
+                </span>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 8px 0;">
+            No trending reposts right now.
+          </div>
+        {% endif %}
+      </div>
+
+      {# Widget 3: My Tickets (Recent 3) #}
+      <div class="right-rail-card">
+        <div class="rail-widget-title">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="ticket" style="width: 15px; height: 15px; color: var(--text-muted);"></i>
+            <span>My tickets</span>
+          </div>
+          <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 500;">
+            View all →
+          </a>
+        </div>
+
+        {% if recent_tickets %}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            {% for t in recent_tickets %}
+              <a href="{% url 'tickets:detail' t.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: inherit;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ t.title }}
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    {{ t.ticket_no }} · {{ t.created_at|timesince }} ago
+                  </div>
+                </div>
+                <div>
+                  {% status_pill t.status %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 8px 0;">
+            You have not raised any tickets.
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
   </div>
 
 </div>
+
+<script>
+  function activateTab(btn) {
+    btn.parentElement.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function toggleCommentSection(ticketNo) {
+    const el = document.getElementById('comments-' + ticketNo);
+    if (!el) return;
+    if (el.style.display === 'none') {
+      el.style.display = 'block';
+      htmx.trigger(document.body, 'load-comments-' + ticketNo);
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function hideCommentPrompt(commentId) {
+    const reason = prompt("Reason for hiding this comment:");
+    if (!reason) return;
+    htmx.ajax('POST', '/community/comments/' + commentId + '/hide/', {
+      target: '#comment-' + commentId,
+      swap: 'outerHTML',
+      values: { reason: reason }
+    });
+  }
+
+  document.body.addEventListener('htmx:afterSwap', function() {
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  });
+</script>
 {% endblock %}

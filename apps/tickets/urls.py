@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.tickets import views
+from apps.tickets import community_views, views
 
 app_name = "tickets"
 
@@ -20,6 +20,8 @@ urlpatterns = [
     path("<str:ticket_no>/assign/", views.reassign, name="reassign"),
     path("<str:ticket_no>/escalate/", views.manual_escalate, name="escalate"),
     path("<str:ticket_no>/comment/", views.add_comment, name="comment"),
+    path("<str:ticket_no>/repost/", community_views.toggle_repost_view, name="repost"),
+    path("<str:ticket_no>/community-comments/", community_views.community_comments_view, name="community_comments"),
     path("<str:ticket_no>/follow/", views.toggle_follow, name="follow"),
     path("<str:ticket_no>/rate/", views.rate_ticket, name="rate"),
 ]
