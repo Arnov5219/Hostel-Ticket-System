@@ -7,6 +7,14 @@
 <!-- Bare Auth Layout without App Shell (Fix B-04) -->
 <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; z-index: 1;">
 
+  <!-- Top Right Theme Toggle -->
+  <div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+    <button type="button" class="btn btn-ghost btn-sm" id="theme-toggle-btn" title="Toggle theme" onclick="var c = getThemePreference(); setTheme(c === 'DARK' ? 'LIGHT' : 'DARK');" style="padding: 6px; border-radius: var(--radius-full); border: 1px solid var(--border); background: var(--bg-surface);">
+      <i data-lucide="sun" class="icon-light" style="width: 16px; height: 16px;"></i>
+      <i data-lucide="moon" class="icon-dark" style="width: 16px; height: 16px;"></i>
+    </button>
+  </div>
+
   <!-- Subtle glow halo behind the card -->
   <div style="position: absolute; width: 440px; height: 440px; background: radial-gradient(circle, var(--bg-glow-accent) 0%, var(--bg-glow-violet) 50%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
 

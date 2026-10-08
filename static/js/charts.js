@@ -1,19 +1,51 @@
-// Chart.js builders using token colors and strict whole-number ticks (Fix B-05, U-13)
+// Chart.js builders with dynamic token resolution and themechange re-rendering
 
 document.addEventListener('DOMContentLoaded', function () {
   initDashboardCharts();
 });
+
+window.addEventListener('themechange', function () {
+  initDashboardCharts();
+});
+
+function getChartThemeTokens() {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  return {
+    isDark: isDark,
+    textPrimary: rootStyle.getPropertyValue('--text-primary').trim() || (isDark ? '#E8EAED' : '#0F172A'),
+    textSecondary: rootStyle.getPropertyValue('--text-secondary').trim() || (isDark ? '#A9B1BE' : '#475569'),
+    textMuted: rootStyle.getPropertyValue('--text-muted').trim() || (isDark ? '#7D8696' : '#64748B'),
+    border: rootStyle.getPropertyValue('--border').trim() || (isDark ? '#272D37' : '#E2E8F0'),
+    bgSurface: rootStyle.getPropertyValue('--bg-surface').trim() || (isDark ? '#161A20' : '#FFFFFF'),
+    bgSubtle: rootStyle.getPropertyValue('--bg-subtle').trim() || (isDark ? '#1D222A' : '#F1F5F9'),
+    gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)',
+    accent: rootStyle.getPropertyValue('--accent').trim() || '#3B82F6',
+    createdBar: isDark ? '#4DA3FF' : '#1A56DB',
+    resolvedBar: isDark ? '#5FD39A' : '#059669',
+    overdueBar: isDark ? '#FF8A8A' : '#E03131',
+    categoryBar: isDark ? '#7DB8FF' : '#3B82F6',
+    resolutionBar: isDark ? '#C3A6FF' : '#6366F1',
+  };
+}
 
 function initDashboardCharts() {
   const trendCanvas = document.getElementById('chart-trend');
   const categoryCanvas = document.getElementById('chart-category');
   const resolutionCanvas = document.getElementById('chart-resolution');
 
-  // Chart typography and grid defaults
+  if (!trendCanvas && !categoryCanvas && !resolutionCanvas) {
+    return;
+  }
+
+  const tokens = getChartThemeTokens();
   const fontConfig = { family: 'Inter, system-ui, sans-serif', size: 11 };
-  const gridColor = 'rgba(226, 232, 240, 0.8)';
 
   if (trendCanvas) {
+    const existing = Chart.getChart(trendCanvas);
+    if (existing) existing.destroy();
+
     fetch('/dashboard/api/trend/')
       .then(res => res.json())
       .then(data => {
@@ -25,7 +57,7 @@ function initDashboardCharts() {
               {
                 label: 'Created',
                 data: data.created,
-                backgroundColor: '#1a56db',
+                backgroundColor: tokens.createdBar,
                 borderRadius: 4,
                 maxBarThickness: 36,
                 categoryPercentage: 0.7,
@@ -33,7 +65,7 @@ function initDashboardCharts() {
               {
                 label: 'Resolved',
                 data: data.resolved,
-                backgroundColor: '#059669',
+                backgroundColor: tokens.resolvedBar,
                 borderRadius: 4,
                 maxBarThickness: 36,
                 categoryPercentage: 0.7,
@@ -41,7 +73,7 @@ function initDashboardCharts() {
               {
                 label: 'Overdue',
                 data: data.overdue,
-                backgroundColor: '#e03131',
+                backgroundColor: tokens.overdueBar,
                 borderRadius: 4,
                 maxBarThickness: 36,
                 categoryPercentage: 0.7,
@@ -60,14 +92,14 @@ function initDashboardCharts() {
                   usePointStyle: true,
                   pointStyle: 'circle',
                   font: fontConfig,
-                  color: '#475569',
+                  color: tokens.textSecondary,
                 },
               },
               tooltip: {
-                backgroundColor: '#ffffff',
-                titleColor: '#0f172a',
-                bodyColor: '#334155',
-                borderColor: '#e2e8f0',
+                backgroundColor: tokens.bgSurface,
+                titleColor: tokens.textPrimary,
+                bodyColor: tokens.textSecondary,
+                borderColor: tokens.border,
                 borderWidth: 1,
                 boxPadding: 4,
                 padding: 10,
@@ -76,17 +108,17 @@ function initDashboardCharts() {
             scales: {
               x: {
                 grid: { display: false },
-                ticks: { font: fontConfig, color: '#64748b' },
+                ticks: { font: fontConfig, color: tokens.textMuted },
               },
               y: {
                 beginAtZero: true,
-                grid: { color: gridColor, borderDash: [4, 4] },
+                grid: { color: tokens.gridColor, borderDash: [4, 4] },
                 ticks: {
                   font: fontConfig,
-                  color: '#64748b',
+                  color: tokens.textMuted,
                   precision: 0,
                   stepSize: 1,
-                  callback: function(val) {
+                  callback: function (val) {
                     return Number.isInteger(val) ? val : null;
                   },
                 },
@@ -99,6 +131,9 @@ function initDashboardCharts() {
   }
 
   if (categoryCanvas) {
+    const existing = Chart.getChart(categoryCanvas);
+    if (existing) existing.destroy();
+
     fetch('/dashboard/api/by-category/')
       .then(res => res.json())
       .then(data => {
@@ -111,8 +146,7 @@ function initDashboardCharts() {
               {
                 label: 'Tickets',
                 data: data.data,
-                // Fix U-13: Muted blue-slate series, NOT brown
-                backgroundColor: '#3b82f6',
+                backgroundColor: tokens.categoryBar,
                 borderRadius: 4,
                 maxBarThickness: 40,
                 categoryPercentage: 0.7,
@@ -126,38 +160,38 @@ function initDashboardCharts() {
             plugins: {
               legend: { display: false },
               tooltip: {
-                backgroundColor: '#ffffff',
-                titleColor: '#0f172a',
-                bodyColor: '#334155',
-                borderColor: '#e2e8f0',
+                backgroundColor: tokens.bgSurface,
+                titleColor: tokens.textPrimary,
+                bodyColor: tokens.textSecondary,
+                borderColor: tokens.border,
                 borderWidth: 1,
                 padding: 10,
               },
             },
             scales: {
               x: {
-                grid: isHorizontal ? { color: gridColor, borderDash: [4, 4] } : { display: false },
+                grid: isHorizontal ? { color: tokens.gridColor, borderDash: [4, 4] } : { display: false },
                 ticks: {
                   font: { family: 'Inter', size: 10 },
-                  color: '#64748b',
+                  color: tokens.textMuted,
                   precision: 0,
                   stepSize: isHorizontal ? 1 : undefined,
                   callback: isHorizontal
-                    ? function(val) { return Number.isInteger(val) ? val : null; }
+                    ? function (val) { return Number.isInteger(val) ? val : null; }
                     : undefined,
                 },
               },
               y: {
                 beginAtZero: true,
-                grid: isHorizontal ? { display: false } : { color: gridColor, borderDash: [4, 4] },
+                grid: isHorizontal ? { display: false } : { color: tokens.gridColor, borderDash: [4, 4] },
                 ticks: {
                   font: fontConfig,
-                  color: '#64748b',
+                  color: tokens.textMuted,
                   precision: 0,
                   stepSize: isHorizontal ? undefined : 1,
                   callback: isHorizontal
                     ? undefined
-                    : function(val) { return Number.isInteger(val) ? val : null; },
+                    : function (val) { return Number.isInteger(val) ? val : null; },
                 },
               },
             },
@@ -168,6 +202,9 @@ function initDashboardCharts() {
   }
 
   if (resolutionCanvas) {
+    const existing = Chart.getChart(resolutionCanvas);
+    if (existing) existing.destroy();
+
     fetch('/dashboard/api/resolution-time/')
       .then(res => res.json())
       .then(data => {
@@ -179,8 +216,7 @@ function initDashboardCharts() {
               {
                 label: 'Avg Hours',
                 data: data.data,
-                // Muted indigo/slate series
-                backgroundColor: '#6366f1',
+                backgroundColor: tokens.resolutionBar,
                 borderRadius: 4,
                 maxBarThickness: 36,
                 categoryPercentage: 0.7,
@@ -193,14 +229,14 @@ function initDashboardCharts() {
             plugins: {
               legend: { display: false },
               tooltip: {
-                backgroundColor: '#ffffff',
-                titleColor: '#0f172a',
-                bodyColor: '#334155',
-                borderColor: '#e2e8f0',
+                backgroundColor: tokens.bgSurface,
+                titleColor: tokens.textPrimary,
+                bodyColor: tokens.textSecondary,
+                borderColor: tokens.border,
                 borderWidth: 1,
                 padding: 10,
                 callbacks: {
-                  label: function(context) {
+                  label: function (context) {
                     return `Avg time: ${context.parsed.y}h`;
                   },
                 },
@@ -209,17 +245,17 @@ function initDashboardCharts() {
             scales: {
               x: {
                 grid: { display: false },
-                ticks: { font: fontConfig, color: '#64748b' },
+                ticks: { font: fontConfig, color: tokens.textMuted },
               },
               y: {
                 beginAtZero: true,
-                grid: { color: gridColor, borderDash: [4, 4] },
+                grid: { color: tokens.gridColor, borderDash: [4, 4] },
                 ticks: {
                   font: fontConfig,
-                  color: '#64748b',
+                  color: tokens.textMuted,
                   precision: 0,
                   stepSize: 1,
-                  callback: function(val) {
+                  callback: function (val) {
                     return Number.isInteger(val) ? val + 'h' : '';
                   },
                 },

@@ -66,3 +66,28 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+/* Theme toggle icon switching */
+html[data-theme="dark"] #theme-toggle-btn .icon-dark,
+html[data-theme="dark"] .theme-icon-dark {
+  display: none !important;
+}
+html[data-theme="dark"] #theme-toggle-btn .icon-light,
+html[data-theme="dark"] .theme-icon-light {
+  display: inline-block !important;
+}
+html[data-theme="light"] #theme-toggle-btn .icon-light,
+html[data-theme="light"] .theme-icon-light {
+  display: none !important;
+}
+html[data-theme="light"] #theme-toggle-btn .icon-dark,
+html[data-theme="light"] .theme-icon-dark {
+  display: inline-block !important;
+}
+
+

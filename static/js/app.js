@@ -180,3 +180,63 @@ function showToast(message, type = 'info') {
 
 // Window global helper
 window.showToast = showToast;
+
+// Theme management
+function getThemePreference() {
+  const userTheme = document.documentElement.getAttribute('data-user-theme');
+  const storedTheme = localStorage.getItem('theme');
+  return (userTheme || storedTheme || 'SYSTEM').toUpperCase();
+}
+
+function setTheme(theme) {
+  theme = (theme || 'SYSTEM').toUpperCase();
+  document.documentElement.classList.add('theme-switching');
+  localStorage.setItem('theme', theme);
+  document.documentElement.setAttribute('data-user-theme', theme);
+
+  let isDark = false;
+  if (theme === 'DARK') {
+    isDark = true;
+  } else if (theme === 'LIGHT') {
+    isDark = false;
+  } else {
+    isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  const themeValue = isDark ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', themeValue);
+  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+
+  const meta = document.getElementById('meta-theme-color');
+  if (meta) {
+    meta.setAttribute('content', isDark ? '#0F1115' : '#F7F8FA');
+  }
+
+  // Persist to backend if authenticated
+  const csrf = getCookie('csrftoken');
+  if (csrf) {
+    fetch('/accounts/theme/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrf,
+      },
+      body: 'theme=' + encodeURIComponent(theme),
+    }).catch(() => {});
+  }
+
+  window.dispatchEvent(new CustomEvent('themechange', {
+    detail: { theme: themeValue, preference: theme, isDark: isDark }
+  }));
+
+  document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-theme-btn') === theme);
+  });
+
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-switching');
+  }, 150);
+}
+
+window.setTheme = setTheme;
+window.getThemePreference = getThemePreference;
