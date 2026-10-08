@@ -58,9 +58,13 @@ def assign_initial(ticket: Ticket, actor: User | None = None) -> Ticket:
 
     assignee = find_initial_assignee(ticket)
 
+    now = timezone.now()
     ticket.assigned_to = assignee
     ticket.current_level = 1
     ticket.status = Status.ASSIGNED if assignee else Status.OPEN
+    if not ticket.level_started_at:
+        ticket.level_started_at = now
+    ticket.last_activity_at = now
     ticket.due_at = calculate_due_date(ticket.priority, level=1)
     ticket.is_overdue = False
     ticket.save()

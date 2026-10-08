@@ -53,10 +53,13 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
     policy = SLAPolicy.objects.filter(priority=ticket.priority, level=next_level).first()
     hours = policy.hours if policy else 24
 
+    now = timezone.now()
     ticket.current_level = next_level
+    ticket.level_started_at = now
+    ticket.last_activity_at = now
     if new_assignee:
         ticket.assigned_to = new_assignee
-    ticket.due_at = timezone.now() + timedelta(hours=hours)
+    ticket.due_at = now + timedelta(hours=hours)
     ticket.is_overdue = False
     ticket.save()
 
