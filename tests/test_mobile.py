@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role
-from apps.hostels.models import Block, GenderType, Hostel, Room
+from apps.hostels.models import GenderType, Hostel, Room
 from apps.tickets.factories import TicketFactory
 
 
@@ -27,8 +27,7 @@ def test_manifest_file_exists_and_valid():
 def test_mobile_bottom_nav_renders_for_hosteler(client):
     """Hosteler bottom nav must contain Home, Community, Raise, News, and More."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
-    block = Block.objects.create(hostel=hostel, name="Block A")
-    room = Room.objects.create(block=block, room_number="101", floor=1)
+    room = Room.objects.create(hostel=hostel, room_number="101", floor=1)
     hosteler = UserFactory(
         role=Role.HOSTELER,
         hostel=hostel,
@@ -104,8 +103,7 @@ def test_kanban_renders_mobile_tab_strip_and_move_fallback(client):
 def test_ticket_create_has_camera_capture_options(client):
     """Ticket create template includes camera capture and gallery options."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
-    block = Block.objects.create(hostel=hostel, name="Block A")
-    room = Room.objects.create(block=block, room_number="101", floor=1)
+    room = Room.objects.create(hostel=hostel, room_number="101", floor=1)
     hosteler = UserFactory(
         role=Role.HOSTELER,
         hostel=hostel,

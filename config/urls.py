@@ -18,7 +18,7 @@ urlpatterns = [
     path("manage/criticality/", manage_criticality, name="manage_criticality"),
     path("manage/trash/", trash_list_view, name="manage_trash"),
     path("manage/", include("apps.hostels.urls", namespace="hostels")),
-    path("hostels/options/blocks/", hostels_views.options_blocks_view, name="options_blocks_direct"),
+    path("hostels/options/floors/", hostels_views.options_floors_view, name="options_floors_direct"),
     path("hostels/options/rooms/", hostels_views.options_rooms_view, name="options_rooms_direct"),
 ]
 

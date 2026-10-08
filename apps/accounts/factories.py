@@ -15,6 +15,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     role = Role.HOSTELER
     escalation_level = None
     is_active = True
+    is_verified = True
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
@@ -25,13 +26,12 @@ class UserFactory(factory.django.DjangoModelFactory):
 
         if user.role == Role.HOSTELER and with_residence and not user.has_residence:
             from django.utils import timezone
-            from apps.hostels.factories import BlockFactory, HostelFactory, RoomFactory
+            from apps.hostels.factories import HostelFactory, RoomFactory
 
             if not user.hostel:
                 user.hostel = HostelFactory()
             if not user.room:
-                block = BlockFactory(hostel=user.hostel)
-                user.room = RoomFactory(block=block)
+                user.room = RoomFactory(hostel=user.hostel)
             user.residence_set_at = timezone.now()
 
         user.save()

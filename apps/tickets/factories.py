@@ -42,7 +42,6 @@ class TicketFactory(factory.django.DjangoModelFactory):
     status = Status.OPEN
     reporter = factory.SubFactory(UserFactory)
     hostel = factory.LazyAttribute(lambda o: o.reporter.hostel if (o.reporter and o.reporter.hostel) else HostelFactory())
-    block = factory.LazyAttribute(lambda o: o.reporter.room.block if (o.reporter and o.reporter.room) else None)
     room = factory.LazyAttribute(lambda o: o.reporter.room if (o.reporter and o.reporter.room) else None)
     current_level = 1
     repost_count = 0

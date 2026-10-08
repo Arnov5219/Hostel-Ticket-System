@@ -33,6 +33,7 @@
             <th>Hostel</th>
             <th>Code</th>
             <th>Type</th>
+            <th>Rooms</th>
             <th>Level 1 responsible staff</th>
             <th>Status</th>
             <th style="text-align: right;">Actions</th>
@@ -48,6 +49,12 @@
                 </span>
               </td>
               <td style="font-size: var(--fs-xs); color: var(--text-secondary);">{{ hostel.get_gender_type_display }}</td>
+              <td>
+                <a href="{% url 'hostels:manage_rooms' %}?hostel={{ hostel.id }}" class="btn btn-ghost btn-xs" style="font-weight: 600;">
+                  <i data-lucide="door-closed" style="width: 12px; height: 12px;"></i>
+                  <span>{{ hostel.room_count }} rooms</span>
+                </a>
+              </td>
               <td>
                 {% if hostel.responsible_staff %}
                   <div style="display: flex; align-items: center; gap: 6px;">
@@ -70,6 +77,11 @@
               </td>
               <td style="text-align: right;">
                 <div style="display: inline-flex; gap: 4px; align-items: center;">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openGenerateRoomsModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}');" title="Generate Rooms">
+                    <i data-lucide="layers" style="width: 12px; height: 12px;"></i>
+                    <span>Generate</span>
+                  </button>
+
                   <button type="button" class="btn btn-ghost btn-sm" onclick="openEditModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.code|escapejs }}', '{{ hostel.gender_type }}', '{{ hostel.address|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}', {{ hostel.is_active|yesno:'true,false' }});">
                     <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
                     <span>Edit</span>
@@ -97,7 +109,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
                 <div class="empty-state">
                   <div class="empty-state-icon">
                     <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
@@ -272,7 +284,61 @@
   </div>
 </div>
 
+<!-- Generate Rooms Modal -->
+<div id="generate-rooms-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Generate Rooms</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('generate-rooms-modal').style.display='none';">✕</button>
+    </div>
+
+    <form id="generate-rooms-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0;">
+        Generate rooms for <strong id="generate-hostel-name"></strong>. Existing rooms will not be overwritten.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Floors</label>
+          <input type="number" name="floors" class="form-control" value="3" min="1" max="10" required>
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Rooms per Floor</label>
+          <input type="number" name="rooms_per_floor" class="form-control" value="40" min="1" max="100" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Default Capacity</label>
+          <input type="number" name="capacity" class="form-control" value="2" min="1" max="8" required>
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Starting Floor #</label>
+          <input type="number" name="first_floor" class="form-control" value="1" min="0" max="10" required>
+        </div>
+      </div>
+
+      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 0;">
+        Standard: 3 floors × 40 rooms = 120 rooms (101–140, 201–240, 301–340).
+      </p>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('generate-rooms-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Generate Rooms</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+function openGenerateRoomsModal(id, name) {
+  document.getElementById('generate-hostel-name').innerText = name;
+  document.getElementById('generate-rooms-form').action = '/manage/hostels/' + id + '/generate-rooms/';
+  document.getElementById('generate-rooms-modal').style.display = 'flex';
+}
+
 function openEditModal(id, name, code, gender, address, staffId, isActive) {
   document.getElementById('edit-hostel-id').value = id;
   document.getElementById('edit-hostel-name').value = name;
@@ -287,7 +353,7 @@ function openEditModal(id, name, code, gender, address, staffId, isActive) {
 function openStaffModal(id, name, staffId) {
   document.getElementById('staff-modal-hostel-name').innerText = name;
   document.getElementById('change-staff-select').value = staffId;
-  document.getElementById('change-staff-form').action = '/hostels/hostels/' + id + '/change-responsible/';
+  document.getElementById('change-staff-form').action = '/manage/hostels/' + id + '/change-responsible/';
   document.getElementById('change-staff-modal').style.display = 'flex';
 }
 

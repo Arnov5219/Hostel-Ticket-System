@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 
 from apps.accounts.models import User
-from apps.hostels.models import Block, Hostel, Room
+from apps.hostels.models import Hostel, Room
 
 
 class LoginForm(forms.Form):
@@ -59,10 +59,9 @@ class ResidenceForm(forms.Form):
         empty_label="Select hostel",
         widget=forms.Select(attrs={"class": "form-select", "id": "residence-hostel-select"}),
     )
-    block = forms.ModelChoiceField(
-        queryset=Block.objects.none(),
-        empty_label="Select block",
-        widget=forms.Select(attrs={"class": "form-select", "id": "residence-block-select"}),
+    floor = forms.IntegerField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "residence-floor-input"}),
     )
     room = forms.ModelChoiceField(
         queryset=Room.objects.none(),
@@ -73,33 +72,145 @@ class ResidenceForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         hostel_id = None
-        block_id = None
+        floor_val = None
         if self.data:
             hostel_id = self.data.get("hostel")
-            block_id = self.data.get("block")
+            floor_val = self.data.get("floor")
         elif self.initial:
             hostel_id = self.initial.get("hostel")
-            block_id = self.initial.get("block")
+            floor_val = self.initial.get("floor")
 
         if hostel_id:
-            self.fields["block"].queryset = Block.objects.filter(hostel_id=hostel_id, is_active=True)
-        else:
-            self.fields["block"].queryset = Block.objects.none()
-
-        if block_id:
-            self.fields["room"].queryset = Room.objects.filter(block_id=block_id, is_active=True)
+            qs = Room.objects.filter(hostel_id=hostel_id, is_active=True)
+            if floor_val:
+                qs = qs.filter(floor=floor_val)
+            self.fields["room"].queryset = qs
         else:
             self.fields["room"].queryset = Room.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()
         hostel = cleaned_data.get("hostel")
-        block = cleaned_data.get("block")
         room = cleaned_data.get("room")
+        floor = cleaned_data.get("floor")
 
-        if hostel and block and block.hostel_id != hostel.id:
-            self.add_error("block", f"Block '{block.name}' does not belong to {hostel.name}.")
-        if block and room and room.block_id != block.id:
-            self.add_error("room", f"Room '{room.room_number}' does not belong to block '{block.name}'.")
+        if hostel and room and room.hostel_id != hostel.id:
+            self.add_error("room", f"Room '{room.room_number}' does not belong to {hostel.code}.")
+        if floor and room and str(room.floor) != str(floor):
+            self.add_error("room", f"Room '{room.room_number}' is not on floor {floor}.")
 
         return cleaned_data
+
+
+class HostelerRegistrationForm(forms.Form):
+    full_name = forms.CharField(
+        label="Full Name",
+        max_length=150,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Aryan Sharma", "autofocus": True}),
+    )
+    login_id = forms.CharField(
+        label="Roll / Registration Number",
+        max_length=50,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "e.g. 2024CS101",
+                "style": "text-transform: uppercase;",
+            }
+        ),
+    )
+    email = forms.EmailField(
+        label="Email Address",
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "e.g. aryan@college.edu"}),
+    )
+    phone = forms.CharField(
+        label="Phone Number",
+        max_length=20,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. 9876543210"}),
+    )
+    hostel = forms.ModelChoiceField(
+        label="Hostel",
+        queryset=Hostel.objects.filter(is_active=True),
+        empty_label="Select hostel",
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_hostel"}),
+    )
+    floor = forms.ChoiceField(
+        label="Floor",
+        choices=[("", "Select floor"), ("1", "Floor 1"), ("2", "Floor 2"), ("3", "Floor 3")],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_floor"}),
+    )
+    room = forms.ModelChoiceField(
+        label="Room",
+        queryset=Room.objects.none(),
+        empty_label="Select room",
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_room"}),
+    )
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "At least 8 characters"}),
+    )
+    confirm_password = forms.CharField(
+        label="Confirm Password",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Re-enter password"}),
+    )
+    website = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "id_website", "autocomplete": "off"}),
+    )
+    ts_token = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "id_ts_token"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.hostels.services import natural_sort_key
+        self.fields["hostel"].queryset = Hostel.objects.filter(is_active=True)
+        # Order hostels naturally
+        self.fields["hostel"].choices = [
+            (h.id, f"{h.code} ({h.name})")
+            for h in sorted(Hostel.objects.filter(is_active=True), key=natural_sort_key)
+        ]
+        self.fields["hostel"].choices.insert(0, ("", "Select hostel"))
+
+        hostel_id = None
+        floor_val = None
+        if self.data:
+            hostel_id = self.data.get("hostel")
+            floor_val = self.data.get("floor")
+
+        if hostel_id:
+            qs = Room.objects.filter(hostel_id=hostel_id, is_active=True)
+            if floor_val:
+                qs = qs.filter(floor=floor_val)
+            self.fields["room"].queryset = qs.order_by("floor", "room_number")
+        else:
+            self.fields["room"].queryset = Room.objects.none()
+
+    def clean_login_id(self):
+        login_id = self.cleaned_data["login_id"].strip().upper()
+        if User.objects.filter(login_id__iexact=login_id).exists():
+            raise forms.ValidationError(f"Roll number '{login_id}' is already registered.")
+        return login_id
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(f"Email '{email}' is already in use.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pw = cleaned_data.get("password")
+        cpw = cleaned_data.get("confirm_password")
+        if pw and cpw and pw != cpw:
+            self.add_error("confirm_password", "Passwords do not match.")
+
+        hostel = cleaned_data.get("hostel")
+        room = cleaned_data.get("room")
+        if hostel and room and room.hostel_id != hostel.id:
+            self.add_error("room", f"Room {room.room_number} does not belong to {hostel.code}.")
+
+        return cleaned_data
+

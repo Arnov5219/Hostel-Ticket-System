@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.hostels.models import Block, GenderType, Hostel, Room
+from apps.hostels.models import GenderType, Hostel, Room
 from apps.tickets.models import (
     ActivityAction,
     Category,
@@ -33,11 +33,8 @@ def deletion_setup(db):
     h1 = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     h2 = Hostel.objects.create(name="Hostel Two", code="H2", gender_type=GenderType.BOYS)
 
-    b1 = Block.objects.create(hostel=h1, name="Block A")
-    b2 = Block.objects.create(hostel=h2, name="Block B")
-
-    r1 = Room.objects.create(block=b1, room_number="101", floor=1, capacity=2)
-    r2 = Room.objects.create(block=b2, room_number="201", floor=2, capacity=2)
+    r1 = Room.objects.create(hostel=h1, room_number="101", floor=1, capacity=2)
+    r2 = Room.objects.create(hostel=h2, room_number="201", floor=2, capacity=2)
 
     cat, _ = Category.objects.get_or_create(name="Maintenance", defaults={"is_active": True})
 
@@ -86,7 +83,6 @@ def deletion_setup(db):
         category=cat,
         reporter=student1,
         hostel=h1,
-        block=b1,
         room=r1,
         status=Status.OPEN,
         priority=Priority.MEDIUM,
@@ -95,7 +91,6 @@ def deletion_setup(db):
     return {
         "h1": h1,
         "h2": h2,
-        "b1": b1,
         "r1": r1,
         "cat": cat,
         "student1": student1,

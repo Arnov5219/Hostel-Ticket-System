@@ -6,7 +6,6 @@ from apps.tickets.models import (
     RoutingRule,
     SavedFilter,
     SLAPolicy,
-    SubCategory,
     Tag,
     Ticket,
     TicketActivity,
@@ -20,13 +19,6 @@ from apps.tickets.models import (
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ["name", "icon", "default_priority", "allow_community", "is_active"]
     list_filter = ["allow_community", "is_active", "default_priority"]
-    search_fields = ["name"]
-
-
-@admin.register(SubCategory)
-class SubCategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "category"]
-    list_filter = ["category"]
     search_fields = ["name"]
 
 

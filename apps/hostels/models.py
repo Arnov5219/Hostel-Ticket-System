@@ -30,49 +30,67 @@ class Hostel(TimeStampedModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["code"]
 
     def __str__(self):
-        return f"{self.name} ({self.code})"
+        return f"{self.code} - {self.name}"
 
+    @property
+    def floors(self):
+        return list(self.rooms.values_list("floor", flat=True).distinct().order_by("floor"))
 
-class Block(TimeStampedModel):
-    hostel = models.ForeignKey(
-        Hostel,
-        on_delete=models.CASCADE,
-        related_name="blocks",
-    )
-    name = models.CharField(max_length=50)
-    code = models.CharField(max_length=20, blank=True, default="")
-    is_active = models.BooleanField(default=True)
+    @property
+    def room_count(self):
+        return self.rooms.filter(is_active=True).count()
 
-    class Meta:
-        ordering = ["hostel", "name"]
-        unique_together = ("hostel", "name")
+    @property
+    def total_room_count(self):
+        return self.rooms.count()
 
-    def __str__(self):
-        return f"{self.hostel.name} - {self.name}"
+    @property
+    def resident_count(self):
+        if hasattr(self, "_resident_count"):
+            return self._resident_count
+        from apps.accounts.models import Role, User
+        return User.objects.filter(hostel=self, role=Role.HOSTELER, is_active=True).count()
+
+    @resident_count.setter
+    def resident_count(self, value):
+        self._resident_count = value
 
 
 class Room(TimeStampedModel):
-    block = models.ForeignKey(
-        Block,
+    hostel = models.ForeignKey(
+        Hostel,
         on_delete=models.CASCADE,
         related_name="rooms",
     )
-    room_number = models.CharField(max_length=20)
-    floor = models.IntegerField(default=1)
+    floor = models.PositiveSmallIntegerField(default=1)
+    room_number = models.CharField(max_length=10)
     capacity = models.PositiveSmallIntegerField(default=2)
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["block", "room_number"]
-        unique_together = ("block", "room_number")
+        ordering = ["floor", "room_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["hostel", "room_number"],
+                name="unique_hostel_room_number",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["hostel", "floor"]),
+        ]
 
     def __str__(self):
-        return f"{self.block.name} - {self.room_number}"
+        return f"{self.hostel.code} - {self.room_number}"
 
     @property
     def resident_count(self):
-        return self.residents.count()
+        if hasattr(self, "_resident_count"):
+            return self._resident_count
+        return self.residents.filter(is_active=True).count()
 
+    @resident_count.setter
+    def resident_count(self, value):
+        self._resident_count = value

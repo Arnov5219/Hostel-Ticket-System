@@ -39,8 +39,9 @@
         <thead>
           <tr>
             <th>Hostel</th>
-            <th>Level 1 responsible staff</th>
-            <th>Hostel status</th>
+            <th>Level 1 Caretaker</th>
+            <th>Level 2 Warden</th>
+            <th>Coverage Status</th>
             <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
@@ -57,33 +58,51 @@
                     {% user_avatar hostel.responsible_staff size="sm" %}
                     <div>
                       <div style="font-weight: 500; font-size: var(--fs-sm); color: var(--text-primary);">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
-                      <div style="font-size: var(--fs-xs); color: var(--text-muted);">Caretaker (L1) · <span style="font-family: var(--font-mono);">{{ hostel.responsible_staff.login_id }}</span></div>
+                      <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ hostel.responsible_staff.login_id }}</div>
                     </div>
                   </div>
                 {% else %}
-                  <div style="display: flex; align-items: center; gap: 6px; color: var(--st-progress-fg); font-size: var(--fs-xs);">
-                    <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
-                    <span style="font-style: italic;">Unassigned (Falls back to caretaker/warden)</span>
-                  </div>
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border-color: var(--st-progress-dot);">
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -2px;"></i>
+                    Missing Caretaker
+                  </span>
                 {% endif %}
               </td>
               <td>
-                {% if hostel.is_active %}
-                  <span class="status-pill resolved">Active</span>
+                {% if hostel.warden %}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    {% user_avatar hostel.warden size="sm" %}
+                    <div>
+                      <div style="font-weight: 500; font-size: var(--fs-sm); color: var(--text-primary);">{{ hostel.warden.full_name|default:hostel.warden.login_id }}</div>
+                      <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ hostel.warden.login_id }}</div>
+                    </div>
+                  </div>
                 {% else %}
-                  <span class="status-pill closed">Inactive</span>
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border-color: var(--st-progress-dot);">
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -2px;"></i>
+                    Missing Warden
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if hostel.responsible_staff and hostel.warden %}
+                  <span class="status-pill resolved">Complete Coverage</span>
+                {% else %}
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); font-weight: 600;">
+                    Missing Staff
+                  </span>
                 {% endif %}
               </td>
               <td style="text-align: right;">
                 <button type="button" class="btn btn-secondary btn-sm" onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
                   <i data-lucide="user-check" style="width: 12px; height: 12px;"></i>
-                  <span>{% if hostel.responsible_staff %}Change staff{% else %}Assign staff{% endif %}</span>
+                  <span>{% if hostel.responsible_staff %}Change caretaker{% else %}Assign caretaker{% endif %}</span>
                 </button>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
                 <div class="empty-state">
                   <div class="empty-state-icon">
                     <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>

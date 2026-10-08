@@ -1,6 +1,7 @@
 import random
 from datetime import timedelta
 
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -12,7 +13,7 @@ from apps.announcements.models import (
     AnnouncementSeverity,
     AnnouncementStatus,
 )
-from apps.hostels.models import Block, GenderType, Hostel, Room
+from apps.hostels.models import GenderType, Hostel, Room
 from apps.tickets.models import (
     ActivityAction,
     Category,
@@ -32,57 +33,22 @@ from apps.tickets.services.deletion import soft_delete
 
 
 class Command(BaseCommand):
-    help = "Seeds comprehensive demo data: hostels, blocks, rooms, users, routing rules, and 60 realistic tickets"
+    help = "Seeds comprehensive demo data: 12 hostels, 1,440 rooms, users, routing rules, and 60 realistic tickets"
 
     def handle(self, *args, **options):
         self.stdout.write("Starting comprehensive demo data seeding...")
 
-        # 1. Seed Hostels
-        hostel_a, _ = Hostel.objects.get_or_create(
-            code="BH-A",
-            defaults={
-                "name": "Boys Hostel A",
-                "gender_type": GenderType.BOYS,
-                "address": "North Campus, Hall of Residence 1",
-            },
-        )
-        hostel_b, _ = Hostel.objects.get_or_create(
-            code="GH-B",
-            defaults={
-                "name": "Girls Hostel B",
-                "gender_type": GenderType.GIRLS,
-                "address": "South Campus, Hall of Residence 2",
-            },
-        )
+        # 1. Seed Real 12 Hostels and 1,440 Rooms
+        call_command("seed_hostels")
 
-        # 2. Hostels created
-        self.stdout.write("Hostels initialized (BH-A and GH-B).")
+        all_hostels = list(Hostel.objects.filter(is_active=True).order_by("code"))
+        hostel_a = Hostel.objects.filter(code="BH-1").first() or all_hostels[0]
+        hostel_b = Hostel.objects.filter(code="BH-2").first() or all_hostels[1]
 
-        # Seed Blocks & Rooms
-        bha_b1, _ = Block.objects.get_or_create(hostel=hostel_a, name="Block 1")
-        bha_b2, _ = Block.objects.get_or_create(hostel=hostel_a, name="Block 2")
-        ghb_b1, _ = Block.objects.get_or_create(hostel=hostel_b, name="Block 1")
-        ghb_b2, _ = Block.objects.get_or_create(hostel=hostel_b, name="Block 2")
+        rooms_a = list(hostel_a.rooms.filter(is_active=True).order_by("floor", "room_number"))
+        rooms_b = list(hostel_b.rooms.filter(is_active=True).order_by("floor", "room_number"))
 
-        rooms_a = []
-        for blk in [bha_b1, bha_b2]:
-            for floor in [1, 2]:
-                for num in [1, 2, 3]:
-                    rm, _ = Room.objects.get_or_create(
-                        block=blk, room_number=f"{floor}0{num}",
-                        defaults={"floor": floor, "capacity": 2}
-                    )
-                    rooms_a.append(rm)
-
-        rooms_b = []
-        for blk in [ghb_b1, ghb_b2]:
-            for floor in [1, 2]:
-                for num in [1, 2]:
-                    rm, _ = Room.objects.get_or_create(
-                        block=blk, room_number=f"{floor}0{num}",
-                        defaults={"floor": floor, "capacity": 2}
-                    )
-                    rooms_b.append(rm)
+        self.stdout.write("Hostel structure initialized (12 hostels, 1,440 rooms).")
 
         # 3. Seed Users
         # Admin
@@ -188,7 +154,41 @@ class Command(BaseCommand):
             u.save()
             caretakers_b.append(u)
 
-        # Set Level 1 responsible staff for hostels
+        # Set Level 1 responsible staff for all 12 hostels + wardens
+        for h in all_hostels:
+            ct_login = f"caretaker_{h.code.lower().replace('-', '')}"
+            ct, _ = User.objects.get_or_create(
+                login_id=ct_login,
+                defaults={
+                    "full_name": f"Caretaker ({h.code})",
+                    "role": Role.CARETAKER,
+                    "escalation_level": 1,
+                    "hostel": h,
+                    "is_staff": True,
+                },
+            )
+            ct.set_password("pass1234")
+            ct.hostel = h
+            ct.save()
+            h.responsible_staff = ct
+            h.save(update_fields=["responsible_staff"])
+
+            wd_login = f"warden_{h.code.lower().replace('-', '')}"
+            wd, _ = User.objects.get_or_create(
+                login_id=wd_login,
+                defaults={
+                    "full_name": f"Warden ({h.code})",
+                    "role": Role.WARDEN,
+                    "escalation_level": 2,
+                    "hostel": h,
+                    "is_staff": True,
+                },
+            )
+            wd.set_password("pass1234")
+            wd.hostel = h
+            wd.save()
+
+        # Backward compatibility for demo accounts on login screen
         hostel_a.responsible_staff = caretakers_a[0]
         hostel_a.save()
         hostel_b.responsible_staff = caretakers_b[0]
@@ -196,12 +196,15 @@ class Command(BaseCommand):
 
         # 22 Hostelers (allows up to 11+ reposters in Hostel A)
         # Note: student_14 and student_22 are deliberately unassigned to demo onboarding gate
+        # student_12 is pending verification; student_13 is rejected to test verification queues
         now = timezone.now()
         theme_cycle = [Theme.SYSTEM, Theme.DARK, Theme.LIGHT]
         students_a = []
         for i in range(1, 15):
             lid = f"student_{i:02d}"
             assigned_room = rooms_a[(i - 1) % len(rooms_a)] if i < 14 else None
+            is_ver = (i < 12)
+            rej_rsn = "Discrepancy in room allocation" if i == 13 else ""
             u, _ = User.objects.get_or_create(
                 login_id=lid,
                 defaults={
@@ -211,6 +214,8 @@ class Command(BaseCommand):
                     "room": assigned_room,
                     "residence_set_at": now if assigned_room else None,
                     "theme": theme_cycle[i % 3],
+                    "is_verified": is_ver,
+                    "rejected_reason": rej_rsn,
                 },
             )
             u.set_password("pass1234")
@@ -219,6 +224,8 @@ class Command(BaseCommand):
                 u.room = assigned_room
                 u.residence_set_at = now
             u.theme = theme_cycle[i % 3]
+            u.is_verified = is_ver
+            u.rejected_reason = rej_rsn
             u.save()
             if assigned_room:
                 ResidenceHistory.objects.get_or_create(
@@ -490,7 +497,6 @@ class Command(BaseCommand):
                     resolved_at = now - timedelta(hours=2)
 
             reporter_room = reporter.room if (reporter and reporter.room) else (rooms_a[0] if is_hostel_a else rooms_b[0])
-            ticket_block = reporter_room.block if reporter_room else None
             is_outside = bool(reporter and reporter.hostel_id and reporter.hostel_id != hostel.id)
 
             ticket, created = Ticket.objects.get_or_create(
@@ -502,7 +508,6 @@ class Command(BaseCommand):
                     "priority": prio,
                     "status": status,
                     "hostel": hostel,
-                    "block": ticket_block,
                     "room": reporter_room,
                     "outside_own_hostel": is_outside,
                     "reporter": reporter,
@@ -789,7 +794,6 @@ class Command(BaseCommand):
                     "description": desc,
                     "category": elec_cat,
                     "hostel": hst,
-                    "block": rep_room.block if rep_room else None,
                     "room": rep_room,
                     "reporter": rep,
                     "priority": Priority.LOW,

@@ -55,18 +55,6 @@ class Category(TimeStampedModel):
         return self.name
 
 
-class SubCategory(TimeStampedModel):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="subcategories")
-    name = models.CharField(max_length=100)
-
-    class Meta:
-        unique_together = ("category", "name")
-        ordering = ["category", "name"]
-
-    def __str__(self):
-        return f"{self.category.name} - {self.name}"
-
-
 class Tag(TimeStampedModel):
     name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=20, default="#2490EF")
@@ -146,13 +134,6 @@ class Ticket(TimeStampedModel):
     title = models.CharField(max_length=150)
     description = models.TextField()
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="tickets")
-    sub_category = models.ForeignKey(
-        SubCategory,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="tickets",
-    )
     visibility = models.CharField(
         max_length=20,
         choices=TicketVisibility.choices,
@@ -182,13 +163,6 @@ class Ticket(TimeStampedModel):
     hostel = models.ForeignKey(
         "hostels.Hostel",
         on_delete=models.PROTECT,
-        related_name="tickets",
-    )
-    block = models.ForeignKey(
-        "hostels.Block",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
         related_name="tickets",
     )
     room = models.ForeignKey(

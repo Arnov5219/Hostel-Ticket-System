@@ -20,7 +20,7 @@
   <div class="card" style="width: 100%; max-width: 440px; padding: 32px 28px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-modal); position: relative; z-index: 2;"
        x-data="{
          hostelId: '{{ form.data.hostel|default:'' }}',
-         blockId: '{{ form.data.block|default:'' }}',
+         floorVal: '{{ form.data.floor|default:'' }}',
          roomId: '{{ form.data.room|default:'' }}',
          roomWarning: '',
          updateRoomWarning(event) {
@@ -75,13 +75,14 @@
                 class="form-select"
                 required
                 x-model="hostelId"
-                hx-get="{% url 'hostels:options_blocks' %}"
-                hx-target="#residence-block-select"
+                hx-get="{% url 'hostels:options_rooms' %}?format=options"
+                hx-target="#residence-room-select"
+                hx-include="#residence-floor-select"
                 hx-trigger="change"
-                @change="blockId = ''; roomId = ''; roomWarning = ''; document.getElementById('residence-room-select').innerHTML = '<option value=\'\'>Select room</option>'">
+                @change="roomId = ''; roomWarning = '';">
           <option value="">Select hostel</option>
           {% for h in hostels %}
-            <option value="{{ h.id }}" {% if form.data.hostel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+            <option value="{{ h.id }}" {% if form.data.hostel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
           {% endfor %}
         </select>
         {% if form.hostel.errors %}
@@ -89,29 +90,23 @@
         {% endif %}
       </div>
 
-      <!-- Block Select -->
+      <!-- Floor Select -->
       <div class="form-group">
-        <label class="form-label" for="residence-block-select">Block *</label>
-        <select name="block"
-                id="residence-block-select"
+        <label class="form-label" for="residence-floor-select">Floor</label>
+        <select name="floor"
+                id="residence-floor-select"
                 class="form-select"
-                required
-                :disabled="!hostelId"
-                x-model="blockId"
-                hx-get="{% url 'hostels:options_rooms' %}"
+                x-model="floorVal"
+                hx-get="{% url 'hostels:options_rooms' %}?format=options"
                 hx-target="#residence-room-select"
+                hx-include="#residence-hostel-select"
                 hx-trigger="change"
                 @change="roomId = ''; roomWarning = ''">
-          <option value="">Select block</option>
-          {% if form.fields.block.queryset %}
-            {% for b in form.fields.block.queryset %}
-              <option value="{{ b.id }}" {% if form.data.block == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-            {% endfor %}
-          {% endif %}
+          <option value="">All floors</option>
+          <option value="1">Floor 1</option>
+          <option value="2">Floor 2</option>
+          <option value="3">Floor 3</option>
         </select>
-        {% if form.block.errors %}
-          <span class="form-error">{{ form.block.errors.0 }}</span>
-        {% endif %}
       </div>
 
       <!-- Room Select -->
@@ -121,7 +116,7 @@
                 id="residence-room-select"
                 class="form-select"
                 required
-                :disabled="!blockId"
+                :disabled="!hostelId"
                 x-model="roomId"
                 @change="updateRoomWarning($event)">
           <option value="">Select room</option>

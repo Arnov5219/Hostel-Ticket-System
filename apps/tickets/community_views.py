@@ -37,6 +37,7 @@ def feed_page(request):
     page_obj = paginator.get_page(request.GET.get("page", 1))
 
     categories = Category.objects.filter(is_active=True, allow_community=True)
+    is_unverified = request.user.is_hosteler and not getattr(request.user, "is_verified", True)
 
     return render(
         request,
@@ -49,6 +50,7 @@ def feed_page(request):
             "current_category": category_id,
             "current_status": status,
             "current_section": "community",
+            "is_unverified": is_unverified,
         },
     )
 
@@ -108,6 +110,13 @@ def similar_issues(request):
 @require_POST
 def toggle_repost_view(request, ticket_no):
     """HTMX endpoint to toggle repost on a ticket."""
+    if request.user.is_hosteler and not getattr(request.user, "is_verified", True):
+        return HttpResponse(
+            '<div class="toast-error" role="alert" style="color: var(--danger); font-size: var(--fs-xs); margin-top: 4px;">'
+            'Your account is pending warden verification. Community reposting unlocks once verified.</div>',
+            status=403,
+        )
+
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
     note = request.POST.get("note", "")
 
@@ -147,6 +156,13 @@ def community_comments_view(request, ticket_no):
         raise PermissionDenied("Community comments are only available on shared hostel tickets.")
 
     if request.method == "POST":
+        if request.user.is_hosteler and not getattr(request.user, "is_verified", True):
+            return HttpResponse(
+                '<div class="form-error" style="color: var(--danger); font-size: var(--fs-xs); padding: 4px 8px;">'
+                'Your account is pending warden verification. Community comments unlock once verified.</div>',
+                status=403,
+            )
+
         body = request.POST.get("body", "").strip()
         try:
             add_community_comment(request.user, ticket, body)

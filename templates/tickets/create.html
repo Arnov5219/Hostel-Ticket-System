@@ -38,17 +38,11 @@
       {% csrf_token %}
       {{ form.priority }}
 
-      <!-- Category & Subcategory -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div class="form-group" style="margin: 0;">
-          <label class="form-label" for="{{ form.category.id_for_label }}">Category *</label>
-          {{ form.category }}
-          {% if form.category.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.category.errors.0 }}</span>{% endif %}
-        </div>
-        <div class="form-group" style="margin: 0;">
-          <label class="form-label" for="{{ form.sub_category.id_for_label }}">Subcategory <span style="font-weight: 400; color: var(--text-muted);">(Optional)</span></label>
-          {{ form.sub_category }}
-        </div>
+      <!-- Category -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label" for="{{ form.category.id_for_label }}">Category *</label>
+        {{ form.category }}
+        {% if form.category.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.category.errors.0 }}</span>{% endif %}
       </div>
 
       <!-- Priority Segmented Control -->
@@ -65,19 +59,19 @@
         </span>
       </div>
 
-      <!-- Location Section (Feature A) -->
+      <!-- Location Section -->
       <div class="card" style="padding: 16px; background-color: var(--bg-subtle); border: 1px solid var(--border);"
            x-data="{
              differentHostel: {% if form.different_hostel.value %}true{% else %}false{% endif %},
              hostelId: '{{ form.hostel.value|default:request.user.hostel_id|default:'' }}',
              userHostelId: '{{ request.user.hostel_id|default:'' }}',
-             blockId: '{{ form.block.value|default:request.user.room.block_id|default:'' }}',
+             floorVal: '{{ form.floor.value|default:request.user.room.floor|default:'' }}',
              roomId: '{{ form.room.value|default:request.user.room_id|default:'' }}',
              toggleDifferentHostel() {
                if (!this.differentHostel) {
                  this.hostelId = this.userHostelId;
                } else {
-                 this.blockId = '';
+                 this.floorVal = '';
                  this.roomId = '';
                }
              }
@@ -110,13 +104,14 @@
             <select name="hostel" id="id_hostel" class="form-select" required
                     :disabled="!differentHostel && userHostelId !== ''"
                     x-model="hostelId"
-                    hx-get="{% url 'hostels:options_blocks' %}"
-                    hx-target="#id_block"
+                    hx-get="{% url 'hostels:options_rooms' %}?format=options"
+                    hx-target="#id_room"
+                    hx-include="#id_floor"
                     hx-trigger="change"
-                    @change="blockId = ''; roomId = ''; document.getElementById('id_room').innerHTML = '<option value=\'\'>Select room</option>'">
+                    @change="roomId = '';">
               <option value="">Select hostel</option>
               {% for h in form.fields.hostel.queryset %}
-                <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }}</option>
+                <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
               {% endfor %}
             </select>
             <template x-if="!differentHostel && userHostelId !== ''">
@@ -125,29 +120,28 @@
             {% if form.hostel.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.hostel.errors.0 }}</span>{% endif %}
           </div>
 
-          <!-- Block -->
+          <!-- Floor -->
           <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="id_block">Block *</label>
-            <select name="block" id="id_block" class="form-select" required
-                    :disabled="!hostelId"
-                    x-model="blockId"
-                    hx-get="{% url 'hostels:options_rooms' %}"
+            <label class="form-label" for="id_floor">Floor</label>
+            <select name="floor" id="id_floor" class="form-select"
+                    x-model="floorVal"
+                    hx-get="{% url 'hostels:options_rooms' %}?format=options"
                     hx-target="#id_room"
+                    hx-include="#id_hostel"
                     hx-trigger="change"
                     @change="roomId = ''">
-              <option value="">Select block</option>
-              {% for b in form.fields.block.queryset %}
-                <option value="{{ b.id }}" {% if form.block.value == b.id or form.block.value == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
-              {% endfor %}
+              <option value="">All floors</option>
+              <option value="1" {% if form.floor.value == 1 or form.floor.value == '1' %}selected{% endif %}>Floor 1</option>
+              <option value="2" {% if form.floor.value == 2 or form.floor.value == '2' %}selected{% endif %}>Floor 2</option>
+              <option value="3" {% if form.floor.value == 3 or form.floor.value == '3' %}selected{% endif %}>Floor 3</option>
             </select>
-            {% if form.block.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.block.errors.0 }}</span>{% endif %}
           </div>
 
           <!-- Room -->
           <div class="form-group" style="margin: 0;">
             <label class="form-label" for="id_room">Room *</label>
             <select name="room" id="id_room" class="form-select" required
-                    :disabled="!blockId"
+                    :disabled="!hostelId"
                     x-model="roomId">
               <option value="">Select room</option>
               {% for r in form.fields.room.queryset %}

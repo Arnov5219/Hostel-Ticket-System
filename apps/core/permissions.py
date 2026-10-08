@@ -146,3 +146,11 @@ def can_edit_criticality_rules(user):
     if not user.is_authenticated:
         return False
     return user.role == Role.ADMIN or user.is_superuser
+
+
+def can_verify_residents(user):
+    """Admins, Chief Wardens, and Wardens can verify residents."""
+    if not user.is_authenticated:
+        return False
+    return user.role in [Role.ADMIN, Role.CHIEF_WARDEN, Role.WARDEN] or user.is_superuser
+

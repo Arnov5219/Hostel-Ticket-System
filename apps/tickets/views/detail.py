@@ -25,8 +25,8 @@ def ticket_detail(request, ticket_no):
     ticket = get_object_or_404(
         Ticket.objects.select_related(
             "category",
-            "sub_category",
             "hostel",
+            "room",
             "reporter",
             "assigned_to",
         ).prefetch_related(

@@ -111,7 +111,7 @@
           </div>
           <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 2px;">
             {% if request.user.room %}
-              {{ request.user.room.block.name }} · Room {{ request.user.room.room_number }} (Floor {{ request.user.room.floor }})
+              Room {{ request.user.room.room_number }} · Floor {{ request.user.room.floor }}
             {% else %}
               No room assigned
             {% endif %}
@@ -129,7 +129,7 @@
     <form x-show="editingResidence" method="post" action="{% url 'accounts:profile_residence' %}" style="display: flex; flex-direction: column; gap: 14px;"
           x-data="{
             hostelId: '{{ request.user.hostel_id|default:'' }}',
-            blockId: '{{ request.user.room.block_id|default:'' }}',
+            floorVal: '{{ request.user.room.floor|default:'' }}',
             roomId: '{{ request.user.room_id|default:'' }}'
           }">
       {% csrf_token %}
@@ -137,38 +137,38 @@
       <div class="form-group">
         <label class="form-label" for="profile-hostel-select">Hostel *</label>
         <select name="hostel" id="profile-hostel-select" class="form-select" required x-model="hostelId"
-                hx-get="{% url 'hostels:options_blocks' %}"
-                hx-target="#profile-block-select"
+                hx-get="{% url 'hostels:options_rooms' %}?format=options"
+                hx-target="#profile-room-select"
+                hx-include="#profile-floor-select"
                 hx-trigger="change"
-                @change="blockId = ''; roomId = ''; document.getElementById('profile-room-select').innerHTML = '<option value=\'\'>Select room</option>'">
+                @change="roomId = '';">
           <option value="">Select hostel</option>
           {% if residence_form %}
             {% for h in residence_form.fields.hostel.queryset %}
-              <option value="{{ h.id }}" {% if request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }}</option>
+              <option value="{{ h.id }}" {% if request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
             {% endfor %}
           {% endif %}
         </select>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="profile-block-select">Block *</label>
-        <select name="block" id="profile-block-select" class="form-select" required :disabled="!hostelId" x-model="blockId"
-                hx-get="{% url 'hostels:options_rooms' %}"
+        <label class="form-label" for="profile-floor-select">Floor</label>
+        <select name="floor" id="profile-floor-select" class="form-select" x-model="floorVal"
+                hx-get="{% url 'hostels:options_rooms' %}?format=options"
                 hx-target="#profile-room-select"
+                hx-include="#profile-hostel-select"
                 hx-trigger="change"
                 @change="roomId = ''">
-          <option value="">Select block</option>
-          {% if residence_form and residence_form.fields.block.queryset %}
-            {% for b in residence_form.fields.block.queryset %}
-              <option value="{{ b.id }}" {% if request.user.room.block_id == b.id %}selected{% endif %}>{{ b.name }}</option>
-            {% endfor %}
-          {% endif %}
+          <option value="">All floors</option>
+          <option value="1">Floor 1</option>
+          <option value="2">Floor 2</option>
+          <option value="3">Floor 3</option>
         </select>
       </div>
 
       <div class="form-group">
         <label class="form-label" for="profile-room-select">Room *</label>
-        <select name="room" id="profile-room-select" class="form-select" required :disabled="!blockId" x-model="roomId">
+        <select name="room" id="profile-room-select" class="form-select" required :disabled="!hostelId" x-model="roomId">
           <option value="">Select room</option>
           {% if residence_form and residence_form.fields.room.queryset %}
             {% for r in residence_form.fields.room.queryset %}

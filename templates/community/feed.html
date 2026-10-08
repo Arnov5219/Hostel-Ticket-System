@@ -22,6 +22,16 @@
 {% block content %}
 <div style="max-width: 820px; margin: 0 auto;">
 
+  {% if is_unverified %}
+    <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: var(--radius-md); background: var(--st-progress-bg); border: 1px solid var(--st-progress-dot); display: flex; align-items: center; gap: 10px;">
+      <i data-lucide="clock" style="width: 18px; height: 18px; color: var(--st-progress-fg); flex-shrink: 0;"></i>
+      <div style="font-size: var(--fs-xs); color: var(--text-primary); line-height: 1.4;">
+        <strong style="color: var(--st-progress-fg);">Residency verification pending:</strong>
+        Your account is currently awaiting warden verification. You can raise room tickets immediately, while community reposting and comments will be unlocked once approved.
+      </div>
+    </div>
+  {% endif %}
+
   {# Feed Filter Bar #}
   <div class="card" style="margin-bottom: 20px; padding: 14px 18px; background: var(--bg-surface-glass);">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">

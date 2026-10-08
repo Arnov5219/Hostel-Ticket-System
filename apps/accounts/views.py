@@ -6,9 +6,57 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 
-from apps.accounts.forms import LoginForm, ProfileUpdateForm, ResidenceForm
-from apps.accounts.services import set_residence
+from apps.accounts.forms import HostelerRegistrationForm, LoginForm, ProfileUpdateForm, ResidenceForm
+from apps.accounts.services import (
+    generate_registration_token,
+    register_hosteler,
+    set_residence,
+)
 from apps.hostels.models import Hostel
+
+
+def register_view(request):
+    """
+    Public student self-registration view.
+    GET: renders registration form with anti-bot token.
+    POST: validates inputs, creates HOSTELER user, logs in, redirects to home.
+    """
+    if request.user.is_authenticated:
+        return redirect("dashboard:index")
+
+    if request.method == "POST":
+        form = HostelerRegistrationForm(request.POST)
+        if form.is_valid():
+            try:
+                user = register_hosteler(
+                    data=form.cleaned_data,
+                    request_meta=request.META,
+                )
+                login(request, user)
+                messages.success(
+                    request,
+                    f"Welcome, {user.full_name or user.login_id}! Your account has been registered. "
+                    "You can report room and hostel issues right away. A warden will verify your residency shortly."
+                )
+                return redirect("dashboard:index")
+            except ValidationError as e:
+                messages.error(request, str(e.message if hasattr(e, "message") else e))
+        else:
+            messages.error(request, "Please check the form for errors.")
+    else:
+        form = HostelerRegistrationForm(initial={"ts_token": generate_registration_token()})
+
+    from apps.hostels.services import natural_sort_key
+    hostels = sorted(Hostel.objects.filter(is_active=True), key=natural_sort_key)
+    return render(
+        request,
+        "accounts/register.html",
+        {
+            "form": form,
+            "hostels": hostels,
+        },
+    )
+
 
 
 def login_view(request):
@@ -65,7 +113,7 @@ def profile_view(request):
         if request.user.hostel_id:
             initial_data["hostel"] = request.user.hostel_id
         if request.user.room_id and request.user.room:
-            initial_data["block"] = request.user.room.block_id
+            initial_data["floor"] = request.user.room.floor
             initial_data["room"] = request.user.room_id
         residence_form = ResidenceForm(initial=initial_data)
 
@@ -99,18 +147,18 @@ def onboarding_view(request):
                 set_residence(
                     user=request.user,
                     hostel=form.cleaned_data["hostel"],
-                    block=form.cleaned_data["block"],
                     room=form.cleaned_data["room"],
                     changed_by=request.user,
+                    floor=form.cleaned_data.get("floor"),
                 )
                 messages.success(request, f"Welcome to {form.cleaned_data['hostel'].name}! Your residence has been saved.")
                 return redirect("dashboard:index")
             except ValidationError as e:
                 messages.error(request, str(e.message if hasattr(e, "message") else e))
         else:
-            messages.error(request, "Please select a valid Hostel, Block, and Room.")
+            messages.error(request, "Please select a valid Hostel, Floor, and Room.")
 
-    hostels = Hostel.objects.filter(is_active=True).order_by("name")
+    hostels = Hostel.objects.filter(is_active=True).order_by("code")
     return render(
         request,
         "accounts/onboarding.html",
@@ -137,15 +185,15 @@ def profile_residence_view(request):
                 set_residence(
                     user=request.user,
                     hostel=form.cleaned_data["hostel"],
-                    block=form.cleaned_data["block"],
                     room=form.cleaned_data["room"],
                     changed_by=request.user,
+                    floor=form.cleaned_data.get("floor"),
                 )
                 messages.success(request, "Your residence was updated successfully.")
             except ValidationError as e:
                 messages.error(request, str(e.message if hasattr(e, "message") else e))
         else:
-            messages.error(request, "Invalid residence selection. Please ensure Block and Room match the selected Hostel.")
+            messages.error(request, "Invalid residence selection. Please ensure Room matches the selected Hostel.")
         return redirect("accounts:profile")
 
     return redirect("accounts:profile")

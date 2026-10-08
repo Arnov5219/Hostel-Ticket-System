@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import models, transaction
 
 from apps.accounts.models import Role, User
 from apps.hostels.models import Hostel
@@ -149,3 +149,66 @@ def deactivate_staff(staff: User, replacement_staff: User | None = None) -> tupl
     staff.save(update_fields=["is_active"])
 
     return staff, active_tickets_count
+
+
+def generate_rooms(
+    hostel: Hostel,
+    floors: int = 3,
+    rooms_per_floor: int = 40,
+    capacity: int = 2,
+    first_floor: int = 1,
+) -> int:
+    """
+    Generates missing rooms for a hostel across floors.
+    Idempotent: skips existing rooms.
+    Returns: count of newly created rooms.
+    """
+    from apps.hostels.models import Room
+
+    created_count = 0
+    with transaction.atomic():
+        for floor_idx in range(floors):
+            floor = first_floor + floor_idx
+            for n in range(1, rooms_per_floor + 1):
+                room_number = f"{floor * 100 + n}"
+                _, created = Room.objects.get_or_create(
+                    hostel=hostel,
+                    room_number=room_number,
+                    defaults={
+                        "floor": floor,
+                        "capacity": capacity,
+                        "is_active": True,
+                    },
+                )
+                if created:
+                    created_count += 1
+    return created_count
+
+
+def room_options(hostel: Hostel, floor: int | None = None):
+    """
+    Returns active rooms for a hostel (optionally filtered by floor)
+    annotated with their current resident count.
+    """
+    from django.db.models import Count
+    from apps.hostels.models import Room
+
+    qs = Room.objects.filter(hostel=hostel, is_active=True)
+    if floor is not None:
+        qs = qs.filter(floor=floor)
+    return qs.annotate(resident_count=Count("residents", filter=models.Q(residents__is_active=True))).order_by("floor", "room_number")
+
+
+def natural_sort_key(item):
+    """
+    Helper for natural sorting strings like 'BH-2' before 'BH-10'.
+    Accepts Hostel object, code, or string.
+    """
+    import re
+
+    s = item
+    if hasattr(item, "code"):
+        s = item.code
+    elif hasattr(item, "name"):
+        s = item.name
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r"(\d+)", str(s))]

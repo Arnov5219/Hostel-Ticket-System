@@ -95,6 +95,24 @@ class User(AbstractUser):
     )
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
+    # Verification and Registration (Feature Section 3.3)
+    is_verified = models.BooleanField(default=False)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    registration_source = models.CharField(
+        max_length=20,
+        choices=[("SELF", "Self-registered"), ("ADMIN", "Admin-created"), ("IMPORT", "Imported")],
+        default="ADMIN",
+    )
+    rejected_reason = models.CharField(max_length=200, blank=True, default="")
+    must_change_password = models.BooleanField(default=False)
+
     USERNAME_FIELD = "login_id"
     REQUIRED_FIELDS = ["full_name"]
 
@@ -108,6 +126,8 @@ class User(AbstractUser):
         return f"{name} ({self.login_id})"
 
     def save(self, *args, **kwargs):
+        if self.login_id:
+            self.login_id = self.login_id.strip().upper()
         if not self.username:
             self.username = self.login_id
         # Automatically sync escalation_level if not explicitly set
@@ -147,8 +167,7 @@ class User(AbstractUser):
             self.hostel_id
             and self.room_id
             and self.room
-            and self.room.block
-            and self.room.block.hostel_id == self.hostel_id
+            and self.room.hostel_id == self.hostel_id
         )
 
 

@@ -1,0 +1,17 @@
+<div class="floor-selector" role="group" aria-label="Select Floor" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+  {% for f in floors %}
+    <button type="button"
+            class="floor-chip btn btn-sm {% if selected_floor == f|stringformat:'s' %}btn-primary{% else %}btn-secondary{% endif %}"
+            style="min-width: 80px; font-weight: 500; border-radius: var(--radius-md);"
+            hx-get="{% url 'hostels:options_rooms' %}?hostel={{ request.GET.hostel }}&floor={{ f }}"
+            hx-target="#room-picker-container"
+            hx-swap="innerHTML"
+            onclick="document.querySelectorAll('.floor-chip').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); }); this.classList.remove('btn-secondary'); this.classList.add('btn-primary');">
+      Floor {{ f }}
+    </button>
+  {% empty %}
+    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-style: italic; padding: 6px 0;">
+      No floors found for this hostel.
+    </div>
+  {% endfor %}
+</div>
