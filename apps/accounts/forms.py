@@ -33,11 +33,18 @@ class LoginForm(forms.Form):
 
         if login_id and password:
             clean_id = login_id.strip()
-            user = authenticate(username=clean_id, password=password)
-            if not user and "@" in clean_id:
+            # Support case-insensitive Login ID / Roll No / Email lookup
+            matched_user = None
+            if "@" in clean_id:
                 matched_user = User.objects.filter(email__iexact=clean_id).first()
-                if matched_user:
-                    user = authenticate(username=matched_user.login_id, password=password)
+            else:
+                matched_user = User.objects.filter(login_id__iexact=clean_id).first()
+
+            if matched_user:
+                user = authenticate(username=matched_user.login_id, password=password)
+            else:
+                user = authenticate(username=clean_id, password=password)
+
             if not user:
                 raise forms.ValidationError("Invalid Roll No / Employee ID or password.")
             if not user.is_active:

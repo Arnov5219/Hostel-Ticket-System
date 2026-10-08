@@ -26,6 +26,17 @@ def test_login_success(client):
 
 
 @pytest.mark.django_db
+def test_login_case_insensitive(client):
+    UserFactory(login_id="CARETAKER_BH1", password="secure_password")
+    response = client.post(
+        reverse("accounts:login"),
+        {"login_id": "caretaker_bh1", "password": "secure_password"},
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard:index")
+
+
+@pytest.mark.django_db
 def test_login_invalid_credentials(client):
     UserFactory(login_id="STU1002", password="secure_password")
     response = client.post(
