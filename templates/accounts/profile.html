@@ -22,7 +22,7 @@
       <span class="level-badge l{{ request.user.escalation_level|default:'1' }}">{{ request.user.get_role_display }}</span>
     </div>
 
-    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
+    <form method="post" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
       <input type="hidden" name="action" value="update_profile">
 
@@ -50,11 +50,6 @@
       <div class="form-group">
         <label class="form-label">Phone Number</label>
         {{ profile_form.phone }}
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Update Avatar</label>
-        {{ profile_form.avatar }}
       </div>
 
       <button type="submit" class="btn btn-primary" style="align-self: flex-start;">

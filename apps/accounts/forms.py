@@ -49,12 +49,11 @@ class LoginForm(forms.Form):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ["full_name", "email", "phone", "avatar"]
+        fields = ["full_name", "email", "phone"]
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "form-control"}),
             "email": forms.EmailInput(attrs={"class": "form-control"}),
             "phone": forms.TextInput(attrs={"class": "form-control"}),
-            "avatar": forms.FileInput(attrs={"class": "form-control"}),
         }
 
 

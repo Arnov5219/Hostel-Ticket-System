@@ -96,7 +96,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
     # Verification and Registration (Feature Section 3.3)
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=True)
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

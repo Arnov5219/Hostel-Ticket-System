@@ -503,16 +503,15 @@ def manage_residents(request):
     all_count = tab_base_qs.count()
 
     # Tab filtering
-    tab = request.GET.get("tab", "pending").lower()
+    tab = request.GET.get("tab", "all").lower()
     if tab == "verified":
         residents_qs = residents_qs.filter(is_verified=True)
     elif tab == "rejected":
         residents_qs = residents_qs.filter(is_verified=False).exclude(rejected_reason="")
-    elif tab == "all":
-        pass
-    else:  # pending (default)
-        tab = "pending"
+    elif tab == "pending":
         residents_qs = residents_qs.filter(is_verified=False, rejected_reason="")
+    else:  # all (default)
+        tab = "all"
 
     # Hostel filter for Admins
     hostel_filter = request.GET.get("hostel", "").strip()

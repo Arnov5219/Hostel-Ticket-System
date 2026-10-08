@@ -75,7 +75,7 @@ class TestRegistrationService:
         assert user.login_id == "21BCS001"  # Uppercased
         assert user.email == "aarav@example.com"
         assert user.role == Role.HOSTELER
-        assert user.is_verified is False
+        assert user.is_verified is True
         assert user.registration_source == "SELF_REGISTRATION"
         assert user.hostel == h1
         assert user.room == r1
@@ -102,7 +102,7 @@ class TestRegistrationService:
         assert user.email == ""
         assert user.phone == ""
         assert user.role == Role.HOSTELER
-        assert user.is_verified is False
+        assert user.is_verified is True
         assert user.hostel == h1
         assert user.room == r1
 
@@ -242,7 +242,7 @@ class TestRegistrationView:
         user = User.objects.filter(login_id="22BCS045").first()
         assert user is not None
         assert user.role == Role.HOSTELER
-        assert user.is_verified is False
+        assert user.is_verified is True
         assert user.hostel == h1
         assert user.room == r1
 
@@ -429,11 +429,11 @@ class TestWardenResidentVerification:
 
 
 @pytest.mark.django_db
-class TestUnverifiedResidentCommunityRestrictions:
-    def test_unverified_cannot_repost(self, client, hostel_setup):
+class TestResidentCommunityParticipation:
+    def test_resident_can_repost_and_comment_without_verification(self, client, hostel_setup):
         h1 = hostel_setup["hostel1"]
         r1 = hostel_setup["room1"]
-        creator = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=True)
+        creator = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1)
         ticket = TicketFactory(
             reporter=creator,
             hostel=h1,
@@ -441,54 +441,16 @@ class TestUnverifiedResidentCommunityRestrictions:
             visibility=TicketVisibility.HOSTEL,
         )
 
-        unverified_user = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-        client.force_login(unverified_user)
+        user = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1)
+        client.force_login(user)
 
+        # Repost succeeds immediately
         repost_url = reverse("tickets:repost", kwargs={"ticket_no": ticket.ticket_no})
         resp = client.post(repost_url)
-        assert resp.status_code == 403
-        assert "pending warden verification" in resp.content.decode("utf-8")
+        assert resp.status_code == 200
 
-    def test_unverified_cannot_comment_community(self, client, hostel_setup):
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        creator = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=True)
-        ticket = TicketFactory(
-            reporter=creator,
-            hostel=h1,
-            room=r1,
-            visibility=TicketVisibility.HOSTEL,
-        )
-
-        unverified_user = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-        client.force_login(unverified_user)
-
+        # Comment succeeds immediately
         comment_url = reverse("tickets:community_comments", kwargs={"ticket_no": ticket.ticket_no})
         resp = client.post(comment_url, {"body": "I have this issue too!"})
-        assert resp.status_code == 403
-        assert "pending warden verification" in resp.content.decode("utf-8")
-
-    def test_verified_user_can_repost_and_comment(self, client, hostel_setup):
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        creator = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=True)
-        ticket = TicketFactory(
-            reporter=creator,
-            hostel=h1,
-            room=r1,
-            visibility=TicketVisibility.HOSTEL,
-        )
-
-        verified_user = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=True)
-        client.force_login(verified_user)
-
-        # Repost
-        repost_url = reverse("tickets:repost", kwargs={"ticket_no": ticket.ticket_no})
-        resp = client.post(repost_url)
         assert resp.status_code == 200
-
-        # Comment
-        comment_url = reverse("tickets:community_comments", kwargs={"ticket_no": ticket.ticket_no})
-        resp = client.post(comment_url, {"body": "Confirmed, very loud noise."})
-        assert resp.status_code == 200
-        assert "Confirmed, very loud noise." in resp.content.decode("utf-8")
+        assert "I have this issue too!" in resp.content.decode("utf-8")

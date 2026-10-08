@@ -9,12 +9,12 @@
   <span class="current">Residents</span>
 {% endblock %}
 
-{% block page_title %}Resident Verification{% endblock %}
+{% block page_title %}Resident Directory{% endblock %}
 {% block page_subtitle %}
   {% if is_scoped_warden %}
-    Review and verify hostel residents for {{ warden_hostel.code }} ({{ warden_hostel.name }})
+    Resident management and directory for {{ warden_hostel.code }} ({{ warden_hostel.name }})
   {% else %}
-    Campus-wide resident management and registration verification
+    Campus-wide resident management and directory
   {% endif %}
 {% endblock %}
 
@@ -26,25 +26,25 @@
 
   <!-- Filter Tabs -->
   <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; flex-wrap: wrap;">
-    <a href="?tab=pending{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-       class="btn btn-sm {% if tab == 'pending' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
-      <span>Pending Verification</span>
-      <span style="background: var(--st-progress-bg); color: var(--st-progress-fg); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600;">{{ pending_count }}</span>
+    <a href="?tab=all{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="btn btn-sm {% if tab == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
+      <span>All Residents</span>
+      <span style="background: var(--bg-subtle); color: var(--text-secondary); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px;">{{ all_count }}</span>
     </a>
     <a href="?tab=verified{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
        class="btn btn-sm {% if tab == 'verified' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
       <span>Verified</span>
       <span style="background: var(--st-resolved-bg); color: var(--st-resolved-fg); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600;">{{ verified_count }}</span>
     </a>
+    <a href="?tab=pending{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="btn btn-sm {% if tab == 'pending' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
+      <span>Pending</span>
+      <span style="background: var(--st-progress-bg); color: var(--st-progress-fg); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600;">{{ pending_count }}</span>
+    </a>
     <a href="?tab=rejected{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
        class="btn btn-sm {% if tab == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
       <span>Rejected</span>
       <span style="background: var(--st-open-bg); color: var(--st-open-fg); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600;">{{ rejected_count }}</span>
-    </a>
-    <a href="?tab=all{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-       class="btn btn-sm {% if tab == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
-      <span>All Residents</span>
-      <span style="background: var(--bg-subtle); color: var(--text-secondary); padding: 1px 6px; border-radius: var(--radius-full); font-size: 11px;">{{ all_count }}</span>
     </a>
   </div>
 
@@ -174,7 +174,7 @@
               </td>
               <td>
                 {% if resident.is_verified %}
-                  <span class="status-pill resolved" title="Verified by {{ resident.verified_by.full_name|default:resident.verified_by.login_id }} on {{ resident.verified_at|date:'M d, Y' }}">
+                  <span class="status-pill resolved" {% if resident.verified_by %}title="Verified by {{ resident.verified_by.full_name|default:resident.verified_by.login_id }}{% if resident.verified_at %} on {{ resident.verified_at|date:'M d, Y' }}{% endif %}"{% else %}title="Active resident"{% endif %}>
                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px; display: inline; vertical-align: -2px;"></i>
                     Verified
                   </span>

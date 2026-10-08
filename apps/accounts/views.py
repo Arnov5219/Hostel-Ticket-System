@@ -36,7 +36,7 @@ def register_view(request):
                 msg = f"Welcome, {user.full_name or user.login_id}! Your account has been registered."
                 if not form.cleaned_data.get("login_id"):
                     msg += f" Your assigned Login ID is {user.login_id} (save this to sign in)."
-                msg += " You can report room and hostel issues right away. A warden will verify your residency shortly."
+                msg += " You can report room and hostel issues right away."
                 messages.success(request, msg)
                 return redirect("dashboard:index")
             except ValidationError as e:
@@ -94,7 +94,7 @@ def profile_view(request):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "update_profile":
-            profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
+            profile_form = ProfileUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, "Profile updated successfully.")
