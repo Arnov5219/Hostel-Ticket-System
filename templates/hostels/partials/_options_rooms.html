@@ -1,0 +1,10 @@
+<option value="">Select room</option>
+{% for room in rooms %}
+  <option value="{{ room.id }}"
+          data-floor="{{ room.floor }}"
+          data-capacity="{{ room.capacity }}"
+          data-residents="{{ room.resident_count }}"
+          {% if selected_id == room.id|stringformat:"s" %}selected{% endif %}>
+    Room {{ room.room_number }} · Floor {{ room.floor }}{% if room.resident_count >= room.capacity %} (Full · {{ room.resident_count }}/{{ room.capacity }}){% endif %}
+  </option>
+{% endfor %}

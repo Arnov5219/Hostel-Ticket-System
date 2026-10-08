@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Residence Setup | Hostel Ticket System{% endblock %}
+
+{% block body_layout %}
+<div style="min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; z-index: 1;">
+
+  <!-- Subtle glow halo -->
+  <div style="position: absolute; width: 440px; height: 440px; background: radial-gradient(circle, var(--bg-glow-accent) 0%, var(--bg-glow-violet) 50%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
+
+  <div class="card" style="width: 100%; max-width: 440px; padding: 32px 28px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-modal); position: relative; z-index: 2;"
+       x-data="{
+         hostelId: '{{ form.data.hostel|default:'' }}',
+         blockId: '{{ form.data.block|default:'' }}',
+         roomId: '{{ form.data.room|default:'' }}',
+         roomWarning: '',
+         updateRoomWarning(event) {
+           const select = event.target;
+           const opt = select.options[select.selectedIndex];
+           if (opt && opt.dataset.residents && opt.dataset.capacity) {
+             const res = parseInt(opt.dataset.residents, 10);
+             const cap = parseInt(opt.dataset.capacity, 10);
+             if (res >= cap) {
+               this.roomWarning = `Room already has ${res} occupant${res === 1 ? '' : 's'} (Capacity: ${cap}).`;
+             } else if (res > 0) {
+               this.roomWarning = `Room currently has ${res} occupant${res === 1 ? '' : 's'}.`;
+             } else {
+               this.roomWarning = '';
+             }
+           } else {
+             this.roomWarning = '';
+           }
+         }
+       }">
+
+    <!-- Header -->
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
+      <div class="rail-logo" style="width: 48px; height: 48px; font-size: 20px; margin-bottom: 6px;">
+        <i data-lucide="home" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h1 style="font-size: var(--fs-title); font-weight: 650; color: var(--text-primary); letter-spacing: -0.01em; margin: 0;">
+        Welcome, {{ request.user.full_name|default:request.user.login_id }}
+      </h1>
+      <p style="font-size: var(--fs-base); color: var(--text-secondary); margin: 0; line-height: 1.4;">
+        Tell us where you live so your maintenance tickets reach the right hostel staff.
+      </p>
+    </div>
+
+    <!-- Onboarding Form -->
+    <form method="post" action="{% url 'accounts:onboarding' %}" style="display: flex; flex-direction: column; gap: 16px;">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); border: 1px solid var(--st-open-dot);">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Hostel Select -->
+      <div class="form-group">
+        <label class="form-label" for="residence-hostel-select">Hostel *</label>
+        <select name="hostel"
+                id="residence-hostel-select"
+                class="form-select"
+                required
+                x-model="hostelId"
+                hx-get="{% url 'hostels:options_blocks' %}"
+                hx-target="#residence-block-select"
+                hx-trigger="change"
+                @change="blockId = ''; roomId = ''; roomWarning = ''; document.getElementById('residence-room-select').innerHTML = '<option value=\'\'>Select room</option>'">
+          <option value="">Select hostel</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}" {% if form.data.hostel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+          {% endfor %}
+        </select>
+        {% if form.hostel.errors %}
+          <span class="form-error">{{ form.hostel.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Block Select -->
+      <div class="form-group">
+        <label class="form-label" for="residence-block-select">Block *</label>
+        <select name="block"
+                id="residence-block-select"
+                class="form-select"
+                required
+                :disabled="!hostelId"
+                x-model="blockId"
+                hx-get="{% url 'hostels:options_rooms' %}"
+                hx-target="#residence-room-select"
+                hx-trigger="change"
+                @change="roomId = ''; roomWarning = ''">
+          <option value="">Select block</option>
+          {% if form.fields.block.queryset %}
+            {% for b in form.fields.block.queryset %}
+              <option value="{{ b.id }}" {% if form.data.block == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+        {% if form.block.errors %}
+          <span class="form-error">{{ form.block.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Room Select -->
+      <div class="form-group">
+        <label class="form-label" for="residence-room-select">Room *</label>
+        <select name="room"
+                id="residence-room-select"
+                class="form-select"
+                required
+                :disabled="!blockId"
+                x-model="roomId"
+                @change="updateRoomWarning($event)">
+          <option value="">Select room</option>
+          {% if form.fields.room.queryset %}
+            {% for r in form.fields.room.queryset %}
+              <option value="{{ r.id }}"
+                      data-floor="{{ r.floor }}"
+                      data-capacity="{{ r.capacity }}"
+                      data-residents="{{ r.residents.count }}"
+                      {% if form.data.room == r.id|stringformat:"s" %}selected{% endif %}>
+                Room {{ r.room_number }} · Floor {{ r.floor }}
+              </option>
+            {% endfor %}
+          {% endif %}
+        </select>
+        {% if form.room.errors %}
+          <span class="form-error">{{ form.room.errors.0 }}</span>
+        {% endif %}
+
+        <!-- Capacity Warning / Info Note -->
+        <div x-show="roomWarning"
+             style="display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--st-progress-fg); background-color: var(--st-progress-bg); padding: 6px 10px; border-radius: var(--radius-xs); border: 1px solid var(--st-progress-dot); margin-top: 6px;">
+          <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <span x-text="roomWarning"></span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; height: 44px; margin-top: 8px; font-weight: 600;">
+        Save and continue
+      </button>
+    </form>
+
+    <!-- Footer Actions (Logout & Theme) -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border-subtle); font-size: var(--fs-xs);">
+      <a href="{% url 'accounts:logout' %}" style="color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+        <i data-lucide="log-out" style="width: 13px; height: 13px;"></i>
+        <span>Sign out</span>
+      </a>
+      <span style="color: var(--text-muted);">Step 1 of 1</span>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -35,3 +35,44 @@ class Hostel(TimeStampedModel):
     def __str__(self):
         return f"{self.name} ({self.code})"
 
+
+class Block(TimeStampedModel):
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name="blocks",
+    )
+    name = models.CharField(max_length=50)
+    code = models.CharField(max_length=20, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["hostel", "name"]
+        unique_together = ("hostel", "name")
+
+    def __str__(self):
+        return f"{self.hostel.name} - {self.name}"
+
+
+class Room(TimeStampedModel):
+    block = models.ForeignKey(
+        Block,
+        on_delete=models.CASCADE,
+        related_name="rooms",
+    )
+    room_number = models.CharField(max_length=20)
+    floor = models.IntegerField(default=1)
+    capacity = models.PositiveSmallIntegerField(default=2)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["block", "room_number"]
+        unique_together = ("block", "room_number")
+
+    def __str__(self):
+        return f"{self.block.name} - {self.room_number}"
+
+    @property
+    def resident_count(self):
+        return self.residents.count()
+

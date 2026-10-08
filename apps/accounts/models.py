@@ -1,5 +1,8 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
+from apps.core.models import TimeStampedModel
 
 
 class Role(models.TextChoices):
@@ -8,6 +11,12 @@ class Role(models.TextChoices):
     WARDEN = "WARDEN", "Hostel Warden (L2)"
     CHIEF_WARDEN = "CHIEF_WARDEN", "Chief Warden (L3)"
     ADMIN = "ADMIN", "Admin / Dean (L4)"
+
+
+class Theme(models.TextChoices):
+    SYSTEM = "SYSTEM", "System"
+    LIGHT = "LIGHT", "Light"
+    DARK = "DARK", "Dark"
 
 
 ROLE_TO_LEVEL = {
@@ -71,6 +80,19 @@ class User(AbstractUser):
         on_delete=models.SET_NULL,
         related_name="users",
     )
+    room = models.ForeignKey(
+        "hostels.Room",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="residents",
+    )
+    residence_set_at = models.DateTimeField(null=True, blank=True)
+    theme = models.CharField(
+        max_length=10,
+        choices=Theme.choices,
+        default=Theme.SYSTEM,
+    )
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
     USERNAME_FIELD = "login_id"
@@ -116,3 +138,52 @@ class User(AbstractUser):
     @property
     def is_staff_member(self):
         return self.role in [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
+
+    @property
+    def has_residence(self):
+        if not self.is_hosteler:
+            return True
+        return bool(
+            self.hostel_id
+            and self.room_id
+            and self.room
+            and self.room.block
+            and self.room.block.hostel_id == self.hostel_id
+        )
+
+
+class ResidenceHistory(TimeStampedModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="residence_histories",
+    )
+    hostel = models.ForeignKey(
+        "hostels.Hostel",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="residence_history_records",
+    )
+    room = models.ForeignKey(
+        "hostels.Room",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="residence_history_records",
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-changed_at"]
+        verbose_name_plural = "Residence histories"
+
+    def __str__(self):
+        return f"{self.user} -> {self.hostel} {self.room}"

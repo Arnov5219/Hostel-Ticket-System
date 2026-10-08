@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.accounts.models import Role, User
 from apps.core.permissions import can_manage_config
 from apps.hostels.forms import AssignStaffHostelForm, ChangeResponsibleStaffForm, HostelForm
-from apps.hostels.models import Hostel
+from apps.hostels.models import Block, Hostel, Room
 from apps.hostels.services import (
     assign_staff_to_hostel,
     change_hostel_responsible_staff,
@@ -259,3 +259,43 @@ def toggle_staff_status_view(request, user_id):
             messages.success(request, f"Staff member {staff.full_name or staff.login_id} activated.")
 
     return redirect("hostels:manage_staff")
+
+
+@login_required
+def options_blocks_view(request):
+    """
+    Returns HTML <option> tags for blocks of a given hostel.
+    Used for cascading HTMX dependent select.
+    """
+    hostel_id = request.GET.get("hostel")
+    selected_id = request.GET.get("selected")
+    blocks = []
+    if hostel_id:
+        blocks = Block.objects.filter(hostel_id=hostel_id, is_active=True).order_by("name")
+    return render(
+        request,
+        "hostels/partials/_options_blocks.html",
+        {"blocks": blocks, "selected_id": str(selected_id) if selected_id else ""},
+    )
+
+
+@login_required
+def options_rooms_view(request):
+    """
+    Returns HTML <option> tags for rooms of a given block, including capacity attributes.
+    Used for cascading HTMX dependent select.
+    """
+    block_id = request.GET.get("block")
+    selected_id = request.GET.get("selected")
+    rooms = []
+    if block_id:
+        rooms = (
+            Room.objects.filter(block_id=block_id, is_active=True)
+            .annotate(resident_count=Count("residents"))
+            .order_by("floor", "room_number")
+        )
+    return render(
+        request,
+        "hostels/partials/_options_rooms.html",
+        {"rooms": rooms, "selected_id": str(selected_id) if selected_id else ""},
+    )

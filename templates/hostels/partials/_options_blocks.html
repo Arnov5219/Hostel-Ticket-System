@@ -1,0 +1,4 @@
+<option value="">Select block</option>
+{% for block in blocks %}
+  <option value="{{ block.id }}" {% if selected_id == block.id|stringformat:"s" %}selected{% endif %}>{{ block.name }}</option>
+{% endfor %}

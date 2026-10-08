@@ -309,10 +309,22 @@
       </div>
 
       <div style="border-top: 1px solid var(--border); padding-top: 12px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500;">Hostel</div>
-        <div style="font-weight: 500; font-size: var(--fs-sm); margin-top: 4px; color: var(--text-primary);">
-          {{ ticket.hostel.name }}
+        <div style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500;">Hostel & Room</div>
+        <div style="font-weight: 500; font-size: var(--fs-sm); margin-top: 4px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span>{{ ticket.hostel.name }}</span>
+          {% if ticket.room %}
+            <span>·</span>
+            <span>{{ ticket.room.block.name }}, Room {{ ticket.room.room_number }} (Floor {{ ticket.room.floor }})</span>
+          {% endif %}
+          {% if ticket.outside_own_hostel %}
+            <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 11px;">Outside own hostel</span>
+          {% endif %}
         </div>
+        {% if ticket.location_detail %}
+          <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 4px;">
+            Detail: {{ ticket.location_detail }}
+          </div>
+        {% endif %}
       </div>
 
       <div style="border-top: 1px solid var(--border); padding-top: 12px;">

@@ -57,7 +57,19 @@
               <span style="color: var(--text-muted); font-size: 11.5px;">1</span>
             {% endif %}
           </td>
-          <td style="white-space: nowrap; font-size: var(--fs-xs);">{{ ticket.hostel.name }}</td>
+          <td style="white-space: nowrap; font-size: var(--fs-xs);">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span>{{ ticket.hostel.name }}</span>
+              {% if ticket.room %}
+                <span style="color: var(--text-muted); font-size: 11px;">
+                  {{ ticket.room.block.name }} · R{{ ticket.room.room_number }}
+                </span>
+              {% endif %}
+              {% if ticket.outside_own_hostel %}
+                <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 10px; padding: 1px 4px; align-self: flex-start;">Outside</span>
+              {% endif %}
+            </div>
+          </td>
           <td style="white-space: nowrap;">{% level_badge ticket.current_level %}</td>
           <td style="white-space: nowrap;">
             {# Fix U-07: Use shared sla_indicator which shows no full-green bar on resolved/closed #}

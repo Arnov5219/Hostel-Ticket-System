@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.hostels import views as hostels_views
 from apps.tickets.views import manage_criticality
 
 urlpatterns = [
@@ -16,6 +17,8 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),
     path("manage/criticality/", manage_criticality, name="manage_criticality"),
     path("manage/", include("apps.hostels.urls", namespace="hostels")),
+    path("hostels/options/blocks/", hostels_views.options_blocks_view, name="options_blocks_direct"),
+    path("hostels/options/rooms/", hostels_views.options_rooms_view, name="options_rooms_direct"),
 ]
 
 if settings.DEBUG:

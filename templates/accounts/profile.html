@@ -89,5 +89,104 @@
     </form>
   </div>
 
+  {% if request.user.is_hosteler %}
+  <!-- Residence Details Card -->
+  <div class="card" x-data="{ editingResidence: false }">
+    <div class="card-header">
+      <h2 class="card-title">Residence Details</h2>
+      <button type="button" class="btn btn-secondary btn-xs" @click="editingResidence = !editingResidence">
+        <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i>
+        <span x-text="editingResidence ? 'Cancel' : 'Change'">Change</span>
+      </button>
+    </div>
+
+    <div x-show="!editingResidence" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+        </div>
+        <div>
+          <div style="font-weight: 600; font-size: var(--fs-base); color: var(--text-primary);">
+            {{ request.user.hostel.name|default:"No hostel assigned" }}
+          </div>
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 2px;">
+            {% if request.user.room %}
+              {{ request.user.room.block.name }} · Room {{ request.user.room.room_number }} (Floor {{ request.user.room.floor }})
+            {% else %}
+              No room assigned
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% if request.user.residence_set_at %}
+        <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+          Last updated: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Edit Residence Form -->
+    <form x-show="editingResidence" method="post" action="{% url 'accounts:profile_residence' %}" style="display: flex; flex-direction: column; gap: 14px;"
+          x-data="{
+            hostelId: '{{ request.user.hostel_id|default:'' }}',
+            blockId: '{{ request.user.room.block_id|default:'' }}',
+            roomId: '{{ request.user.room_id|default:'' }}'
+          }">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="profile-hostel-select">Hostel *</label>
+        <select name="hostel" id="profile-hostel-select" class="form-select" required x-model="hostelId"
+                hx-get="{% url 'hostels:options_blocks' %}"
+                hx-target="#profile-block-select"
+                hx-trigger="change"
+                @change="blockId = ''; roomId = ''; document.getElementById('profile-room-select').innerHTML = '<option value=\'\'>Select room</option>'">
+          <option value="">Select hostel</option>
+          {% if residence_form %}
+            {% for h in residence_form.fields.hostel.queryset %}
+              <option value="{{ h.id }}" {% if request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="profile-block-select">Block *</label>
+        <select name="block" id="profile-block-select" class="form-select" required :disabled="!hostelId" x-model="blockId"
+                hx-get="{% url 'hostels:options_rooms' %}"
+                hx-target="#profile-room-select"
+                hx-trigger="change"
+                @change="roomId = ''">
+          <option value="">Select block</option>
+          {% if residence_form and residence_form.fields.block.queryset %}
+            {% for b in residence_form.fields.block.queryset %}
+              <option value="{{ b.id }}" {% if request.user.room.block_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="profile-room-select">Room *</label>
+        <select name="room" id="profile-room-select" class="form-select" required :disabled="!blockId" x-model="roomId">
+          <option value="">Select room</option>
+          {% if residence_form and residence_form.fields.room.queryset %}
+            {% for r in residence_form.fields.room.queryset %}
+              <option value="{{ r.id }}" {% if request.user.room_id == r.id %}selected{% endif %}>
+                Room {{ r.room_number }} · Floor {{ r.floor }}
+              </option>
+            {% endfor %}
+          {% endif %}
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary btn-sm">Save Residence</button>
+        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = false">Cancel</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

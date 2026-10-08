@@ -47,6 +47,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.RequireResidenceMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -107,3 +108,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
+
+ENFORCE_ROOM_CAPACITY = env.bool("ENFORCE_ROOM_CAPACITY", default=False)

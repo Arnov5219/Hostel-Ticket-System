@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from apps.accounts.models import Role, User
+from apps.hostels.models import Block, Hostel, Room
 from apps.tickets.models import (
     Category,
     CommentScope,
@@ -95,6 +96,12 @@ class TicketCreateForm(forms.ModelForm):
         label="Show my name",
         widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_show_reporter_name"}),
     )
+    different_hostel = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="This issue is in a different hostel",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_different_hostel"}),
+    )
 
     class Meta:
         model = Ticket
@@ -105,6 +112,9 @@ class TicketCreateForm(forms.ModelForm):
             "priority",
             "description",
             "hostel",
+            "block",
+            "room",
+            "location_detail",
             "show_reporter_name",
         ]
         widgets = {
@@ -129,15 +139,28 @@ class TicketCreateForm(forms.ModelForm):
                     "placeholder": "Provide detailed description of the problem, exact physical location (room/floor/corridor), symptoms...",
                 }
             ),
-            "hostel": forms.Select(attrs={"class": "form-select"}),
+            "hostel": forms.Select(attrs={"class": "form-select", "id": "id_hostel"}),
+            "block": forms.Select(attrs={"class": "form-select", "id": "id_block"}),
+            "room": forms.Select(attrs={"class": "form-select", "id": "id_room"}),
+            "location_detail": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "id": "id_location_detail",
+                    "placeholder": "e.g. 2nd floor washroom (optional)",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
+        self.user = user
         super().__init__(*args, **kwargs)
         self.fields["sub_category"].queryset = SubCategory.objects.none()
         self.fields["sub_category"].required = False
-        self.fields["hostel"].queryset = self.fields["hostel"].queryset.filter(is_active=True)
+        self.fields["hostel"].queryset = Hostel.objects.filter(is_active=True)
+        self.fields["hostel"].required = True
+        self.fields["block"].required = True
+        self.fields["room"].required = True
 
         if "category" in self.data:
             try:
@@ -150,9 +173,29 @@ class TicketCreateForm(forms.ModelForm):
         elif self.instance.pk and self.instance.category:
             self.fields["sub_category"].queryset = self.instance.category.subcategories.all()
 
-        if user and user.is_authenticated:
+        hostel_id = None
+        block_id = None
+        if self.data:
+            hostel_id = self.data.get("hostel")
+            block_id = self.data.get("block")
+        elif user and user.is_authenticated:
             if user.hostel:
                 self.fields["hostel"].initial = user.hostel
+                hostel_id = user.hostel_id
+            if getattr(user, "room", None) and user.room:
+                self.fields["block"].initial = user.room.block
+                self.fields["room"].initial = user.room
+                block_id = user.room.block_id
+
+        if hostel_id:
+            self.fields["block"].queryset = Block.objects.filter(hostel_id=hostel_id, is_active=True)
+        else:
+            self.fields["block"].queryset = Block.objects.none()
+
+        if block_id:
+            self.fields["room"].queryset = Room.objects.filter(block_id=block_id, is_active=True)
+        else:
+            self.fields["room"].queryset = Room.objects.none()
 
         if not self.initial.get("priority"):
             self.initial["priority"] = Priority.MEDIUM
@@ -165,6 +208,38 @@ class TicketCreateForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        hostel = cleaned_data.get("hostel")
+        block = cleaned_data.get("block")
+        room = cleaned_data.get("room")
+
+        if not hostel:
+            self.add_error("hostel", "Please select a hostel.")
+        if not block:
+            self.add_error("block", "Please select a block.")
+        if not room:
+            self.add_error("room", "Select your room.")
+
+        if hostel and block and room:
+            from apps.tickets.services.location import validate_location
+            try:
+                h, b, r, outside = validate_location(
+                    hostel.id,
+                    block.id,
+                    room.id,
+                    reporter=getattr(self, "user", None),
+                )
+                cleaned_data["hostel"] = h
+                cleaned_data["block"] = b
+                cleaned_data["room"] = r
+                cleaned_data["outside_own_hostel"] = outside
+            except ValidationError as e:
+                if hasattr(e, "message_dict"):
+                    for field, msgs in e.message_dict.items():
+                        for msg in msgs:
+                            self.add_error(field, msg)
+                else:
+                    self.add_error(None, str(e.message if hasattr(e, "message") else e))
+
         cat = cleaned_data.get("category")
         if cat and not cat.allow_community:
             cleaned_data["share_with_community"] = False
@@ -179,6 +254,10 @@ class TicketCreateForm(forms.ModelForm):
         else:
             instance.visibility = TicketVisibility.PRIVATE
 
+        instance.block = self.cleaned_data.get("block")
+        instance.room = self.cleaned_data.get("room")
+        instance.location_detail = self.cleaned_data.get("location_detail", "")
+        instance.outside_own_hostel = self.cleaned_data.get("outside_own_hostel", False)
         instance.show_reporter_name = bool(self.cleaned_data.get("show_reporter_name"))
         instance.base_priority = instance.priority
         if commit:

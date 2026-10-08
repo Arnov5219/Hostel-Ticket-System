@@ -11,5 +11,24 @@ class HostelFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f"Hostel {chr(65 + n % 26)}")
     code = factory.Sequence(lambda n: f"HSTL_{n:03d}")
     gender_type = GenderType.BOYS
-    address = factory.Faker("address")
+    is_active = True
+
+
+class BlockFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "hostels.Block"
+
+    hostel = factory.SubFactory(HostelFactory)
+    name = factory.Sequence(lambda n: f"Block {n}")
+    is_active = True
+
+
+class RoomFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "hostels.Room"
+
+    block = factory.SubFactory(BlockFactory)
+    room_number = factory.Sequence(lambda n: f"{100 + n}")
+    floor = 1
+    capacity = 2
     is_active = True

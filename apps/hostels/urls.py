@@ -12,4 +12,6 @@ urlpatterns = [
     path("hostels/<int:hostel_id>/toggle-status/", views.toggle_hostel_status_view, name="toggle_hostel_status"),
     path("staff/<int:user_id>/assign-hostel/", views.assign_staff_hostel_view, name="assign_staff_hostel"),
     path("staff/<int:user_id>/toggle-status/", views.toggle_staff_status_view, name="toggle_staff_status"),
+    path("options/blocks/", views.options_blocks_view, name="options_blocks"),
+    path("options/rooms/", views.options_rooms_view, name="options_rooms"),
 ]

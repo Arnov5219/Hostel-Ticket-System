@@ -12,7 +12,7 @@ from apps.announcements.models import (
     AnnouncementSeverity,
     AnnouncementStatus,
 )
-from apps.hostels.models import GenderType, Hostel
+from apps.hostels.models import Block, GenderType, Hostel, Room
 from apps.tickets.models import (
     ActivityAction,
     Category,
@@ -56,6 +56,32 @@ class Command(BaseCommand):
 
         # 2. Hostels created
         self.stdout.write("Hostels initialized (BH-A and GH-B).")
+
+        # Seed Blocks & Rooms
+        bha_b1, _ = Block.objects.get_or_create(hostel=hostel_a, name="Block 1")
+        bha_b2, _ = Block.objects.get_or_create(hostel=hostel_a, name="Block 2")
+        ghb_b1, _ = Block.objects.get_or_create(hostel=hostel_b, name="Block 1")
+        ghb_b2, _ = Block.objects.get_or_create(hostel=hostel_b, name="Block 2")
+
+        rooms_a = []
+        for blk in [bha_b1, bha_b2]:
+            for floor in [1, 2]:
+                for num in [1, 2, 3]:
+                    rm, _ = Room.objects.get_or_create(
+                        block=blk, room_number=f"{floor}0{num}",
+                        defaults={"floor": floor, "capacity": 2}
+                    )
+                    rooms_a.append(rm)
+
+        rooms_b = []
+        for blk in [ghb_b1, ghb_b2]:
+            for floor in [1, 2]:
+                for num in [1, 2]:
+                    rm, _ = Room.objects.get_or_create(
+                        block=blk, room_number=f"{floor}0{num}",
+                        defaults={"floor": floor, "capacity": 2}
+                    )
+                    rooms_b.append(rm)
 
         # 3. Seed Users
         # Admin
@@ -158,38 +184,54 @@ class Command(BaseCommand):
         hostel_b.save()
 
         # 22 Hostelers (allows up to 11+ reposters in Hostel A)
+        # Note: student_14 and student_22 are deliberately unassigned to demo onboarding gate
+        now = timezone.now()
         students_a = []
         for i in range(1, 15):
             lid = f"student_{i:02d}"
+            assigned_room = rooms_a[(i - 1) % len(rooms_a)] if i < 14 else None
             u, _ = User.objects.get_or_create(
                 login_id=lid,
                 defaults={
                     "full_name": f"Hosteler {i} (Boys)",
                     "role": Role.HOSTELER,
-                    "hostel": hostel_a,
+                    "hostel": hostel_a if i < 14 else None,
+                    "room": assigned_room,
+                    "residence_set_at": now if assigned_room else None,
                 },
             )
             u.set_password("pass1234")
+            if assigned_room and not u.room:
+                u.hostel = hostel_a
+                u.room = assigned_room
+                u.residence_set_at = now
             u.save()
             students_a.append(u)
 
         students_b = []
         for i in range(15, 23):
             lid = f"student_{i:02d}"
+            assigned_room = rooms_b[(i - 15) % len(rooms_b)] if i < 22 else None
             u, _ = User.objects.get_or_create(
                 login_id=lid,
                 defaults={
                     "full_name": f"Hosteler {i} (Girls)",
                     "role": Role.HOSTELER,
-                    "hostel": hostel_b,
+                    "hostel": hostel_b if i < 22 else None,
+                    "room": assigned_room,
+                    "residence_set_at": now if assigned_room else None,
                 },
             )
             u.set_password("pass1234")
+            if assigned_room and not u.room:
+                u.hostel = hostel_b
+                u.room = assigned_room
+                u.residence_set_at = now
             u.save()
             students_b.append(u)
 
         self.stdout.write(
-            "Users seeded (1 Admin, 1 Chief Warden, 2 Wardens, 4 Caretakers, 22 Students)."
+            "Users seeded (1 Admin, 1 Chief Warden, 2 Wardens, 4 Caretakers, 22 Students with 2 pending onboarding)."
         )
 
         # 4. Routing Rules
@@ -417,6 +459,10 @@ class Command(BaseCommand):
                 if resolved_at > now:
                     resolved_at = now - timedelta(hours=2)
 
+            reporter_room = reporter.room if (reporter and reporter.room) else (rooms_a[0] if is_hostel_a else rooms_b[0])
+            ticket_block = reporter_room.block if reporter_room else None
+            is_outside = bool(reporter and reporter.hostel_id and reporter.hostel_id != hostel.id)
+
             ticket, created = Ticket.objects.get_or_create(
                 ticket_no=ticket_no,
                 defaults={
@@ -426,6 +472,9 @@ class Command(BaseCommand):
                     "priority": prio,
                     "status": status,
                     "hostel": hostel,
+                    "block": ticket_block,
+                    "room": reporter_room,
+                    "outside_own_hostel": is_outside,
                     "reporter": reporter,
                     "assigned_to": assignee,
                     "current_level": current_level,
