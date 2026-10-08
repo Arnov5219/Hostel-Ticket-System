@@ -40,10 +40,10 @@
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; gap: 16px; height: 100%; align-items: flex-start; flex-wrap: wrap;">
+<div x-data="{ mobileFilterOpen: false }" style="display: flex; gap: 16px; height: 100%; align-items: flex-start; flex-wrap: wrap; width: 100%;">
 
   <!-- Left Filter Sidebar (~220px, sticky, styled selects U-06) -->
-  <aside style="width: 220px; flex-shrink: 0; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-card); position: sticky; top: 16px;">
+  <aside class="desktop-filter-sidebar" style="width: 220px; flex-shrink: 0; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-card); position: sticky; top: 16px;">
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
       <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">Filter by</span>
       <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--text-muted); text-decoration: none;">Clear all</a>
@@ -177,6 +177,15 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- Mobile Filters Button -->
+        <button type="button" class="btn btn-secondary btn-sm mobile-filter-btn" @click="mobileFilterOpen = true" style="align-items: center; gap: 6px;">
+          <i data-lucide="sliders-horizontal" style="width: 13px; height: 13px;"></i>
+          <span>Filters</span>
+          {% if curr_status or curr_priority or curr_category or curr_hostel %}
+            <span class="badge" style="background-color: var(--accent); color: var(--primary-text); font-size: 10px; padding: 1px 5px; border-radius: var(--radius-full); font-weight: 700;">Active</span>
+          {% endif %}
+        </button>
+
         <span style="font-size: var(--fs-xs); color: var(--text-muted);">Sort:</span>
         <select class="form-select" style="width: 140px; font-size: var(--fs-xs); padding: 4px 8px; height: 30px;"
                 onchange="document.getElementById('sort-input').value = this.value; document.getElementById('filter-form').requestSubmit();">
@@ -304,4 +313,84 @@
     syncBulkSelection();
   });
 </script>
+
+<!-- Mobile Filter Bottom Sheet -->
+<div class="bottom-sheet-backdrop" x-show="mobileFilterOpen" x-transition.opacity style="display: none;" @click="mobileFilterOpen = false">
+  <div class="bottom-sheet-modal" @click.stop x-show="mobileFilterOpen" x-transition>
+    <div class="bottom-sheet-handle"></div>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+      <span style="font-weight: 600; font-size: var(--fs-md); color: var(--text-primary);">Filter Tickets</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--text-muted); text-decoration: none;">Clear all</a>
+        <button type="button" class="btn btn-ghost btn-sm" @click="mobileFilterOpen = false" style="padding: 2px;">✕</button>
+      </div>
+    </div>
+
+    <form method="get" action="{% url 'tickets:list' %}" style="display: flex; flex-direction: column; gap: 14px;">
+      {% if curr_search %}
+        <input type="hidden" name="search" value="{{ curr_search }}">
+      {% endif %}
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All statuses</option>
+          {% for st_val, st_lbl in statuses %}
+            <option value="{{ st_val }}" {% if curr_status == st_val %}selected{% endif %}>{{ st_lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Priority</label>
+        <select name="priority" class="form-select">
+          <option value="">All priorities</option>
+          {% for pr_val, pr_lbl in priorities %}
+            <option value="{{ pr_val }}" {% if curr_priority == pr_val %}selected{% endif %}>{{ pr_lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if curr_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if hostels %}
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Hostel</label>
+        <select name="hostel" class="form-select">
+          <option value="">All hostels</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}" {% if curr_hostel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Sort By</label>
+        <select name="sort" class="form-select">
+          <option value="-created_at" {% if curr_sort == '-created_at' %}selected{% endif %}>Newest first</option>
+          <option value="created_at" {% if curr_sort == 'created_at' %}selected{% endif %}>Oldest first</option>
+          <option value="due_at" {% if curr_sort == 'due_at' %}selected{% endif %}>SLA deadline</option>
+          <option value="-repost_count" {% if curr_sort == '-repost_count' %}selected{% endif %}>Most affected</option>
+          <option value="-updated_at" {% if curr_sort == '-updated_at' %}selected{% endif %}>Last updated</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" @click="mobileFilterOpen = false" style="flex: 1;">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Apply Filters</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}

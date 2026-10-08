@@ -189,9 +189,23 @@
         <div style="border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 18px; text-align: center; background-color: var(--bg-subtle); transition: border-color var(--duration-fast);"
              :style="count > 0 ? 'border-color: var(--accent); background-color: var(--accent-light);' : ''">
           <i data-lucide="image-plus" style="width: 24px; height: 24px; color: var(--text-muted); margin-bottom: 6px;"></i>
-          <input type="file" name="images" id="ticket-images" multiple accept="image/*" class="form-control" style="border: none; background: transparent; cursor: pointer;"
-                 @change="count = $event.target.files.length; names = Array.from($event.target.files).map(f => f.name)">
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px;">PNG, JPG, WEBP supported</div>
+          
+          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 6px;">
+            <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="camera" style="width: 14px; height: 14px;"></i>
+              <span>Take photo</span>
+              <input type="file" name="images" accept="image/*" capture="environment" style="display: none;"
+                     @change="count += $event.target.files.length; names.push(...Array.from($event.target.files).map(f => f.name))">
+            </label>
+            <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="image" style="width: 14px; height: 14px;"></i>
+              <span>Choose from gallery</span>
+              <input type="file" name="images" multiple accept="image/*" style="display: none;"
+                     @change="count += $event.target.files.length; names.push(...Array.from($event.target.files).map(f => f.name))">
+            </label>
+          </div>
+
+          <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px;">PNG, JPG, WEBP supported</div>
           <template x-if="count > 0">
             <div style="margin-top: 8px; font-size: var(--fs-xs); color: var(--accent); font-weight: 500;">
               <span x-text="count + ' file(s) selected: ' + names.join(', ')"></span>
@@ -228,9 +242,10 @@
         </div>
       </div>
 
-      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border);">
+      <!-- Sticky Submit Bar on Mobile -->
+      <div class="raise-submit-bar" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border);">
         <a href="{% url 'tickets:list' %}" class="btn btn-secondary">Cancel</a>
-        <button type="submit" class="btn btn-primary" style="padding: 6px 18px;">
+        <button type="submit" class="btn btn-primary" style="padding: 8px 24px;">
           <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
           <span>Raise ticket</span>
         </button>

@@ -4,7 +4,28 @@
   
   <div class="kanban-card-top">
     <span class="kanban-ticket-no">{{ ticket.ticket_no }}</span>
-    {% priority_dot ticket.priority %}
+    <div style="display: flex; align-items: center; gap: 4px;">
+      {% priority_dot ticket.priority %}
+      <div class="dropdown" x-data="{ moveOpen: false }">
+        <button type="button" @click.stop="moveOpen = !moveOpen" class="btn btn-ghost btn-sm" style="padding: 2px 4px; min-height: 24px; min-width: 24px; font-size: 11px; color: var(--text-muted);" title="Move to status">
+          <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
+        </button>
+        <div class="dropdown-menu" x-show="moveOpen" @click.outside="moveOpen = false" style="display: none; min-width: 130px; right: 0; left: auto;">
+          <div style="padding: 4px 8px; font-size: 10px; font-weight: 600; color: var(--text-muted);">MOVE TO</div>
+          {% for st_val, st_lbl in kanban_statuses %}
+            {% if st_val != ticket.status %}
+              <form method="post" action="{% url 'tickets:move' ticket.ticket_no %}" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="{{ st_val }}">
+                <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left; padding: 4px 8px; font-size: var(--fs-xs); cursor: pointer;">
+                  {{ st_lbl }}
+                </button>
+              </form>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="kanban-card-title">{{ ticket.title }}</div>

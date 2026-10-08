@@ -59,6 +59,17 @@
     </div>
   </div>
 
+  <!-- Mobile Status Quick Jump Tab Strip (< 768px) -->
+  <div class="kanban-tab-strip" x-data="{ activeTab: '{{ columns.0.status }}' }">
+    {% for col in columns %}
+      <button type="button" class="kanban-tab-btn" :class="{ 'active': activeTab === '{{ col.status }}' }"
+              @click="activeTab = '{{ col.status }}'; document.querySelector('.kanban-column[data-status=\'{{ col.status }}\']')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });">
+        <span>{{ col.title }}</span>
+        <span style="opacity: 0.85;">({{ col.tickets.count }})</span>
+      </button>
+    {% endfor %}
+  </div>
+
   <!-- Board Columns -->
   <div class="kanban-board">
     {% for col in columns %}

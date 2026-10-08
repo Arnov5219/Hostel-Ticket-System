@@ -44,6 +44,7 @@ def ticket_kanban(request):
         "tickets/kanban.html",
         {
             "columns": columns,
+            "kanban_statuses": [(col["status"], col["title"]) for col in columns],
             "is_kanban": True,
             "current_section": "tickets",
         },

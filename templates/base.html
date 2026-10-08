@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#F7F8FA" id="meta-theme-color">
+  <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
   <title>{% block title %}Hostel Ticket System{% endblock %}</title>
 
   <!-- Immediate zero-flash theme application before CSS renders -->
@@ -194,6 +195,9 @@
         {% block content %}{% endblock %}
       </main>
     </div>
+
+    <!-- Mobile Bottom Navigation -->
+    {% include 'components/_bottom_nav.html' %}
   </div>
   {% endblock %}
 

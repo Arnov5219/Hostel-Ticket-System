@@ -12,6 +12,9 @@ function initKanban() {
     new Sortable(container, {
       group: 'kanban-board',
       animation: 150,
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',

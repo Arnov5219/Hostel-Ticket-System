@@ -1,0 +1,174 @@
+{% load ui static %}
+
+<!-- Mobile Bottom Navigation Bar (Phone only: < 768px) -->
+<nav class="mobile-bottom-nav" aria-label="Mobile Navigation" x-data="{ moreOpen: false }">
+  <div class="bottom-nav-inner">
+    {% if request.user.is_authenticated and request.user.is_hosteler %}
+      <!-- Hosteler: Home · Community · ＋ Raise · News · More -->
+      <a href="{% url 'core:home' %}" class="bottom-nav-item {% if current_section == 'home' %}active{% endif %}">
+        <i data-lucide="home" class="nav-icon"></i>
+        <span class="nav-label">Home</span>
+      </a>
+
+      <a href="{% url 'community:feed' %}" class="bottom-nav-item {% if current_section == 'community' %}active{% endif %}">
+        <i data-lucide="users" class="nav-icon"></i>
+        <span class="nav-label">Community</span>
+      </a>
+
+      <!-- Center Raised Button: Raise Ticket -->
+      <a href="{% url 'tickets:create' %}" class="bottom-nav-item raise-center-btn" aria-label="Raise Ticket">
+        <div class="raise-btn-circle">
+          <i data-lucide="plus" style="width: 22px; height: 22px;"></i>
+        </div>
+        <span class="nav-label" style="font-weight: 600;">Raise</span>
+      </a>
+
+      <a href="{% url 'announcements:list' %}" class="bottom-nav-item {% if current_section == 'announcements' %}active{% endif %}">
+        <i data-lucide="megaphone" class="nav-icon"></i>
+        <span class="nav-label">News</span>
+      </a>
+
+      <button type="button" class="bottom-nav-item" @click="moreOpen = true" aria-label="More options">
+        <i data-lucide="menu" class="nav-icon"></i>
+        <span class="nav-label">More</span>
+      </button>
+
+    {% elif request.user.is_authenticated %}
+      <!-- Staff: Dashboard · Tickets · Kanban · Alerts · More -->
+      <a href="{% url 'dashboard:index' %}" class="bottom-nav-item {% if current_section == 'dashboard' %}active{% endif %}">
+        <i data-lucide="layout-dashboard" class="nav-icon"></i>
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <a href="{% url 'tickets:list' %}" class="bottom-nav-item {% if current_section == 'tickets' and not is_kanban %}active{% endif %}">
+        <i data-lucide="ticket" class="nav-icon"></i>
+        <span class="nav-label">Tickets</span>
+      </a>
+
+      <a href="{% url 'tickets:kanban' %}" class="bottom-nav-item {% if is_kanban %}active{% endif %}">
+        <i data-lucide="columns-3" class="nav-icon"></i>
+        <span class="nav-label">Kanban</span>
+      </a>
+
+      <a href="{% url 'notifications:list' %}" class="bottom-nav-item {% if current_section == 'notifications' %}active{% endif %}" style="position: relative;">
+        <i data-lucide="bell" class="nav-icon"></i>
+        {% if unread_notifications_count > 0 %}
+          <span class="notification-badge" style="position: absolute; top: 4px; right: 18px; width: 7px; height: 7px;"></span>
+        {% endif %}
+        <span class="nav-label">Alerts</span>
+      </a>
+
+      <button type="button" class="bottom-nav-item" @click="moreOpen = true" aria-label="More options">
+        <i data-lucide="menu" class="nav-icon"></i>
+        <span class="nav-label">More</span>
+      </button>
+
+    {% else %}
+      <!-- Guest navigation -->
+      <a href="{% url 'core:home' %}" class="bottom-nav-item active">
+        <i data-lucide="home" class="nav-icon"></i>
+        <span class="nav-label">Home</span>
+      </a>
+      <a href="{% url 'accounts:login' %}" class="bottom-nav-item">
+        <i data-lucide="log-in" class="nav-icon"></i>
+        <span class="nav-label">Sign In</span>
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Mobile "More" Bottom Sheet Overlay -->
+  <div class="bottom-sheet-backdrop" x-show="moreOpen" x-transition.opacity style="display: none;" @click="moreOpen = false">
+    <div class="bottom-sheet-modal" @click.stop x-show="moreOpen" x-transition:enter="sheet-slide-up" x-transition:leave="sheet-slide-down">
+      <div class="bottom-sheet-handle"></div>
+
+      {% if request.user.is_authenticated %}
+        <!-- User identity header -->
+        <div style="display: flex; align-items: center; gap: var(--sp-3); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--border); margin-bottom: var(--sp-2);">
+          {% user_avatar request.user size="md" %}
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: var(--fs-base); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ request.user.full_name|default:request.user.login_id }}
+            </div>
+            <div style="font-size: var(--fs-xs); color: var(--text-muted);">
+              {{ request.user.get_role_display }} {% if request.user.hostel %}· {{ request.user.hostel.name }}{% endif %}
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" @click="moreOpen = false" style="padding: 4px;" aria-label="Close sheet">
+            ✕
+          </button>
+        </div>
+
+        <!-- Theme Segmented Control in Sheet -->
+        <div style="padding: var(--sp-2) 0; border-bottom: 1px solid var(--border);" x-data="{ sheetTheme: getThemePreference() }">
+          <div style="font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary); margin-bottom: var(--sp-2);">
+            Appearance
+          </div>
+          <div style="display: flex; gap: var(--sp-2); background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
+                    :style="sheetTheme === 'LIGHT' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
+                    @click="setTheme('LIGHT'); sheetTheme = 'LIGHT';">
+              <i data-lucide="sun" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Light
+            </button>
+            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
+                    :style="sheetTheme === 'DARK' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
+                    @click="setTheme('DARK'); sheetTheme = 'DARK';">
+              <i data-lucide="moon" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Dark
+            </button>
+            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
+                    :style="sheetTheme === 'SYSTEM' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
+                    @click="setTheme('SYSTEM'); sheetTheme = 'SYSTEM';">
+              <i data-lucide="laptop" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Auto
+            </button>
+          </div>
+        </div>
+
+        <!-- Sheet Action Links -->
+        <div class="bottom-sheet-list">
+          <a href="{% url 'accounts:profile' %}" class="sheet-action-row">
+            <i data-lucide="user" class="sheet-row-icon"></i>
+            <span>Profile & Residence</span>
+          </a>
+
+          {% if request.user.is_admin %}
+            <a href="{% url 'hostels:manage_hostels' %}" class="sheet-action-row">
+              <i data-lucide="building-2" class="sheet-row-icon"></i>
+              <span>Hostels Management</span>
+            </a>
+            <a href="{% url 'hostels:manage_staff' %}" class="sheet-action-row">
+              <i data-lucide="users" class="sheet-row-icon"></i>
+              <span>Staff Management</span>
+            </a>
+            <a href="{% url 'hostels:manage_responsibility' %}" class="sheet-action-row">
+              <i data-lucide="user-check" class="sheet-row-icon"></i>
+              <span>Hostel Responsibility</span>
+            </a>
+            <a href="{% url 'tickets:manage_routing' %}" class="sheet-action-row">
+              <i data-lucide="sliders-horizontal" class="sheet-row-icon"></i>
+              <span>Categories & SLA</span>
+            </a>
+          {% endif %}
+
+          {% if request.user.is_warden or request.user.is_chief_warden or request.user.is_admin %}
+            <a href="{% url 'tickets:trash' %}" class="sheet-action-row">
+              <i data-lucide="trash-2" class="sheet-row-icon"></i>
+              <span>Trash Log</span>
+            </a>
+          {% endif %}
+
+          <a href="{% url 'notifications:list' %}" class="sheet-action-row">
+            <i data-lucide="bell" class="sheet-row-icon"></i>
+            <span>Notifications</span>
+          </a>
+
+          <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0; width: 100%;">
+            {% csrf_token %}
+            <button type="submit" class="sheet-action-row danger" style="width: 100%; border: none; background: transparent; text-align: left; cursor: pointer;">
+              <i data-lucide="log-out" class="sheet-row-icon"></i>
+              <span>Log Out</span>
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</nav>
