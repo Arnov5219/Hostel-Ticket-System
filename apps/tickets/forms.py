@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from apps.accounts.models import Role, User
 from apps.tickets.models import (
     Category,
+    CommentScope,
     Priority,
     RoutingRule,
     SLAPolicy,
@@ -148,9 +149,15 @@ class TicketCreateForm(forms.ModelForm):
 
 
 class CommentForm(forms.ModelForm):
+    is_internal = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(),
+        help_text="Visible only to staff",
+    )
+
     class Meta:
         model = TicketComment
-        fields = ["body", "is_internal"]
+        fields = ["body"]
         widgets = {
             "body": forms.Textarea(
                 attrs={
@@ -159,5 +166,19 @@ class CommentForm(forms.ModelForm):
                     "placeholder": "Write a reply or status update...",
                 }
             ),
-            "is_internal": forms.CheckboxInput(),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["is_internal"].initial = self.instance.is_internal
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data.get("is_internal"):
+            instance.scope = CommentScope.INTERNAL
+        elif instance.scope == CommentScope.INTERNAL:
+            instance.scope = CommentScope.PRIVATE
+        if commit:
+            instance.save()
+        return instance

@@ -2,6 +2,22 @@ from django.conf import settings
 from django.db import models
 
 
+class NotificationVerb:
+    CREATED = "CREATED"
+    ASSIGNED = "ASSIGNED"
+    STATUS_CHANGED = "STATUS_CHANGED"
+    ESCALATED = "ESCALATED"
+    RESOLVED = "RESOLVED"
+    CLOSED = "CLOSED"
+    COMMENTED = "COMMENTED"
+    REPOSTED = "REPOSTED"
+    COMMUNITY_COMMENT = "COMMUNITY_COMMENT"
+    PRIORITY_RAISED = "PRIORITY_RAISED"
+    CRITICAL_ISSUE = "CRITICAL_ISSUE"
+    ANNOUNCEMENT = "ANNOUNCEMENT"
+    ANNOUNCEMENT_URGENT = "ANNOUNCEMENT_URGENT"
+
+
 class Notification(models.Model):
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -10,6 +26,13 @@ class Notification(models.Model):
     )
     ticket = models.ForeignKey(
         "tickets.Ticket",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    announcement = models.ForeignKey(
+        "announcements.Announcement",
         on_delete=models.CASCADE,
         null=True,
         blank=True,

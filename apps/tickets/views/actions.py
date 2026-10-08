@@ -10,6 +10,7 @@ from apps.notifications.models import Notification
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
     ActivityAction,
+    CommentScope,
     Ticket,
     TicketActivity,
 )
@@ -60,7 +61,7 @@ def add_comment(request, ticket_no):
             if request.headers.get("HX-Request") == "true":
                 comments = ticket.comments.all()
                 if request.user.is_hosteler:
-                    comments = comments.filter(is_internal=False)
+                    comments = comments.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
                 return render(
                     request,
                     "tickets/_activity.html",

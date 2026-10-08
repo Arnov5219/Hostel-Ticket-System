@@ -7,6 +7,7 @@ from apps.accounts.models import Role, User
 from apps.core.permissions import can_add_internal_note, can_view_ticket
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
+    CommentScope,
     Status,
     Ticket,
 )
@@ -37,7 +38,7 @@ def ticket_detail(request, ticket_no):
     # Comments visibility: internal notes hidden from hostelers!
     comments_qs = ticket.comments.all()
     if request.user.is_hosteler:
-        comments_qs = comments_qs.filter(is_internal=False)
+        comments_qs = comments_qs.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
 
     # SLA time calculation
     sla_percentage = 0

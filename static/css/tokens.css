@@ -50,6 +50,20 @@
   --prio-medium:       #2490EF;
   --prio-low:          #8D96A0;
 
+  /* Criticality & Community Tokens */
+  --crit-low:          #8D8D8D;
+  --crit-med:          #2490EF;
+  --crit-high:         #F08C00;
+  --crit-urgent:       #E03E3E;
+
+  /* Announcement Severity Tokens */
+  --ann-info-bg:       #E8F1FD;
+  --ann-info-fg:       #1D5FB4;
+  --ann-imp-bg:        #FFF3E0;
+  --ann-imp-fg:        #B45309;
+  --ann-urg-bg:        #FDE8E8;
+  --ann-urg-fg:        #C53030;
+
   /* Level Badges */
   --lvl-1-bg:          #E8F1FD;  --lvl-1-fg: #1D5FB4;
   --lvl-2-bg:          #FEF3C7;  --lvl-2-fg: #B45309;
