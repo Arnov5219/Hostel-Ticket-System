@@ -232,3 +232,17 @@ def kanban_time_copy(ticket):
     if hours < 24:
         return f"Due in {hours}h"
     return f"Due in {hours // 24}d"
+
+
+@register.simple_tag
+def category_chip(category):
+    """Renders a neat category chip with icon."""
+    if not category:
+        return ""
+    icon_html = f'<i data-lucide="{category.icon}" style="width: 12px; height: 12px;"></i> ' if getattr(category, "icon", None) else ""
+    return mark_safe(
+        f'<span class="category-chip" style="display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--text-secondary); background: var(--bg-subtle); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);">'
+        f'{icon_html}{category.name}'
+        f'</span>'
+    )
+

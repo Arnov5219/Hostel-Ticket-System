@@ -5,6 +5,7 @@ from apps.accounts.models import Role, User
 from apps.tickets.models import (
     Category,
     CommentScope,
+    CriticalityRule,
     Priority,
     RoutingRule,
     SLAPolicy,
@@ -14,6 +15,18 @@ from apps.tickets.models import (
     TicketComment,
     TicketVisibility,
 )
+
+
+class CriticalityRuleForm(forms.ModelForm):
+    class Meta:
+        model = CriticalityRule
+        fields = ["min_reposts", "bump_levels", "force_priority", "notify_level"]
+        widgets = {
+            "min_reposts": forms.NumberInput(attrs={"class": "form-control", "min": 1, "placeholder": "e.g. 3"}),
+            "bump_levels": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 3, "placeholder": "e.g. 1"}),
+            "force_priority": forms.Select(attrs={"class": "form-select"}),
+            "notify_level": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 4, "placeholder": "e.g. 2"}),
+        }
 
 
 class CategoryForm(forms.ModelForm):

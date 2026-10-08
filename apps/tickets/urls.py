@@ -14,6 +14,7 @@ urlpatterns = [
     path("filter/save/", views.save_filter, name="save_filter"),
     path("filter/<int:filter_id>/delete/", views.delete_filter, name="delete_filter"),
     path("manage/routing/", views.manage_routing, name="manage_routing"),
+    path("manage/criticality/", views.manage_criticality, name="manage_criticality"),
     path("<str:ticket_no>/", views.ticket_detail, name="detail"),
     path("<str:ticket_no>/status/", views.change_status, name="change_status"),
     path("<str:ticket_no>/move/", views.move_ticket, name="move"),

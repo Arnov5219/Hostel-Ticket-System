@@ -3,6 +3,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.tickets.views import manage_criticality
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls", namespace="core")),
@@ -12,6 +14,7 @@ urlpatterns = [
     path("announcements/", include("apps.announcements.urls", namespace="announcements")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),
+    path("manage/criticality/", manage_criticality, name="manage_criticality"),
     path("manage/", include("apps.hostels.urls", namespace="hostels")),
 ]
 

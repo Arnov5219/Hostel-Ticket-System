@@ -4,12 +4,18 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.core.permissions import can_add_internal_note, can_view_ticket
+from apps.core.permissions import (
+    can_add_internal_note,
+    can_moderate_community,
+    can_view_reposters_and_notes,
+    can_view_ticket,
+)
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
     CommentScope,
     Status,
     Ticket,
+    TicketVisibility,
 )
 
 
@@ -85,6 +91,12 @@ def ticket_detail(request, ticket_no):
     if request.user.is_hosteler:
         activities_qs = activities_qs.exclude(note__icontains="internal")
 
+    can_mod = can_moderate_community(request.user)
+    can_repost_view = can_view_reposters_and_notes(request.user, ticket)
+    reposts_qs = []
+    if can_repost_view and (ticket.visibility == TicketVisibility.HOSTEL or ticket.repost_count > 0):
+        reposts_qs = ticket.reposts.select_related("user").order_by("-created_at")
+
     context = {
         "ticket": ticket,
         "comments": comments_qs,
@@ -98,5 +110,9 @@ def ticket_detail(request, ticket_no):
         "current_section": "tickets",
         "eligible_staff": eligible_staff,
         "statuses": Status.choices,
+        "can_moderate": can_mod,
+        "can_view_reposters": can_repost_view,
+        "reposts": reposts_qs,
+        "affected_count": ticket.repost_count + 1 if ticket.visibility == TicketVisibility.HOSTEL else 1,
     }
     return render(request, "tickets/detail.html", context)

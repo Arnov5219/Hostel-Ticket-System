@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Criticality Escalation Rules | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Criticality Rules</span>
+{% endblock %}
+
+{% block page_title %}Criticality Escalation Rules{% endblock %}
+{% block page_subtitle %}Configure automatic priority elevation and staff alerts based on community repost counts{% endblock %}
+
+{% block content %}
+<div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+
+  {% include 'components/_admin_subnav.html' %}
+
+  <!-- Explainer Card -->
+  <div class="card" style="padding: 20px 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <div style="display: flex; align-items: flex-start; gap: 14px;">
+      <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--ann-info-bg); color: var(--ann-info-fg); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="info" style="width: 20px; height: 20px;"></i>
+      </div>
+      <div style="flex: 1;">
+        <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0 0 6px; color: var(--text-primary);">
+          How Community Criticality Works
+        </h3>
+        <p style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.5; margin: 0 0 10px;">
+          When multiple hostelers in the same hostel report facing the same problem, the ticket’s effective priority is automatically raised.
+          Each threshold below triggers a priority bump or forces an immediate Urgent status, recalculating the SLA deadline from the time current level began.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: var(--fs-xs); color: var(--text-muted);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="check" style="width: 14px; height: 14px; color: var(--st-resolved-fg);"></i>
+            <span><strong>Never lowers below base:</strong> Staff-assigned base priority is always preserved.</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="check" style="width: 14px; height: 14px; color: var(--st-resolved-fg);"></i>
+            <span><strong>Idempotent & safe:</strong> Repost undos dynamically recalculate effective priority.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Live Simulator -->
+  <div class="card" x-data="criticalitySimulator()" style="padding: 20px 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--accent);"></i>
+        <span>Live Threshold Simulator</span>
+      </h3>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted);">Preview how tickets react to reposts</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: center;">
+      <!-- Inputs -->
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label class="form-label" style="font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Base Priority</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button type="button" @click="basePriority = 'LOW'" :class="basePriority === 'LOW' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'">Low</button>
+            <button type="button" @click="basePriority = 'MEDIUM'" :class="basePriority === 'MEDIUM' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'">Medium</button>
+            <button type="button" @click="basePriority = 'HIGH'" :class="basePriority === 'HIGH' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'">High</button>
+            <button type="button" @click="basePriority = 'URGENT'" :class="basePriority === 'URGENT' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'">Urgent</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin: 0;">Hosteler Repost Count</label>
+            <span style="font-weight: 700; font-family: var(--font-mono); font-size: var(--fs-md); color: var(--accent);" x-text="reposts"></span>
+          </div>
+          <input type="range" min="0" max="15" x-model.number="reposts" class="form-range" style="width: 100%; cursor: pointer;">
+        </div>
+      </div>
+
+      <!-- Live Result Preview -->
+      <div style="padding: 16px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500;">Calculated Priority:</span>
+          <span class="badge" :style="effectiveBadgeStyle" style="font-weight: 700; font-size: var(--fs-sm); padding: 4px 10px;" x-text="effectivePriority"></span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs);">
+          <span style="color: var(--text-muted);">Active Threshold:</span>
+          <span style="font-weight: 600; color: var(--text-primary);" x-text="activeRuleText"></span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs);">
+          <span style="color: var(--text-muted);">Staff Notification:</span>
+          <span :style="notifyStyle" style="font-weight: 600;" x-text="notifyText"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rules Table Card -->
+  <div class="card" style="padding: 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--text-primary);">Configured Threshold Rules</h3>
+        <span style="font-size: var(--fs-xs); color: var(--text-muted);">Evaluated in ascending order of repost count</span>
+      </div>
+      <form method="post" action="{% url 'tickets:manage_criticality' %}" onsubmit="return confirm('Reset all criticality rules to factory defaults (3, 6, 10)?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reset_defaults">
+        <button type="submit" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+          <span>Reset Defaults</span>
+        </button>
+      </form>
+    </div>
+
+    <div style="border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden;">
+      <table class="table" style="width: 100%; margin: 0; font-size: var(--fs-sm);">
+        <thead>
+          <tr style="background: var(--bg-subtle); border-bottom: 1px solid var(--border);">
+            <th style="padding: 10px 14px; text-align: left;">Min Reposts</th>
+            <th style="padding: 10px 14px; text-align: left;">Priority Effect</th>
+            <th style="padding: 10px 14px; text-align: left;">Staff Alert Level</th>
+            <th style="padding: 10px 14px; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rules %}
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px 14px; font-weight: 700; font-family: var(--font-mono); color: var(--accent);">
+                {{ r.min_reposts }}+
+              </td>
+              <td style="padding: 12px 14px;">
+                {% if r.force_priority %}
+                  <span class="badge" style="background: var(--ann-urg-bg); color: var(--ann-urg-fg); font-weight: 700;">
+                    Force {{ r.force_priority }}
+                  </span>
+                {% else %}
+                  <span style="font-weight: 600; color: var(--text-primary);">
+                    +{{ r.bump_levels }} level{{ r.bump_levels|pluralize }}
+                  </span>
+                  <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-left: 4px;">
+                    (e.g. Low → {% if r.bump_levels == 1 %}Medium{% elif r.bump_levels == 2 %}High{% else %}Urgent{% endif %})
+                  </span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px 14px;">
+                {% if r.notify_level %}
+                  <span class="badge" style="background: var(--ann-imp-bg); color: var(--ann-imp-fg); font-weight: 600;">
+                    Alert Level {{ r.notify_level }} Staff
+                  </span>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: var(--fs-xs);">None</span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px 14px; text-align: right;">
+                <div style="display: inline-flex; gap: 8px;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="openEditModal({{ r.id }}, {{ r.min_reposts }}, {{ r.bump_levels }}, '{{ r.force_priority|default:'' }}', '{{ r.notify_level|default:'' }}')">
+                    Edit
+                  </button>
+                  <form method="post" action="{% url 'tickets:manage_criticality' %}" style="display: inline;" onsubmit="return confirm('Delete this threshold rule?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_rule">
+                    <input type="hidden" name="rule_id" value="{{ r.id }}">
+                    <button type="submit" class="btn btn-danger-ghost btn-sm">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="padding: 24px; text-align: center; color: var(--text-muted);">
+                No criticality rules defined. Shared tickets will remain at base priority.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add New Rule Section -->
+    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <h4 style="font-size: var(--fs-sm); font-weight: 600; margin: 0 0 14px; color: var(--text-primary);">
+        Add New Threshold Rule
+      </h4>
+      <form method="post" action="{% url 'tickets:manage_criticality' %}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto; gap: 12px; align-items: flex-end;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_rule">
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" style="font-size: var(--fs-xs);">Min Reposts *</label>
+          {{ form.min_reposts }}
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" style="font-size: var(--fs-xs);">Bump Levels</label>
+          {{ form.bump_levels }}
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" style="font-size: var(--fs-xs);">Force Priority (Optional)</label>
+          {{ form.force_priority }}
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" style="font-size: var(--fs-xs);">Notify Level (Optional)</label>
+          {{ form.notify_level }}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+          <span>Add Rule</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Edit Rule Modal -->
+<div id="edit-rule-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Edit Criticality Rule</h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-rule-modal').style.display='none';">✕</button>
+    </div>
+    <form method="post" action="{% url 'tickets:manage_criticality' %}" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_rule">
+      <input type="hidden" name="rule_id" id="modal-rule-id">
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Min Reposts *</label>
+        <input type="number" name="min_reposts" id="modal-min-reposts" class="form-control" required min="1">
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Bump Levels</label>
+        <input type="number" name="bump_levels" id="modal-bump-levels" class="form-control" min="0" max="3" required>
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Force Priority</label>
+        <select name="force_priority" id="modal-force-priority" class="form-select">
+          <option value="">None (Use bump levels)</option>
+          {% for code, label in priority_choices %}
+            <option value="{{ code }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Notify Staff Escalation Level</label>
+        <select name="notify_level" id="modal-notify-level" class="form-select">
+          <option value="">None</option>
+          <option value="1">Level 1 (Caretaker)</option>
+          <option value="2">Level 2 (Hostel Warden)</option>
+          <option value="3">Level 3 (Chief Warden)</option>
+          <option value="4">Level 4 (Admin / Dean)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-rule-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, minReposts, bumpLevels, forcePriority, notifyLevel) {
+  document.getElementById('modal-rule-id').value = id;
+  document.getElementById('modal-min-reposts').value = minReposts;
+  document.getElementById('modal-bump-levels').value = bumpLevels;
+  document.getElementById('modal-force-priority').value = forcePriority;
+  document.getElementById('modal-notify-level').value = notifyLevel;
+  document.getElementById('edit-rule-modal').style.display = 'flex';
+}
+
+function criticalitySimulator() {
+  const rules = [
+    {% for r in rules %}
+      { min: {{ r.min_reposts }}, bump: {{ r.bump_levels }}, force: '{{ r.force_priority|default:"" }}', notify: '{{ r.notify_level|default:"" }}' },
+    {% endfor %}
+  ];
+  const priorityOrder = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+
+  return {
+    basePriority: 'LOW',
+    reposts: 6,
+
+    get effectivePriority() {
+      let activeRule = null;
+      for (const r of rules) {
+        if (this.reposts >= r.min) {
+          activeRule = r;
+        }
+      }
+      if (!activeRule) return this.basePriority;
+
+      if (activeRule.force) return activeRule.force;
+
+      const baseIdx = priorityOrder.indexOf(this.basePriority);
+      const newIdx = Math.min(priorityOrder.length - 1, baseIdx + activeRule.bump);
+      return priorityOrder[Math.max(baseIdx, newIdx)];
+    },
+
+    get activeRuleText() {
+      let activeRule = null;
+      for (const r of rules) {
+        if (this.reposts >= r.min) {
+          activeRule = r;
+        }
+      }
+      if (!activeRule) return 'No threshold reached';
+      return `${activeRule.min}+ reposts (${activeRule.force ? 'Force ' + activeRule.force : '+' + activeRule.bump + ' levels'})`;
+    },
+
+    get notifyText() {
+      let activeRule = null;
+      for (const r of rules) {
+        if (this.reposts >= r.min) {
+          activeRule = r;
+        }
+      }
+      if (!activeRule || !activeRule.notify) return 'None';
+      return `Alert Level ${activeRule.notify} Staff`;
+    },
+
+    get effectiveBadgeStyle() {
+      const p = this.effectivePriority;
+      if (p === 'URGENT') return 'background: var(--ann-urg-bg); color: var(--ann-urg-fg);';
+      if (p === 'HIGH') return 'background: var(--ann-imp-bg); color: var(--ann-imp-fg);';
+      if (p === 'MEDIUM') return 'background: var(--ann-info-bg); color: var(--ann-info-fg);';
+      return 'background: var(--bg-subtle); color: var(--text-primary);';
+    },
+
+    get notifyStyle() {
+      let activeRule = null;
+      for (const r of rules) {
+        if (this.reposts >= r.min) {
+          activeRule = r;
+        }
+      }
+      return (activeRule && activeRule.notify) ? 'color: var(--ann-imp-fg);' : 'color: var(--text-muted);';
+    }
+  };
+}
+</script>
+{% endblock %}

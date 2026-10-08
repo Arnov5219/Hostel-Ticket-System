@@ -12,5 +12,8 @@
   <a href="{% url 'tickets:manage_routing' %}" class="admin-subnav__item {% if current_section == 'manage_config' %}active{% endif %}">
     Categories & SLA
   </a>
+  <a href="{% url 'tickets:manage_criticality' %}" class="admin-subnav__item {% if current_section == 'manage_criticality' %}active{% endif %}">
+    Criticality Rules
+  </a>
 </nav>
 {% endif %}

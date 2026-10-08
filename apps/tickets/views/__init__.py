@@ -18,7 +18,7 @@ from .list import (
     search_quick,
     ticket_list,
 )
-from .manage import manage_routing
+from .manage import manage_criticality, manage_routing
 
 __all__ = [
     "ticket_list",
@@ -26,6 +26,7 @@ __all__ = [
     "ticket_create",
     "ticket_detail",
     "manage_routing",
+    "manage_criticality",
     "add_comment",
     "change_status",
     "reassign",

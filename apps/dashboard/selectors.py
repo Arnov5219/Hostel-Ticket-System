@@ -163,3 +163,37 @@ def get_overdue_tickets(user, limit=5):
         .select_related("hostel", "category", "assigned_to")
         .order_by("due_at")[:limit]
     )
+
+
+def get_most_reported_issues(user, limit=5):
+    """Fetches top community-reported issues by repost count for staff dashboard."""
+    return (
+        Ticket.objects.visible_to(user)
+        .filter(
+            status__in=[Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD],
+            repost_count__gt=0,
+        )
+        .select_related("hostel", "category")
+        .order_by("-repost_count", "-created_at")[:limit]
+    )
+
+
+def get_latest_announcements_staff(user, limit=3):
+    """Returns latest announcements with read stats for staff dashboard."""
+    from apps.announcements.models import Announcement, AnnouncementRead
+    from apps.announcements.services import audience_users
+    qs = Announcement.objects.all().order_by("-published_at", "-created_at")
+    if getattr(user, "is_warden", False) and user.hostel:
+        qs = qs.filter(Q(all_hostels=True) | Q(hostels=user.hostel))
+    items = []
+    for ann in qs[:limit]:
+        total = audience_users(ann).count()
+        read = AnnouncementRead.objects.filter(announcement=ann).count()
+        items.append({
+            "announcement": ann,
+            "total": total,
+            "read": read,
+            "read_pct": int((read / total) * 100) if total > 0 else 0,
+        })
+    return items
+

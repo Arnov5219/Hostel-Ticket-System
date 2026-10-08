@@ -22,7 +22,6 @@ class AnnouncementForm(forms.ModelForm):
             "severity",
             "all_hostels",
             "hostels",
-            "status",
             "is_pinned",
             "publish_at",
             "expires_at",

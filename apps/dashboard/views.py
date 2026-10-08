@@ -9,6 +9,8 @@ from apps.dashboard.selectors import (
     get_escalation_breakdown,
     get_hosteler_kpis,
     get_kpis,
+    get_latest_announcements_staff,
+    get_most_reported_issues,
     get_overdue_tickets,
     get_resolution_time_data,
     get_top_staff,
@@ -74,12 +76,16 @@ def dashboard_index(request):
     escalations = get_escalation_breakdown(user)
     top_staff = get_top_staff(user)
     overdue_tickets = get_overdue_tickets(user)
+    most_reported = get_most_reported_issues(user)
+    latest_announcements = get_latest_announcements_staff(user)
 
     context = {
         "kpis": kpis,
         "escalations": escalations,
         "top_staff": top_staff,
         "overdue_tickets": overdue_tickets,
+        "most_reported_issues": most_reported,
+        "latest_announcements": latest_announcements,
         "current_section": "dashboard",
     }
     return render(request, "dashboard/staff.html", context)
