@@ -82,6 +82,30 @@ class TestRegistrationService:
         assert user.check_password("SecurePassword123!")
         assert user.residence_histories.count() == 1
 
+    def test_registration_without_roll_email_phone(self, hostel_setup):
+        h1 = hostel_setup["hostel1"]
+        r1 = hostel_setup["room1"]
+
+        data = {
+            "full_name": "Priya Patel",
+            "password": "SecurePassword123!",
+            "hostel": h1,
+            "room": r1,
+            "ts_token": make_valid_ts_token(5),
+            "website": "",
+        }
+
+        user = register_hosteler(data)
+
+        assert user.login_id.startswith("STU")
+        assert len(user.login_id) == 9  # STU + 6 digits
+        assert user.email == ""
+        assert user.phone == ""
+        assert user.role == Role.HOSTELER
+        assert user.is_verified is False
+        assert user.hostel == h1
+        assert user.room == r1
+
     def test_honeypot_rejection(self, hostel_setup):
         h1 = hostel_setup["hostel1"]
         r1 = hostel_setup["room1"]
@@ -221,6 +245,59 @@ class TestRegistrationView:
         assert user.is_verified is False
         assert user.hostel == h1
         assert user.room == r1
+
+    def test_post_registration_without_optional_fields(self, client, hostel_setup):
+        h1 = hostel_setup["hostel1"]
+        r1 = hostel_setup["room1"]
+
+        url = reverse("accounts:register")
+        post_data = {
+            "full_name": "Dev Sharma",
+            "login_id": "",
+            "email": "",
+            "phone": "",
+            "hostel": h1.id,
+            "floor": 1,
+            "room": r1.id,
+            "password": "Password@123",
+            "confirm_password": "Password@123",
+            "ts_token": make_valid_ts_token(10),
+            "website": "",
+        }
+
+        response = client.post(url, post_data, follow=True)
+        assert response.status_code == 200
+
+        user = User.objects.filter(full_name="Dev Sharma").first()
+        assert user is not None
+        assert user.login_id.startswith("STU")
+        assert user.email == ""
+        assert user.phone == ""
+        assert user.hostel == h1
+
+    def test_login_with_email(self, client, hostel_setup):
+        h1 = hostel_setup["hostel1"]
+        r1 = hostel_setup["room1"]
+        user = User.objects.create_user(
+            login_id="STU999001",
+            email="student@univ.edu",
+            password="SecurePassword123!",
+            full_name="Test Student",
+            role=Role.HOSTELER,
+            hostel=h1,
+            room=r1,
+        )
+
+        login_url = reverse("accounts:login")
+        # Log in using email instead of login_id
+        response = client.post(
+            login_url,
+            {"login_id": "student@univ.edu", "password": "SecurePassword123!"},
+            follow=True,
+        )
+        assert response.status_code == 200
+        assert response.context["user"].is_authenticated
+        assert response.context["user"].id == user.id
 
 
 @pytest.mark.django_db

@@ -95,27 +95,43 @@ def validate_anti_bot(data, request_meta=None):
         cache.set(rate_key, attempts + 1, timeout=3600)
 
 
+def generate_student_login_id() -> str:
+    """Generates a unique login ID for a hosteler if no roll number is provided."""
+    while True:
+        num = secrets.randbelow(900000) + 100000
+        candidate = f"STU{num}"
+        if not User.objects.filter(login_id=candidate).exists():
+            return candidate
+
+
 def register_hosteler(data, request_meta=None):
     """
     Self-registration service for student hostelers.
-    Forces role to HOSTELER, sets is_verified=False, normalizes login_id.
+    Forces role to HOSTELER, sets is_verified=False.
+    Roll number, email, and phone are optional.
     """
     validate_anti_bot(data, request_meta)
 
-    login_id = str(data.get("login_id", "")).strip().upper()
-    if not login_id:
-        raise ValidationError("Roll / Registration Number is required.")
+    raw_login_id = str(data.get("login_id", "") or "").strip().upper()
+    if raw_login_id:
+        if User.objects.filter(login_id__iexact=raw_login_id).exists():
+            raise ValidationError(f"Roll number '{raw_login_id}' is already registered.")
+        login_id = raw_login_id
+    else:
+        login_id = generate_student_login_id()
 
-    if User.objects.filter(login_id__iexact=login_id).exists():
-        raise ValidationError(f"Roll number '{login_id}' is already registered.")
-
-    email = str(data.get("email", "")).strip().lower()
+    email = str(data.get("email", "") or "").strip().lower()
     if email and User.objects.filter(email__iexact=email).exists():
         raise ValidationError(f"Email '{email}' is already in use.")
 
-    full_name = str(data.get("full_name", "")).strip()
-    phone = str(data.get("phone", "")).strip()
+    full_name = str(data.get("full_name", "") or "").strip()
+    if not full_name:
+        raise ValidationError("Full Name is required.")
+
+    phone = str(data.get("phone", "") or "").strip()
     password = data.get("password")
+    if not password:
+        raise ValidationError("Password is required.")
 
     hostel = data.get("hostel")
     if isinstance(hostel, (int, str)):

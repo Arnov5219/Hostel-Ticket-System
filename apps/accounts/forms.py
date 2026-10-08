@@ -32,7 +32,12 @@ class LoginForm(forms.Form):
         password = cleaned_data.get("password")
 
         if login_id and password:
-            user = authenticate(username=login_id.strip(), password=password)
+            clean_id = login_id.strip()
+            user = authenticate(username=clean_id, password=password)
+            if not user and "@" in clean_id:
+                matched_user = User.objects.filter(email__iexact=clean_id).first()
+                if matched_user:
+                    user = authenticate(username=matched_user.login_id, password=password)
             if not user:
                 raise forms.ValidationError("Invalid Roll No / Employee ID or password.")
             if not user.is_active:
@@ -106,27 +111,30 @@ class HostelerRegistrationForm(forms.Form):
     full_name = forms.CharField(
         label="Full Name",
         max_length=150,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Aryan Sharma", "autofocus": True}),
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Oyaan Ahmed ", "autofocus": True}),
     )
     login_id = forms.CharField(
-        label="Roll / Registration Number",
+        label="Regd Number",
         max_length=50,
+        required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "e.g. 2024CS101",
-                "style": "text-transform: uppercase;",
+                "placeholder": "e.g. 24E118B08 (optional)",
+                
             }
         ),
     )
     email = forms.EmailField(
         label="Email Address",
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "e.g. aryan@college.edu"}),
+        required=False,
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "e.g. chandanho222@gmail.com (optional)"}),
     )
     phone = forms.CharField(
         label="Phone Number",
         max_length=20,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. 9876543210"}),
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. 7608088181 (optional)"}),
     )
     hostel = forms.ModelChoiceField(
         label="Hostel",
@@ -189,16 +197,19 @@ class HostelerRegistrationForm(forms.Form):
             self.fields["room"].queryset = Room.objects.none()
 
     def clean_login_id(self):
-        login_id = self.cleaned_data["login_id"].strip().upper()
-        if User.objects.filter(login_id__iexact=login_id).exists():
+        login_id = (self.cleaned_data.get("login_id") or "").strip().upper()
+        if login_id and User.objects.filter(login_id__iexact=login_id).exists():
             raise forms.ValidationError(f"Roll number '{login_id}' is already registered.")
         return login_id
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if email and User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError(f"Email '{email}' is already in use.")
         return email
+
+    def clean_phone(self):
+        return (self.cleaned_data.get("phone") or "").strip()
 
     def clean(self):
         cleaned_data = super().clean()
