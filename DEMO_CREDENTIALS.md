@@ -69,10 +69,16 @@ All demo student accounts have the password set to `pass1234`.
 
 ---
 
-## 🔄 5. Resetting or Reseeding Demo Data
+## 🔄 5. Managing Demo & Test Data
 
-To reset the database and reseed all demo accounts, hostels, rooms, and tickets:
+### To clean and remove all fake/test data at any time:
+```bash
+# Wipes all tickets, fake students, announcements, and notifications
+# Preserves all 12 Hostels, 1,440 rooms, and Staff/Admin accounts
+python manage.py clear_demo_data
+```
 
+### To reseed demo data (for presentations or mock testing):
 ```bash
 # Seed 12 hostels and 1,440 rooms
 python manage.py seed_hostels
