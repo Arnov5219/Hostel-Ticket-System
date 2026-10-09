@@ -1,67 +1,48 @@
-# Removal Audit: Block & SubCategory
+# Removal Audit (Phase X0)
 
-This document audits all occurrences of `Block` / `block` and `SubCategory` / `sub_category` across the codebase prior to migration to the real college hostel structure (Hostel → Floor → Room) and single-tier categories.
+## 1. Rooms & Blocks
+- **Routes to remove (return 404)**:
+  - `/manage/rooms/` (`hostels:manage_rooms`)
+  - `/manage/rooms/create/` (`hostels:create_room`)
+  - `/manage/rooms/<int:room_id>/edit/` (`hostels:edit_room`)
+  - `/manage/rooms/<int:room_id>/toggle/` (`hostels:toggle_room`)
+  - `/manage/hostels/<int:hostel_id>/generate-rooms/` (`hostels:generate_rooms`)
+  - `/hostels/options/floors/` (`hostels:options_floors`)
+  - `/hostels/options/rooms/` (`hostels:options_rooms`)
+  - `/hostels/options/blocks/` (deprecated)
+- **Forms & UI to clean**:
+  - Remove floor & room fields from `HostelerRegistrationForm` (`apps/accounts/forms.py`).
+  - Remove floor & room fields from `ResidenceForm` and profile template (`templates/accounts/profile.html`).
+  - Remove room/floor fields from `TicketForm` and `templates/tickets/raise.html`.
+  - Remove room/floor columns from Ticket lists, Kanban, ticket detail, CSV exports, search, dashboards.
+  - Residence is **Hostel only**.
+- **Data preserved**:
+  - `Room`, `Block` models, `User.room`, `Ticket.room`, `ResidenceHistory.room` stay in database schema as deprecated historical columns.
 
-## 1. SubCategory Audit
-- **Models**:
-  - `apps/tickets/models.py`: `SubCategory(TimeStampedModel)` model definition.
-  - `apps/tickets/models.py`: `Ticket.sub_category` foreign key field (`to='tickets.SubCategory'`, `null=True`, `blank=True`).
-- **Forms**:
-  - `apps/tickets/forms.py`: `TicketForm` references `sub_category` field, widgets, and dynamic querysets.
-- **Admin**:
-  - `apps/tickets/admin.py`: `SubCategoryAdmin` registration and import.
-- **Views & Templates**:
-  - `apps/tickets/views/detail.py`: `select_related("sub_category")`.
-  - `templates/tickets/create.html`: Subcategory field select input and label.
-- **Plans**:
-  - Mentioned in earlier plans (`HOSTEL_TICKET_SYSTEM_PLAN.md`), superseded by `HOSTEL_STRUCTURE_AND_REGISTRATION_PLAN.md`.
+## 2. Routing & SLA Page
+- **Routes to remove (return 404)**:
+  - `/manage/routing/` (`tickets:manage_routing`)
+  - `/manage/routing/add/` (`tickets:add_routing_rule`)
+  - `/manage/routing/<int:rule_id>/edit/`
+  - `/manage/routing/<int:rule_id>/delete/`
+- **Logic preserved**:
+  - Dynamic routing fallback order (`assign_initial` service).
+  - SLA computation with `services/sla.py: hours_for(priority, level)` with hardcoded fallback defaults.
+  - Category, Tag, and Criticality management moved to new `/manage/settings/` (Ticket Settings).
 
-## 2. Block Audit
-- **Models**:
-  - `apps/hostels/models.py`: `Block(TimeStampedModel)` model with `hostel`, `name`, `is_active`.
-  - `apps/hostels/models.py`: `Room.block` foreign key (`to='hostels.Block'`).
-  - `apps/tickets/models.py`: `Ticket.block` foreign key (`to='hostels.Block'`).
-  - `apps/accounts/models.py`: `User.has_residence` checks `self.room.block.hostel_id == self.hostel_id`.
-  - `apps/accounts/models.py`: `ResidenceHistory` stores `user`, `hostel`, `room`, `changed_by`.
-- **Services**:
-  - `apps/accounts/services.py`: `set_residence(user, hostel, block, room)` enforces `block` parameter and validation.
-  - `apps/tickets/services/location.py`: `validate_location(hostel_id, block_id, room_id, ...)` validates block chain.
-- **Views & URLs**:
-  - `apps/hostels/views.py`: `block_options` view (`/hostels/options/blocks/`).
-  - `apps/hostels/urls.py`: `path("options/blocks/", ...)` route.
-  - `apps/accounts/views.py`: onboarding and profile views handle block selection.
-- **Forms**:
-  - `apps/accounts/forms.py`: `ResidenceForm` has `block` ModelChoiceField and cascading logic.
-  - `apps/tickets/forms.py`: `TicketForm` has `block` field and queryset population.
-- **Templates**:
-  - `templates/accounts/onboarding.html`: Block select dropdown.
-  - `templates/accounts/profile.html`: Block select dropdown and residence summary.
-  - `templates/tickets/create.html`: Block select field.
-  - `templates/hostels/manage_hostels.html`: Reference to blocks button/column if any.
-- **Factories & Tests**:
-  - `apps/hostels/factories.py`: `BlockFactory`.
-  - `tests/test_residence.py`, `tests/test_mobile.py`, `tests/test_deletion.py`: creation of `Block` fixtures.
-- **Seed Commands**:
-  - `apps/tickets/management/commands/seed_demo_data.py`: creates `bha_b1`, `bha_b2`, `ghb_b1`, `ghb_b2`.
-  - `apps/accounts/management/commands/seed_demo_users.py`: creates blocks.
+## 3. Resident Management
+- **Routes to remove (return 404)**:
+  - `/manage/residents/` (`hostels:manage_residents`)
+  - `/manage/residents/<int:resident_id>/verify/`
+  - `/manage/residents/<int:resident_id>/reject/`
+  - `/manage/residents/<int:resident_id>/reset-password/`
+  - `/manage/residents/bulk-verify/`
+- **Logic preserved**:
+  - All hosteler accounts, logins, ticket creation, and community participation.
+  - New management commands added for operators: `reset_user_password <login_id>` and `import_allowed_roll_numbers <file.csv>`.
 
-## 3. Action Plan
-1. **Hostels & Rooms**:
-   - Update `Room` model to belong directly to `Hostel` with `floor` (PositiveSmallIntegerField), `room_number` (CharField), `capacity` (PositiveSmallIntegerField, default 2), `is_active` (BooleanField, default True), and unique constraint `(hostel, room_number)`.
-   - Remove `Block` model and `Ticket.block` field.
-   - Implement `generate_rooms` and `room_options` in `apps/hostels/services.py`.
-   - Implement `seed_hostels` management command generating BH-1 to BH-12 (3 floors, 40 rooms/floor = 1,440 rooms).
-2. **SubCategory Removal**:
-   - Drop `SubCategory` model and `Ticket.sub_category`.
-   - Remove subcategory references from forms, views, templates, exports, and admin.
-3. **Residence & Selection**:
-   - Update residence chain to Hostel → Floor → Room.
-   - Build floor and room options endpoints (`/hostels/options/floors/` and `/hostels/options/rooms/`).
-   - Implement reusable room chip picker.
-4. **Self-Registration & Verification**:
-   - Add verification fields to `User`: `is_verified`, `verified_by`, `verified_at`, `registration_source`, `rejected_reason`.
-   - Implement registration service, form, views, rate limiting, and honeypot/timestamp security checks.
-   - Implement `/manage/residents/` verification dashboard and actions.
-5. **Testing & Regression**:
-   - Write unit and integration tests covering all requirements.
-   - Run 100% green test suite.
+## 4. Community Staff Access
+- Non-hostelers blocked on `/community/*` (HTTP 403).
+- Staff ticket detail community panels removed.
+- Staff community moderation endpoints (`/community/comments/<id>/hide/`, `/community/<no>/hide/`) removed (404).
+- Hosteler self-moderation (owner hide, reporter hide, 3 reports auto-hide) implemented.
