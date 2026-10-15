@@ -40,7 +40,282 @@
   z-index: 1;
 }
 
-/* Left Icon Rail (56px) */
+/* ==========================================================================
+   Collapsible Desktop Sidebar (232px -> 64px, Decision D2)
+   ========================================================================== */
+.app-sidebar {
+  width: 232px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 30;
+  box-shadow: var(--shadow-sm);
+  transition: width var(--duration-normal) var(--ease-standard);
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.app-sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.app-sidebar.collapsed .sidebar-header {
+  padding: 0;
+  justify-content: center;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: var(--fs-md);
+}
+
+.sidebar-brand-logo {
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary);
+  color: var(--primary-text);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-base);
+  flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+  white-space: nowrap;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+.app-sidebar.collapsed .sidebar-brand-name {
+  display: none;
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-group-title {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.app-sidebar.collapsed .sidebar-group-title {
+  display: none;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  min-height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  position: relative;
+  transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.sidebar-item:hover {
+  background-color: var(--bg-subtle-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.sidebar-item.active {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.sidebar-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background-color: var(--primary);
+}
+
+.sidebar-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-sidebar.collapsed .sidebar-item-label {
+  display: none;
+}
+
+.sidebar-badge {
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: auto;
+  line-height: 14px;
+}
+
+.app-sidebar.collapsed .sidebar-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  padding: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+.app-sidebar.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.app-sidebar .rail-tooltip {
+  display: none;
+}
+
+.app-sidebar.collapsed .rail-tooltip {
+  display: block;
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+  z-index: 1000;
+  box-shadow: var(--shadow-pop);
+}
+
+.app-sidebar.collapsed .sidebar-item:hover .rail-tooltip,
+.app-sidebar.collapsed .sidebar-item:focus-visible .rail-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.app-sidebar.collapsed .sidebar-user-details {
+  display: none;
+}
+
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+/* Tablet (768px to 1023px): automatic 64px collapsed mode */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-sidebar {
+    width: 64px !important;
+  }
+  .app-sidebar .sidebar-brand-name,
+  .app-sidebar .sidebar-group-title,
+  .app-sidebar .sidebar-item-label,
+  .app-sidebar .sidebar-user-details,
+  .app-sidebar .sidebar-toggle-btn {
+    display: none !important;
+  }
+  .app-sidebar .sidebar-header {
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+  .app-sidebar .sidebar-item {
+    justify-content: center !important;
+    padding: 8px 0 !important;
+  }
+  .app-sidebar .rail-tooltip {
+    display: block !important;
+  }
+}
+
+/* Backward compatibility for .app-rail */
 .app-rail {
   width: 56px;
   background-color: var(--bg-surface);
@@ -57,7 +332,7 @@
 .rail-logo {
   width: 36px;
   height: 36px;
-  background-color: var(--accent);
+  background-color: var(--primary);
   color: var(--primary-text);
   border-radius: var(--radius-md);
   display: flex;
@@ -112,8 +387,8 @@
 }
 
 .rail-item.active {
-  background-color: var(--accent-light);
-  color: var(--accent);
+  background-color: var(--primary-soft);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -125,10 +400,9 @@
   bottom: 8px;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background-color: var(--accent);
+  background-color: var(--primary);
 }
 
-/* Tooltip Anchoring (Fix B-02) */
 .rail-tooltip {
   position: absolute;
   left: calc(100% + 10px);
@@ -547,7 +821,8 @@ input:-webkit-autofill:active {
 }
 
 @media (max-width: 767px) {
-  .app-rail {
+  .app-rail,
+  .app-sidebar {
     display: none !important;
   }
 

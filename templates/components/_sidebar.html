@@ -1,24 +1,149 @@
-<aside class="app-rail">
-  <a href="{% url 'core:home' %}" class="rail-logo" title="Hostel Ticket System">
-    H
-  </a>
+{% load ui static %}
 
-  <nav class="rail-nav">
-    {% for item in navigation.sidebar_items %}
-      <a href="{{ item.url }}" class="rail-item {% if current_section == item.section or is_kanban and item.key == 'kanban' or not is_kanban and item.key == 'tickets' and current_section == 'tickets' %}active{% endif %}" title="{{ item.label }}">
-        <i data-lucide="{{ item.icon }}" style="width: 20px; height: 20px;"></i>
-        {% if item.badge_key and unread_notifications_count > 0 %}
-          <span style="position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--st-open-dot);"></span>
+<aside class="app-sidebar"
+       x-data="{
+         collapsed: localStorage.getItem('sidebar_collapsed') === 'true',
+         toggle() {
+           this.collapsed = !this.collapsed;
+           localStorage.setItem('sidebar_collapsed', this.collapsed ? 'true' : 'false');
+         }
+       }"
+       :class="{ 'collapsed': collapsed }"
+       aria-label="Application sidebar">
+
+  <!-- Sidebar Header / Brand -->
+  <div class="sidebar-header">
+    <a href="{% url 'core:home' %}" class="sidebar-brand" title="HostelDesk">
+      <div class="sidebar-brand-logo">H</div>
+      <span class="sidebar-brand-name">HostelDesk</span>
+    </a>
+  </div>
+
+  <!-- Sidebar Nav Groups -->
+  <nav class="sidebar-content">
+    <!-- Group: Main Operations -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Operations</div>
+      {% for item in navigation.sidebar_items %}
+        {% if item.key in 'home,tickets,kanban' %}
+          <a href="{{ item.url }}"
+             class="sidebar-item {% if current_section == item.section or is_kanban and item.key == 'kanban' or not is_kanban and item.key == 'tickets' and current_section == 'tickets' %}active{% endif %}"
+             title="{{ item.label }}">
+            <span class="sidebar-item-icon">
+              <i data-lucide="{{ item.icon }}" style="width: 18px; height: 18px;"></i>
+            </span>
+            <span class="sidebar-item-label">{{ item.label }}</span>
+            {% if item.badge_key and unread_notifications_count > 0 %}
+              <span class="sidebar-badge" style="background-color: var(--st-open-bg); color: var(--st-open-fg);">
+                {{ unread_notifications_count }}
+              </span>
+            {% endif %}
+            <span class="rail-tooltip">{{ item.label }}</span>
+          </a>
         {% endif %}
-        <span class="rail-tooltip">{{ item.label }}</span>
+      {% endfor %}
+    </div>
+
+    <!-- Group: Management (Staff/Admin) -->
+    {% if not request.user.is_hosteler %}
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Management</div>
+        {% for item in navigation.sidebar_items %}
+          {% if item.key in 'announcements,manage_hostels,manage_staff,manage_responsibility,manage_settings' %}
+            <a href="{{ item.url }}"
+               class="sidebar-item {% if current_section == item.section %}active{% endif %}"
+               title="{{ item.label }}">
+              <span class="sidebar-item-icon">
+                <i data-lucide="{{ item.icon }}" style="width: 18px; height: 18px;"></i>
+              </span>
+              <span class="sidebar-item-label">{{ item.label }}</span>
+              <span class="rail-tooltip">{{ item.label }}</span>
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <!-- Announcements for Hosteler -->
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Updates</div>
+        {% for item in navigation.sidebar_items %}
+          {% if item.key == 'announcements' %}
+            <a href="{{ item.url }}"
+               class="sidebar-item {% if current_section == item.section %}active{% endif %}"
+               title="{{ item.label }}">
+              <span class="sidebar-item-icon">
+                <i data-lucide="{{ item.icon }}" style="width: 18px; height: 18px;"></i>
+              </span>
+              <span class="sidebar-item-label">{{ item.label }}</span>
+              <span class="rail-tooltip">{{ item.label }}</span>
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Group: System & Utilities -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">System</div>
+      {% for item in navigation.sidebar_items %}
+        {% if item.key in 'trash,notifications' %}
+          <a href="{{ item.url }}"
+             class="sidebar-item {% if current_section == item.section %}active{% endif %}"
+             title="{{ item.label }}">
+            <span class="sidebar-item-icon">
+              <i data-lucide="{{ item.icon }}" style="width: 18px; height: 18px;"></i>
+            </span>
+            <span class="sidebar-item-label">{{ item.label }}</span>
+            {% if item.badge_key and unread_notifications_count > 0 %}
+              <span class="sidebar-badge" style="background-color: var(--st-open-bg); color: var(--st-open-fg);">
+                {{ unread_notifications_count }}
+              </span>
+            {% endif %}
+            <span class="rail-tooltip">{{ item.label }}</span>
+          </a>
+        {% endif %}
+      {% endfor %}
+      <a href="{% url 'core:ui_kit' %}"
+         class="sidebar-item {% if current_section == 'ui_kit' %}active{% endif %}"
+         title="UI Kit">
+        <span class="sidebar-item-icon">
+          <i data-lucide="palette" style="width: 18px; height: 18px;"></i>
+        </span>
+        <span class="sidebar-item-label">UI Kit</span>
+        <span class="rail-tooltip">UI Kit</span>
       </a>
-    {% endfor %}
+    </div>
   </nav>
 
-  <div class="rail-bottom">
-    <a href="{% url 'accounts:profile' %}" class="rail-item {% if current_section == 'profile' %}active{% endif %}" title="Profile &amp; Settings">
-      <i data-lucide="user-circle" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Profile</span>
-    </a>
+  <!-- Sidebar Footer: User Card + Collapse Toggle -->
+  <div class="sidebar-footer">
+    {% if request.user.is_authenticated %}
+      <a href="{% url 'accounts:profile' %}" class="sidebar-item sidebar-user-card {% if current_section == 'profile' %}active{% endif %}" title="Profile &amp; Settings">
+        <span class="sidebar-item-icon">
+          {% user_avatar request.user size="xs" %}
+        </span>
+        <div class="sidebar-user-details" style="display: flex; flex-direction: column; overflow: hidden; line-height: 1.2;">
+          <span style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+            {{ request.user.full_name|default:request.user.login_id }}
+          </span>
+          <span style="font-size: 10px; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+            {{ request.user.get_role_display }}
+          </span>
+        </div>
+        <span class="rail-tooltip">Profile: {{ request.user.full_name|default:request.user.login_id }}</span>
+      </a>
+    {% endif %}
+
+    <button type="button" class="sidebar-toggle-btn" @click="toggle()" :title="collapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)'" aria-label="Toggle sidebar collapse">
+      <template x-if="!collapsed">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+          <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+          <span>Collapse</span>
+        </div>
+      </template>
+      <template x-if="collapsed">
+        <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+      </template>
+    </button>
   </div>
 </aside>

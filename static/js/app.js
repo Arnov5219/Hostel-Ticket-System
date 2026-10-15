@@ -106,6 +106,13 @@ document.addEventListener('DOMContentLoaded', function() {
           closeModal('command-palette');
         }
       }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+        e.preventDefault();
+        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+        if (toggleBtn) toggleBtn.click();
+      }
     }
     if (e.key === 'Escape') {
       closeAllModals();
