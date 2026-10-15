@@ -142,8 +142,8 @@
             <tbody>
               {% for ticket in recent_tickets %}
                 <tr onclick="window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';" style="cursor: pointer;">
-                  <td style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 600; white-space: nowrap;">
-                    {{ ticket.ticket_no }}
+                  <td>
+                    <span class="ticket-id">{{ ticket.ticket_no }}</span>
                   </td>
                   <td style="font-weight: 500;">
                     <span style="color: var(--text-primary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">
@@ -177,7 +177,7 @@
               <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
             </div>
             <h4 class="empty-state-title" style="margin-top: 8px; font-weight: 600;">No tickets raised yet</h4>
-            <p class="empty-state-text" style="font-size: var(--fs-xs); margin-top: 4px;">Submit a maintenance or room issue whenever you need assistance.</p>
+            <p class="empty-state-text" style="font-size: var(--fs-xs); margin-top: 4px;">Submit a hostel maintenance issue whenever you need assistance.</p>
             <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm" style="margin-top: 12px;">
               <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
               <span>Raise ticket</span>

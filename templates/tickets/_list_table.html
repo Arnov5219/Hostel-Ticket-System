@@ -55,8 +55,8 @@
             <td style="white-space: nowrap;">
               {% sla_indicator ticket %}
             </td>
-            <td style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); white-space: nowrap;">
-              {{ ticket.ticket_no }}
+            <td>
+              <span class="ticket-id">{{ ticket.ticket_no }}</span>
             </td>
             <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
               {% time_ago ticket.updated_at %}
@@ -104,7 +104,7 @@
 
       <div style="display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-xs); color: var(--text-muted); flex-wrap: wrap; gap: 6px;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-family: monospace; font-weight: 600; color: var(--text-secondary);">#{{ ticket.ticket_no }}</span>
+          <span class="ticket-id">{{ ticket.ticket_no }}</span>
           <span>·</span>
           <span>{{ ticket.hostel.name|default:"Hostel" }}</span>
           {% if ticket.outside_own_hostel %}

@@ -43,7 +43,15 @@ def nav_for(user) -> dict:
     sidebar_items = []
 
     # 1. Dashboard / Home
-    home_label = "Home" if is_hosteler else "Dashboard"
+    if is_hosteler:
+        home_label = "Home"
+    elif is_warden:
+        home_label = "Hostel dashboard"
+    elif is_cw_or_admin:
+        home_label = "Campus dashboard"
+    else:
+        home_label = "Dashboard"
+
     sidebar_items.append(
         NavItem(
             key="home",
@@ -104,7 +112,7 @@ def nav_for(user) -> dict:
         sidebar_items.append(
             NavItem(
                 key="manage_staff",
-                label="Staff Management",
+                label="Staff",
                 icon="users",
                 url_name="hostels:manage_staff",
                 section="manage_staff",
@@ -114,7 +122,7 @@ def nav_for(user) -> dict:
         sidebar_items.append(
             NavItem(
                 key="manage_responsibility",
-                label="Hostel Responsibility",
+                label="Assignments",
                 icon="user-check",
                 url_name="hostels:manage_responsibility",
                 section="manage_responsibility",
@@ -124,7 +132,7 @@ def nav_for(user) -> dict:
         sidebar_items.append(
             NavItem(
                 key="manage_settings",
-                label="Ticket Settings",
+                label="Ticket settings",
                 icon="sliders-horizontal",
                 url_name="tickets:manage_settings",
                 section="manage_settings",
@@ -185,15 +193,15 @@ def nav_for(user) -> dict:
             NavItem(key="announcements", label="Announcements", icon="megaphone", url_name="announcements:list", section="announcements"),
         ]
         if user.can(Capability.MANAGE_HOSTELS):
-            mobile_more_items.append(NavItem(key="manage_hostels", label="Hostels Management", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"))
+            mobile_more_items.append(NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"))
         if user.can(Capability.MANAGE_STAFF):
-            mobile_more_items.append(NavItem(key="manage_staff", label="Staff Management", icon="users", url_name="hostels:manage_staff", section="manage_staff"))
+            mobile_more_items.append(NavItem(key="manage_staff", label="Staff", icon="users", url_name="hostels:manage_staff", section="manage_staff"))
         if user.can(Capability.MANAGE_RESPONSIBILITY):
-            mobile_more_items.append(NavItem(key="manage_responsibility", label="Hostel Responsibility", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"))
+            mobile_more_items.append(NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"))
         if user.can(Capability.MANAGE_TICKET_SETTINGS):
-            mobile_more_items.append(NavItem(key="manage_settings", label="Ticket Settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"))
+            mobile_more_items.append(NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"))
         if is_warden or is_cw_or_admin:
-            mobile_more_items.append(NavItem(key="trash", label="Trash Log", icon="trash-2", url_name="tickets:trash", section="trash"))
+            mobile_more_items.append(NavItem(key="trash", label="Trash", icon="trash-2", url_name="tickets:trash", section="trash"))
         mobile_more_items.append(NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"))
 
     return {
