@@ -1,43 +1,94 @@
-# Repository State Audit (Phase A0: Role Separation)
+# Repository State Audit (Phase A5: Final Implementation State)
 
 **Date**: 2026-10-15  
 **Branch**: `feature/role-separation`  
-**Purpose**: Baseline audit prior to Admin vs Dean role separation and demo account overhaul (L0–L5 with password `me1234`).
+**Status**: Fully Implemented & Verified
 
-## 1. Current Role Values (`apps/accounts/models.py`)
-- `Role.HOSTELER = "HOSTELER", "Hosteler"`
-- `Role.CARETAKER = "CARETAKER", "Caretaker (L1)"`
-- `Role.WARDEN = "WARDEN", "Hostel Warden (L2)"`
-- `Role.CHIEF_WARDEN = "CHIEF_WARDEN", "Chief Warden (L3)"`
-- `Role.ADMIN = "ADMIN", "Admin / Dean (L4)"` (combined role; to be split into `DEAN` at L4 and `ADMIN` as system role)
+---
 
-Current `ROLE_TO_LEVEL`:
+## 1. Role System Architecture (`apps/accounts/models.py`)
+
+The role system defines 6 explicit roles with complete separation between operational campus escalation and system administration:
+
+| Role Identifier | Role Display Name | Level | Scope & Purpose |
+|-----------------|-------------------|-------|-----------------|
+| `HOSTELER` (`L0`) | Hosteler | 0 | Ticket creator (room/hostel issues) |
+| `CARETAKER` (`L1`) | Caretaker (L1) | 1 | Operational ticket handler (hostel level) |
+| `WARDEN` (`L2`) | Hostel Warden (L2) | 2 | Operational supervisor (hostel level) |
+| `CHIEF_WARDEN` (`L3`)| Chief Warden (L3) | 3 | Operational authority (campus-wide) |
+| `DEAN` (`L4`) | Dean (L4) | 4 | Final operational escalation authority (campus-wide) |
+| `ADMIN` (`L5`) | Admin | None | System administrator (user hygiene, configuration, audit, trash) |
+
+`ROLE_TO_LEVEL`:
+- `Role.HOSTELER: 0`
 - `Role.CARETAKER: 1`
 - `Role.WARDEN: 2`
 - `Role.CHIEF_WARDEN: 3`
-- `Role.ADMIN: 4`
+- `Role.DEAN: 4`
+- `Role.ADMIN: None` (outside ticket escalation hierarchy)
 
-## 2. Usage of `ADMIN` and `CHIEF_WARDEN`
-- **Capabilities (`apps/core/permissions.py`)**: `CHIEF_WARDEN_CAPABILITIES` currently mirrors `ADMIN_CAPABILITIES - {RAISE_TICKET}` under the old parity rule.
-- **Safety Policy (`can_manage_user`)**: Checks `settings.CHIEF_WARDEN_CAN_MANAGE_ADMINS` (to be removed; staff management will become Admin-only).
-- **Navigation (`apps/core/navigation.py`)**: Groups `is_cw_or_admin = role in [CHIEF_WARDEN, ADMIN]` and displays Hostels, Staff, Responsibility, Ticket settings to both. Under the new model, only `ADMIN` has management items.
-- **Trash Access**: Currently visible to Warden, Chief Warden, and Admin. Under the new model, Trash and Restore are Admin-only.
+---
 
-## 3. Existing Seed Commands and Demo Accounts
-- `apps/accounts/management/commands/seed_demo_users.py`:
-  - `admin` (`admin123`) -> Admin / Dean
-  - `chief_warden` (`pass1234`) -> Chief Warden
-  - `warden_a` (`pass1234`) -> Warden
-  - `caretaker_a1` (`pass1234`) -> Caretaker
-  - `student1` (`pass1234`) -> Hosteler
-- `apps/tickets/management/commands/seed_demo_data.py`:
-  - Seeds full demo environment, multiple students (`student_01`..`student_22`), hostel wardens (`warden_bh1`..`warden_bh12`), caretakers (`caretaker_bh1`..`caretaker_bh12`), `chief_warden`, `admin`.
-- Target new standard: L0 (Hosteler), L1 (Caretaker), L2 (Warden), L3 (Chief Warden), L4 (Dean), L5 (Admin) all using password `me1234`.
+## 2. Capability Matrix & Permissions (`apps/core/permissions.py`)
 
-## 4. Login Page Demo Panel (`templates/accounts/login.html`)
-- Currently lists `admin` (L4), `chief_warden` (L3), `warden_bha` (L2), `caretaker_bha1` (L1), and `student_01`.
-- Will be updated to chips L0..L5 with `me1234`, visible only in `DEBUG` or `DEMO_MODE=1`.
+- **Admin-Only Capabilities**:
+  - `MANAGE_STAFF`
+  - `MANAGE_HOSTELS`
+  - `MANAGE_RESPONSIBILITY`
+  - `MANAGE_TICKET_SETTINGS`
+  - `RESTORE_TICKET`
+  - `VIEW_TRASH_ALL`
+  - `VIEW_AUDIT_LOG`
+- **Chief Warden & Dean**:
+  - Pure operational roles; stripped of all administrative capabilities.
+  - Can view, review, reassign, close tickets, and manage announcements.
+  - Dean is the Level 4 operational authority (cannot escalate further as L4 is top of ladder).
+- **Admin Operational Restrictions**:
+  - Admin cannot change ticket status, add comments, move tickets on Kanban, or manually escalate tickets.
+  - Admin cannot access `/tickets/kanban/`.
 
-## 5. Escalation Resolver for Level 4 (`apps/tickets/services/escalation.py`)
-- `find_escalation_assignee(ticket, next_level=4)` currently looks for `Role.ADMIN`.
-- Will be updated to resolve `Role.DEAN` first; if none active, fallback to active `Role.ADMIN` with a `LEVEL4_FALLBACK` audit activity.
+---
+
+## 3. Escalation Resolver (`apps/tickets/services/escalation.py`)
+
+- Escalations to Level 4 resolve to an active `Role.DEAN` user.
+- If no active Dean is found, escalation falls back to active `Role.ADMIN` with a `LEVEL4_FALLBACK` audit log entry in `TicketActivity`.
+- A warning banner appears on the Admin dashboard when no active Dean exists.
+
+---
+
+## 4. Navigation & Route Security
+
+- **Admin Sidebar & Mobile Nav**:
+  - Dashboard (`/dashboard/`)
+  - Tickets (`/tickets/`)
+  - Announcements (`/announcements/`)
+  - Hostels (`/manage/hostels/`)
+  - Staff (`/manage/staff/`)
+  - Responsibility Matrix (`/manage/responsibility/`)
+  - Ticket Settings (`/manage/settings/`)
+  - Trash (`/manage/trash/`)
+  - Notifications (`/notifications/`)
+- **Operational Staff (L1–L4)**:
+  - Dashboard, Tickets, Kanban, Announcements, Notifications.
+  - No access to `/manage/*` routes or Trash/Restore.
+- **Hosteler (L0)**:
+  - Dashboard, My Tickets, Raise Ticket, Community, Announcements, Notifications.
+
+---
+
+## 5. Demo Accounts & Production Safeguards
+
+- Standard demo credentials:
+  - `L0` (Hosteler): `me1234`
+  - `L1` (Caretaker): `me1234`
+  - `L2` (Warden): `me1234`
+  - `L3` (Chief Warden): `me1234`
+  - `L4` (Dean): `me1234`
+  - `L5` (Admin): `me1234`
+- Flag: All demo users have `is_demo=True`.
+- **Management Commands**:
+  - `python manage.py seed_demo_accounts`: Idempotently creates or updates L0..L5 accounts. Blocked in non-DEBUG environments unless `ENABLE_DEMO_ACCOUNTS=1`.
+  - `python manage.py purge_demo_accounts --confirm`: Safely purges demo accounts. Dry-run by default without `--confirm`.
+- **Production Guard (`accounts.E001`)**:
+  - Deploy check in `apps/accounts/apps.py` triggers an error during `python manage.py check --deploy` if any `is_demo=True` account exists and `ALLOW_DEMO_ACCOUNTS=1` is not explicitly set.
