@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from apps.core.permissions import Capability, has_capability
 from apps.tickets.models import Ticket
 from apps.tickets.services.deletion import (
     can_delete,
@@ -105,7 +106,7 @@ def ticket_restore_view(request, ticket_no):
     POST /tickets/<ticket_no>/restore/
     Restores soft-deleted ticket (Admin only).
     """
-    if not (request.user.is_admin or request.user.is_superuser):
+    if not has_capability(request.user, Capability.RESTORE_TICKET):
         raise PermissionDenied("Only administrators can restore deleted tickets.")
 
     if request.method != "POST":
@@ -129,18 +130,13 @@ def ticket_restore_view(request, ticket_no):
 @login_required
 def trash_list_view(request):
     """
-    GET /manage/trash/
-    Displays soft-deleted tickets for Warden+ (own scope) and Admin (all).
+    GET /manage/trash/ (or /tickets/trash/)
+    Displays soft-deleted tickets for Admin only (VIEW_TRASH_ALL).
     """
-    if not (request.user.is_warden or request.user.is_chief_warden or request.user.is_admin or request.user.is_superuser):
+    if not has_capability(request.user, Capability.VIEW_TRASH_ALL):
         raise PermissionDenied("You do not have permission to view the trash.")
 
-    if request.user.is_admin or request.user.is_chief_warden or request.user.is_superuser:
-        qs = Ticket.all_objects.filter(is_deleted=True)
-    elif request.user.is_warden and request.user.hostel:
-        qs = Ticket.all_objects.filter(is_deleted=True, hostel=request.user.hostel)
-    else:
-        qs = Ticket.all_objects.none()
+    qs = Ticket.all_objects.filter(is_deleted=True)
 
     deleted_tickets = (
         qs.select_related("hostel", "category", "reporter", "deleted_by")
@@ -152,7 +148,7 @@ def trash_list_view(request):
         "tickets/trash.html",
         {
             "tickets": deleted_tickets,
-            "can_restore": bool(request.user.is_admin or request.user.is_superuser),
+            "can_restore": True,
             "current_section": "trash",
         },
     )

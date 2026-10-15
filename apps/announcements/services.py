@@ -25,7 +25,7 @@ def can_publish(user: User, announcement: Announcement) -> bool:
     """Enforces audience scope rules for publishing announcements."""
     if not user.is_authenticated:
         return False
-    if user.role in [Role.ADMIN, Role.CHIEF_WARDEN]:
+    if user.role in [Role.ADMIN, Role.DEAN, Role.CHIEF_WARDEN]:
         return True
     if user.role == Role.WARDEN:
         if not user.hostel:

@@ -46,12 +46,13 @@ def get_active_tickets_count(staff: User) -> int:
 def get_eligible_replacements(staff: User):
     """
     Returns eligible active staff candidates for ticket reassignment.
-    Prioritizes same hostel staff, then other staff of equivalent/higher role.
+    Replacement eligibility is strictly by same role (Section 3.4).
+    Prioritizes same hostel staff if applicable.
     """
     base_qs = User.objects.filter(
         is_active=True,
         archived_at__isnull=True,
-        role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+        role=staff.role,
     ).exclude(id=staff.id)
 
     if staff.hostel:
@@ -95,17 +96,18 @@ def create_staff(
     if not full_name:
         raise ValidationError("Full name is required.")
 
-    # Derive escalation level
+    # Derive escalation level (Dean = 4, Admin = None)
     level_map = {
         Role.CARETAKER: 1,
         Role.WARDEN: 2,
         Role.CHIEF_WARDEN: 3,
-        Role.ADMIN: 4,
+        Role.DEAN: 4,
+        Role.ADMIN: None,
     }
-    escalation_level = level_map.get(role, 1)
+    escalation_level = level_map.get(role, None)
 
     # Campus-wide roles cannot have a specific hostel
-    if role in [Role.CHIEF_WARDEN, Role.ADMIN]:
+    if role in [Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]:
         hostel = None
     elif role in [Role.CARETAKER, Role.WARDEN] and not hostel:
         raise ValidationError(f"A hostel is required for {role.capitalize()}.")
@@ -205,8 +207,10 @@ def edit_staff(
             raise PermissionDenied(f"You cannot assign role {role}.")
         changes["role"] = {"from": target.role, "to": role}
         target.role = role
-        level_map = {Role.CARETAKER: 1, Role.WARDEN: 2, Role.CHIEF_WARDEN: 3, Role.ADMIN: 4}
-        target.escalation_level = level_map.get(role, target.escalation_level)
+        level_map = {Role.CARETAKER: 1, Role.WARDEN: 2, Role.CHIEF_WARDEN: 3, Role.DEAN: 4, Role.ADMIN: None}
+        target.escalation_level = level_map.get(role, None)
+        if role in [Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]:
+            target.hostel = None
 
     if hostel_changed:
         old_h = target.hostel.code if target.hostel else "None"
@@ -224,6 +228,91 @@ def edit_staff(
                 details=changes,
                 ip=ip,
             )
+
+    return target
+
+
+def change_staff_role(
+    actor: User,
+    target: User,
+    new_role: str,
+    actor_password: str,
+    new_hostel: Hostel | None = None,
+    allow_admin_fallback: bool = False,
+    ip: str | None = None,
+) -> User:
+    """
+    Role change (Admin only) is a separate audited action with the actor's password re-entered.
+    Changing a person to Dean sets escalation_level=4 and clears their hostel;
+    to Admin sets escalation_level=None and clears hostel.
+    A role change is blocked while the person has active tickets in the old role's scope until they are reassigned.
+    """
+    if not can_manage_user(actor, target):
+        raise PermissionDenied("You do not have permission to manage this staff member.")
+
+    if not actor.check_password(actor_password):
+        raise ValidationError("Invalid administrator password. Re-authentication failed.")
+
+    if target.role == new_role:
+        return target
+
+    # Guard: Cannot demote the last active Admin
+    if target.role == Role.ADMIN and new_role != Role.ADMIN:
+        active_admins = User.objects.filter(role=Role.ADMIN, is_active=True).exclude(id=target.id).count()
+        if active_admins == 0:
+            raise ValidationError("Cannot change the role of the last active Admin.")
+
+    # Guard: Cannot demote the last active Dean unless another Dean exists or fallback accepted
+    if target.role == Role.DEAN and new_role != Role.DEAN:
+        active_deans = User.objects.filter(role=Role.DEAN, is_active=True).exclude(id=target.id).count()
+        if active_deans == 0 and not allow_admin_fallback:
+            raise ValidationError("Cannot change the role of the last active Dean without admin fallback confirmation.")
+
+    # Guard: Cannot change role of the last active Chief Warden
+    if target.role == Role.CHIEF_WARDEN and new_role != Role.CHIEF_WARDEN:
+        active_cws = User.objects.filter(role=Role.CHIEF_WARDEN, is_active=True).exclude(id=target.id).count()
+        if active_cws == 0:
+            raise ValidationError("Cannot change the role of the last active Chief Warden.")
+
+    # Blocked while the person has active tickets in old role's scope
+    active_count = get_active_tickets_count(target)
+    if active_count > 0:
+        raise ValidationError(
+            f"Cannot change role while staff has {active_count} active tickets. Reassign tickets first."
+        )
+
+    old_role = target.role
+    target.role = new_role
+
+    if new_role == Role.DEAN:
+        target.escalation_level = 4
+        target.hostel = None
+    elif new_role == Role.ADMIN:
+        target.escalation_level = None
+        target.hostel = None
+    elif new_role == Role.CHIEF_WARDEN:
+        target.escalation_level = 3
+        target.hostel = None
+    elif new_role == Role.WARDEN:
+        target.escalation_level = 2
+        target.hostel = new_hostel or target.hostel
+        if not target.hostel:
+            raise ValidationError("A hostel is required for Warden.")
+    elif new_role == Role.CARETAKER:
+        target.escalation_level = 1
+        target.hostel = new_hostel or target.hostel
+        if not target.hostel:
+            raise ValidationError("A hostel is required for Caretaker.")
+
+    with transaction.atomic():
+        target.save()
+        StaffAuditLog.objects.create(
+            actor=actor,
+            target=target,
+            action=StaffAuditAction.ROLE_CHANGED,
+            details={"from": old_role, "to": new_role},
+            ip=ip,
+        )
 
     return target
 
@@ -342,6 +431,7 @@ def deactivate_staff(
     target: User,
     replacement: User | None = None,
     reason: str = "",
+    allow_admin_fallback: bool = False,
     archive: bool = False,
     ip: str | None = None,
 ) -> User:
@@ -358,17 +448,20 @@ def deactivate_staff(
     if target.role == Role.ADMIN:
         active_admins = User.objects.filter(role=Role.ADMIN, is_active=True).exclude(id=target.id).count()
         if active_admins == 0:
-            raise ValidationError("Cannot deactivate the last active Admin/Dean.")
+            raise ValidationError("Cannot deactivate the last active Admin.")
 
-    if target.escalation_level in [3, 4]:
-        other_active = (
-            User.objects.filter(escalation_level=target.escalation_level, is_active=True)
-            .exclude(id=target.id)
-            .count()
-        )
-        if other_active == 0:
+    if target.role == Role.DEAN:
+        other_deans = User.objects.filter(role=Role.DEAN, is_active=True).exclude(id=target.id).count()
+        if other_deans == 0 and not allow_admin_fallback:
             raise ValidationError(
-                f"Cannot deactivate the only active Level {target.escalation_level} officer."
+                "Cannot deactivate the last active Dean without admin fallback confirmation."
+            )
+
+    if target.role == Role.CHIEF_WARDEN:
+        other_cw = User.objects.filter(role=Role.CHIEF_WARDEN, is_active=True).exclude(id=target.id).count()
+        if other_cw == 0:
+            raise ValidationError(
+                "Cannot deactivate the last active Chief Warden."
             )
 
     active_tickets = Ticket.objects.filter(assigned_to=target, status__in=ACTIVE_TICKET_STATUSES)
@@ -380,6 +473,9 @@ def deactivate_staff(
 
         if replacement.id == target.id or not replacement.is_active or replacement.archived_at:
             raise ValidationError("A valid active replacement staff member is required.")
+
+        if replacement.role != target.role:
+            raise ValidationError(f"Replacement must have the same role ({target.get_role_display()}).")
 
     reason = (reason or "").strip()
 
@@ -455,10 +551,19 @@ def archive_staff(
     target: User,
     replacement: User | None = None,
     reason: str = "",
+    allow_admin_fallback: bool = False,
     ip: str | None = None,
 ) -> User:
     """Soft-deletes (archives) a staff member."""
-    return deactivate_staff(actor, target, replacement=replacement, reason=reason, archive=True, ip=ip)
+    return deactivate_staff(
+        actor,
+        target,
+        replacement=replacement,
+        reason=reason,
+        allow_admin_fallback=allow_admin_fallback,
+        archive=True,
+        ip=ip,
+    )
 
 
 def reactivate_staff(actor: User, target: User, ip: str | None = None) -> User:

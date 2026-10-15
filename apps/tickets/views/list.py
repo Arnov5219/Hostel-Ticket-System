@@ -110,7 +110,7 @@ def ticket_list(request):
         "categories": Category.objects.filter(is_active=True),
         "hostels": Hostel.objects.filter(is_active=True),
         "staff_users": User.objects.filter(
-            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN],
             is_active=True,
         ),
         "tags": Tag.objects.all(),

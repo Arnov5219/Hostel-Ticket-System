@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import Role
+from apps.core.permissions import Capability, has_capability
 from apps.notifications.models import Notification
 from apps.tickets.models import ActivityAction, Ticket, TicketActivity
 
@@ -19,8 +20,8 @@ def can_delete(user, ticket):
     if getattr(ticket, "is_deleted", False):
         return False, "Ticket is already deleted."
 
-    # Admin and Chief Warden can delete any ticket in scope
-    if user.is_admin or user.is_chief_warden:
+    # Admin, Dean, and Chief Warden can delete any ticket in scope
+    if user.is_admin or user.is_dean or user.is_chief_warden:
         return True, ""
 
     # Warden can delete tickets in their assigned hostel
@@ -39,7 +40,7 @@ def can_delete(user, ticket):
 
         # Check for staff comments
         has_staff_comment = ticket.comments.filter(
-            author__role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
+            author__role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
         ).exists()
         if has_staff_comment:
             return (
@@ -109,7 +110,7 @@ def restore(ticket, actor):
     """
     Restores a soft-deleted ticket (Admin only).
     """
-    if not (actor.is_admin or actor.is_superuser):
+    if not has_capability(actor, Capability.RESTORE_TICKET):
         raise ValidationError("Only administrators can restore deleted tickets.")
 
     if not ticket.is_deleted:

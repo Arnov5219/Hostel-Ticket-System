@@ -270,14 +270,17 @@ class TestTicketQueriesExcludeDeleted:
         res_trash = client.get(reverse("tickets:trash"))
         assert res_trash.status_code == 403
 
-        # Warden can view trash
+        # Warden cannot access trash (Admin-only per Section 2 & 6)
         client.force_login(w1)
         res_warden_trash = client.get(reverse("tickets:trash"))
-        assert res_warden_trash.status_code == 200
-        assert t1.ticket_no in res_warden_trash.content.decode()
+        assert res_warden_trash.status_code == 403
 
         # Admin can view trash and restore
         client.force_login(adm)
+        res_admin_trash = client.get(reverse("tickets:trash"))
+        assert res_admin_trash.status_code == 200
+        assert t1.ticket_no in res_admin_trash.content.decode()
+
         res_restore = client.post(reverse("tickets:restore", kwargs={"ticket_no": t1.ticket_no}))
         assert res_restore.status_code in (200, 302)
         t1.refresh_from_db()

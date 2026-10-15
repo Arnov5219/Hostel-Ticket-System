@@ -65,7 +65,7 @@ def announcement_detail(request, announcement_id):
     """Detail view for an announcement; automatically marks it as read."""
     announcement = get_object_or_404(Announcement, id=announcement_id)
     # Check visibility
-    if not request.user.is_admin and not request.user.is_chief_warden:
+    if not (request.user.is_admin or request.user.role in [Role.DEAN, Role.CHIEF_WARDEN]):
         if announcement.status != AnnouncementStatus.PUBLISHED:
             raise PermissionDenied("This announcement is not published.")
         if request.user.is_hosteler and not announcement.all_hostels:
@@ -118,7 +118,7 @@ def manage_list(request):
         qs = qs.filter(status=status_filter)
 
     hostel_filter = request.GET.get("hostel")
-    if hostel_filter and request.user.role in [Role.ADMIN, Role.CHIEF_WARDEN]:
+    if hostel_filter and request.user.role in [Role.ADMIN, Role.DEAN, Role.CHIEF_WARDEN]:
         qs = qs.filter(hostels__id=hostel_filter)
 
     paginator = Paginator(qs, 20)

@@ -13,31 +13,43 @@ from apps.tickets.models import (
 from apps.tickets.services.sla import hours_for
 
 
-def find_escalation_assignee(ticket: Ticket, next_level: int) -> User | None:
-    """Finds next-level assignee in the hierarchy, skipping inactive or archived staff."""
+def find_escalation_assignee(ticket: Ticket, next_level: int) -> tuple[User | None, bool]:
+    """
+    Finds next-level assignee in the hierarchy, skipping inactive or archived staff.
+    Returns (assignee, is_admin_fallback).
+    """
     active_staff_qs = User.objects.filter(is_active=True, archived_at__isnull=True)
 
     if next_level == 2:
         # Hostel Warden for the same hostel
         warden = active_staff_qs.filter(hostel=ticket.hostel, role=Role.WARDEN).first()
         if warden:
-            return warden
+            return warden, False
     elif next_level == 3:
         # Chief Warden across all hostels
         cw = active_staff_qs.filter(role=Role.CHIEF_WARDEN).first()
         if cw:
-            return cw
+            return cw, False
     elif next_level == 4:
-        # Admin / Dean
+        # Dean (final escalation)
+        dean = active_staff_qs.filter(role=Role.DEAN).first()
+        if dean:
+            return dean, False
+        # Fallback to active Admin when no active Dean exists (A5)
         admin_user = active_staff_qs.filter(role=Role.ADMIN).first()
         if admin_user:
-            return admin_user
+            return admin_user, True
 
     # Fallback to any user at that level or admin
-    return (
-        active_staff_qs.filter(escalation_level=next_level).first()
-        or active_staff_qs.filter(role=Role.ADMIN).first()
-    )
+    fallback = active_staff_qs.filter(escalation_level=next_level).first()
+    if fallback:
+        return fallback, False
+    if next_level == 4:
+        admin_user = active_staff_qs.filter(role=Role.ADMIN).first()
+        if admin_user:
+            return admin_user, True
+
+    return None, False
 
 
 def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
@@ -48,7 +60,7 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
         return ticket
 
     next_level = ticket.current_level + 1
-    new_assignee = find_escalation_assignee(ticket, next_level)
+    new_assignee, is_fallback = find_escalation_assignee(ticket, next_level)
     old_assignee = ticket.assigned_to
 
     # Compute new due date from SLA policy or fallback
@@ -77,6 +89,16 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
         to_value=f"L{next_level}",
         note=note_msg,
     )
+
+    if is_fallback:
+        TicketActivity.objects.create(
+            ticket=ticket,
+            actor=actor,
+            action=ActivityAction.LEVEL4_FALLBACK,
+            from_value="No active Dean",
+            to_value=new_assignee.login_id if new_assignee else "None",
+            note="No active Dean found; ticket escalated to Admin as fallback.",
+        )
 
     # Notify new assignee
     if new_assignee:

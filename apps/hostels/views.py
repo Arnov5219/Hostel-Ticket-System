@@ -113,10 +113,10 @@ def manage_staff(request):
     Displays: Name, Role, Level, Assigned Hostel, Active Tickets, Status, Actions.
     Admin can change hostel assignment and activate/deactivate staff.
     """
-    if not can_manage_config(request.user):
+    if not request.user.can(Capability.MANAGE_STAFF):
         raise PermissionDenied("Only administrators can manage staff.")
 
-    staff_roles = [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
+    staff_roles = [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
     active_statuses = [Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD]
 
     staff_members = (

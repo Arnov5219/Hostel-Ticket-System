@@ -4,8 +4,8 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.accounts.models import User
-from apps.core.permissions import can_add_internal_note, can_reassign_or_escalate, can_view_ticket
+from apps.accounts.models import Role, User
+from apps.core.permissions import Capability, can_add_internal_note, can_reassign_or_escalate, can_view_ticket, has_capability
 from apps.notifications.models import Notification
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
@@ -21,6 +21,8 @@ from apps.tickets.services.status import change_status as service_change_status
 @login_required
 def add_comment(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if getattr(request.user, "role", None) == Role.ADMIN:
+        raise PermissionDenied("Admin cannot reply or comment on tickets.")
     if not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You cannot comment on this ticket.")
 
@@ -85,6 +87,9 @@ def add_comment(request, ticket_no):
 @login_required
 def change_status(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
+        raise PermissionDenied("Admin cannot change ticket status.")
+
     if request.method == "POST":
         new_status = request.POST.get("status")
         note = request.POST.get("note", "").strip()
@@ -100,6 +105,9 @@ def change_status(request, ticket_no):
 @login_required
 def move_ticket(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
+        raise PermissionDenied("Admin cannot change ticket status.")
+
     if request.method == "POST":
         new_status = request.POST.get("status")
         try:
@@ -160,7 +168,7 @@ def reassign(request, ticket_no):
 @login_required
 def manual_escalate(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if not can_reassign_or_escalate(request.user, ticket):
+    if not has_capability(request.user, Capability.ESCALATE) or not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to escalate this ticket.")
 
     if request.method == "POST":

@@ -77,7 +77,7 @@ def ticket_detail(request, ticket_no):
 
     # Eligible assignees for reassigning
     eligible_staff = User.objects.filter(
-        role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+        role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN],
         is_active=True,
     )
 

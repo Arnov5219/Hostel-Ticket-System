@@ -138,7 +138,7 @@ def get_top_staff(user, limit=5):
     """Top staff members by resolved tickets."""
     return (
         User.objects.filter(
-            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN],
             is_active=True,
         )
         .annotate(

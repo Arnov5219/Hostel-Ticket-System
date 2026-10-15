@@ -23,14 +23,63 @@ class Capability(StrEnum):
     MANAGE_HOSTELS = "MANAGE_HOSTELS"
     MANAGE_RESPONSIBILITY = "MANAGE_RESPONSIBILITY"
     MANAGE_TICKET_SETTINGS = "MANAGE_TICKET_SETTINGS"
+    VIEW_AUDIT_LOG = "VIEW_AUDIT_LOG"
+    VIEW_STAFF_HEALTH = "VIEW_STAFF_HEALTH"
     VIEW_CAMPUS_ANALYTICS = "VIEW_CAMPUS_ANALYTICS"
     VIEW_KANBAN = "VIEW_KANBAN"
     ADD_INTERNAL_NOTE = "ADD_INTERNAL_NOTE"
+    EXPORT_CSV = "EXPORT_CSV"
 
 
-# Frozen sets for capability parity
+# Single frozen set for admin-only controls (Section 3.2)
+ADMIN_ONLY_CAPABILITIES = frozenset({
+    Capability.MANAGE_STAFF,
+    Capability.MANAGE_HOSTELS,
+    Capability.MANAGE_RESPONSIBILITY,
+    Capability.MANAGE_TICKET_SETTINGS,
+    Capability.RESTORE_TICKET,
+    Capability.VIEW_TRASH_ALL,
+    Capability.VIEW_AUDIT_LOG,
+})
+
+# Admin: system role (accounts, hostels, settings, data hygiene). Not a ticket handler.
 ADMIN_CAPABILITIES = frozenset({
     Capability.RAISE_TICKET,
+    Capability.VIEW_ASSIGNED_TICKETS,
+    Capability.VIEW_HOSTEL_TICKETS,
+    Capability.VIEW_ALL_TICKETS,
+    Capability.REASSIGN_TICKET,
+    Capability.DELETE_TICKET,
+    Capability.RESTORE_TICKET,
+    Capability.VIEW_TRASH_ALL,
+    Capability.PUBLISH_ANNOUNCEMENT,
+    Capability.VIEW_CAMPUS_ANALYTICS,
+    Capability.EXPORT_CSV,
+    Capability.MANAGE_STAFF,
+    Capability.MANAGE_HOSTELS,
+    Capability.MANAGE_RESPONSIBILITY,
+    Capability.MANAGE_TICKET_SETTINGS,
+    Capability.VIEW_AUDIT_LOG,
+    Capability.VIEW_STAFF_HEALTH,
+})
+
+# Dean: Level 4 final escalation and campus authority (no admin controls, no escalate up)
+DEAN_CAPABILITIES = frozenset({
+    Capability.VIEW_ASSIGNED_TICKETS,
+    Capability.VIEW_HOSTEL_TICKETS,
+    Capability.VIEW_ALL_TICKETS,
+    Capability.CHANGE_STATUS,
+    Capability.REASSIGN_TICKET,
+    Capability.DELETE_TICKET,
+    Capability.PUBLISH_ANNOUNCEMENT,
+    Capability.VIEW_CAMPUS_ANALYTICS,
+    Capability.EXPORT_CSV,
+    Capability.VIEW_KANBAN,
+    Capability.ADD_INTERNAL_NOTE,
+})
+
+# Chief Warden: Level 3 campus oversight (no admin controls)
+CHIEF_WARDEN_CAPABILITIES = frozenset({
     Capability.VIEW_ASSIGNED_TICKETS,
     Capability.VIEW_HOSTEL_TICKETS,
     Capability.VIEW_ALL_TICKETS,
@@ -38,25 +87,14 @@ ADMIN_CAPABILITIES = frozenset({
     Capability.ESCALATE,
     Capability.REASSIGN_TICKET,
     Capability.DELETE_TICKET,
-    Capability.RESTORE_TICKET,
-    Capability.VIEW_TRASH_ALL,
-    Capability.VIEW_TRASH_HOSTEL,
     Capability.PUBLISH_ANNOUNCEMENT,
-    Capability.MANAGE_STAFF,
-    Capability.MANAGE_HOSTELS,
-    Capability.MANAGE_RESPONSIBILITY,
-    Capability.MANAGE_TICKET_SETTINGS,
     Capability.VIEW_CAMPUS_ANALYTICS,
+    Capability.EXPORT_CSV,
     Capability.VIEW_KANBAN,
     Capability.ADD_INTERNAL_NOTE,
 })
 
-# Chief Warden has exact same administrative capabilities as Admin
-# (only exception: does not raise tickets on behalf of students)
-CHIEF_WARDEN_CAPABILITIES = frozenset(ADMIN_CAPABILITIES - {
-    Capability.RAISE_TICKET,
-})
-
+# Warden: Level 2 hostel accountability
 WARDEN_CAPABILITIES = frozenset({
     Capability.VIEW_ASSIGNED_TICKETS,
     Capability.VIEW_HOSTEL_TICKETS,
@@ -64,12 +102,13 @@ WARDEN_CAPABILITIES = frozenset({
     Capability.ESCALATE,
     Capability.REASSIGN_TICKET,
     Capability.DELETE_TICKET,
-    Capability.VIEW_TRASH_HOSTEL,
     Capability.PUBLISH_ANNOUNCEMENT,
+    Capability.EXPORT_CSV,
     Capability.VIEW_KANBAN,
     Capability.ADD_INTERNAL_NOTE,
 })
 
+# Caretaker: Level 1 frontline maintenance
 CARETAKER_CAPABILITIES = frozenset({
     Capability.VIEW_ASSIGNED_TICKETS,
     Capability.CHANGE_STATUS,
@@ -78,6 +117,7 @@ CARETAKER_CAPABILITIES = frozenset({
     Capability.ADD_INTERNAL_NOTE,
 })
 
+# Hosteler: Resident
 HOSTELER_CAPABILITIES = frozenset({
     Capability.RAISE_TICKET,
     Capability.CHANGE_STATUS,
@@ -86,6 +126,7 @@ HOSTELER_CAPABILITIES = frozenset({
 
 ROLE_CAPABILITIES = {
     Role.ADMIN: ADMIN_CAPABILITIES,
+    Role.DEAN: DEAN_CAPABILITIES,
     Role.CHIEF_WARDEN: CHIEF_WARDEN_CAPABILITIES,
     Role.WARDEN: WARDEN_CAPABILITIES,
     Role.CARETAKER: CARETAKER_CAPABILITIES,
@@ -98,23 +139,26 @@ def has_capability(user, capability: Capability | str) -> bool:
     if not user or not user.is_authenticated or not getattr(user, "is_active", False):
         return False
 
+    user_role = getattr(user, "role", None)
+    caps = ROLE_CAPABILITIES.get(user_role, frozenset())
+
+    # Admin role explicitly does not have ticket handler capabilities (status change, escalate, kanban)
+    if user_role == Role.ADMIN:
+        return capability in caps
+
     if user.is_superuser:
         return True
 
-    user_role = getattr(user, "role", None)
-    caps = ROLE_CAPABILITIES.get(user_role, frozenset())
     return capability in caps
 
 
 def can_manage_user(actor, target=None) -> bool:
     """
     Safety policy: determine whether actor may manage target staff user.
-    Admin can manage Caretaker, Warden, Chief Warden, and other Admins.
-    Chief Warden can manage Caretaker and Warden (and CW/Admin only if CHIEF_WARDEN_CAN_MANAGE_ADMINS=True).
+    Admin only has MANAGE_STAFF capability.
+    Chief Warden and Dean do NOT get staff management controls.
     Nobody can manage/delete themselves, nor deactivate the last active Admin.
     """
-    from django.conf import settings
-
     if not actor or not actor.is_authenticated or not getattr(actor, "is_active", False):
         return False
     if not has_capability(actor, Capability.MANAGE_STAFF):
@@ -122,26 +166,13 @@ def can_manage_user(actor, target=None) -> bool:
     if target is None:
         return True  # Creating a new staff account
 
+    # Cannot manage hostelers via staff management
+    if getattr(target, "role", None) == Role.HOSTELER:
+        return False
+
     # Never self-manage (deactivate/delete/reset oneself)
     if actor.id == target.id:
         return False
-
-    # Target is Admin: check last active admin protection
-    if getattr(target, "role", None) == Role.ADMIN or getattr(target, "is_superuser", False):
-        if getattr(target, "is_active", False):
-            from apps.accounts.models import User
-            active_admins = (
-                User.objects.filter(role=Role.ADMIN, is_active=True).exclude(id=target.id).count()
-            )
-            if active_admins == 0:
-                return False
-
-    # Chief Warden peer/escalation protection
-    if getattr(actor, "role", None) == Role.CHIEF_WARDEN:
-        allow_cw_manage_admins = getattr(settings, "CHIEF_WARDEN_CAN_MANAGE_ADMINS", False)
-        if not allow_cw_manage_admins:
-            if getattr(target, "role", None) in [Role.CHIEF_WARDEN, Role.ADMIN]:
-                return False
 
     return True
 

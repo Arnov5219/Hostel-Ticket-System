@@ -10,7 +10,8 @@ class Role(models.TextChoices):
     CARETAKER = "CARETAKER", "Caretaker (L1)"
     WARDEN = "WARDEN", "Hostel Warden (L2)"
     CHIEF_WARDEN = "CHIEF_WARDEN", "Chief Warden (L3)"
-    ADMIN = "ADMIN", "Admin / Dean (L4)"
+    DEAN = "DEAN", "Dean (L4)"
+    ADMIN = "ADMIN", "Admin"
 
 
 class Theme(models.TextChoices):
@@ -23,7 +24,7 @@ ROLE_TO_LEVEL = {
     Role.CARETAKER: 1,
     Role.WARDEN: 2,
     Role.CHIEF_WARDEN: 3,
-    Role.ADMIN: 4,
+    Role.DEAN: 4,
 }
 
 
@@ -44,7 +45,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("role", Role.ADMIN)
-        extra_fields.setdefault("escalation_level", 4)
+        extra_fields.setdefault("escalation_level", None)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
@@ -116,6 +117,7 @@ class User(AbstractUser):
     # Staff Lifecycle & Session Security (Addendum Section 7.1)
     session_version = models.PositiveIntegerField(default=1)
     archived_at = models.DateTimeField(null=True, blank=True)
+    is_demo = models.BooleanField(default=False, db_index=True, help_text="Flag for demo/seeded accounts")
     last_password_reset_at = models.DateTimeField(null=True, blank=True)
     last_password_reset_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -143,8 +145,11 @@ class User(AbstractUser):
         if not self.username:
             self.username = self.login_id
         # Automatically sync escalation_level if not explicitly set
-        if not self.escalation_level and self.role in ROLE_TO_LEVEL:
-            self.escalation_level = ROLE_TO_LEVEL[self.role]
+        if self.role in ROLE_TO_LEVEL:
+            if not self.escalation_level:
+                self.escalation_level = ROLE_TO_LEVEL[self.role]
+        elif self.role == Role.ADMIN:
+            self.escalation_level = None
         super().save(*args, **kwargs)
 
     def can(self, capability):
@@ -169,12 +174,16 @@ class User(AbstractUser):
         return self.role == Role.CHIEF_WARDEN
 
     @property
+    def is_dean(self):
+        return self.role == Role.DEAN
+
+    @property
     def is_admin(self):
         return self.role == Role.ADMIN or self.is_superuser
 
     @property
     def is_staff_member(self):
-        return self.role in [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
+        return self.role in [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
 
     @property
     def has_residence(self):

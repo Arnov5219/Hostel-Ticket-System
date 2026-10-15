@@ -395,6 +395,7 @@ class ActivityAction(models.TextChoices):
     DELETED = "DELETED", "Deleted"
     RESTORED = "RESTORED", "Restored"
     PURGED = "PURGED", "Purged"
+    LEVEL4_FALLBACK = "LEVEL4_FALLBACK", "Level 4 Fallback"
 
 
 class ActiveTicketActivityManager(models.Manager):

@@ -22,7 +22,7 @@ from apps.core.permissions import Capability, can_manage_user
 from apps.hostels.models import Hostel
 from apps.tickets.models import Status
 
-STAFF_ROLES = [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
+STAFF_ROLES = [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
 ACTIVE_STATUSES = [Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD, Status.RESOLVED]
 
 
