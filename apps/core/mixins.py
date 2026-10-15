@@ -35,18 +35,6 @@ class CapabilityRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
-class HostelerOnlyMixin(AccessMixin):
-    """Guarantees only authenticated hostelers can access endpoint (Community)."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-
-        from apps.core.permissions import Capability, has_capability
-        if not has_capability(request.user, Capability.COMMUNITY_ACCESS):
-            raise PermissionDenied("Community is reserved for residents only.")
-
-        return super().dispatch(request, *args, **kwargs)
 
 
 class HtmxMixin:

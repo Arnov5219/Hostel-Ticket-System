@@ -10,12 +10,27 @@ class NotificationVerb:
     RESOLVED = "RESOLVED"
     CLOSED = "CLOSED"
     COMMENTED = "COMMENTED"
+    # DEPRECATED: Community removed, kept for historical data, no UI
     REPOSTED = "REPOSTED"
     COMMUNITY_COMMENT = "COMMUNITY_COMMENT"
     PRIORITY_RAISED = "PRIORITY_RAISED"
     CRITICAL_ISSUE = "CRITICAL_ISSUE"
     ANNOUNCEMENT = "ANNOUNCEMENT"
     ANNOUNCEMENT_URGENT = "ANNOUNCEMENT_URGENT"
+
+
+DEPRECATED_COMMUNITY_VERBS = [
+    NotificationVerb.REPOSTED,
+    NotificationVerb.COMMUNITY_COMMENT,
+    NotificationVerb.PRIORITY_RAISED,
+    NotificationVerb.CRITICAL_ISSUE,
+]
+
+
+class ActiveNotificationManager(models.Manager):
+    """Excludes legacy community notifications from lists, unread counts, and bell badges."""
+    def get_queryset(self):
+        return super().get_queryset().exclude(verb__in=DEPRECATED_COMMUNITY_VERBS)
 
 
 class Notification(models.Model):
@@ -42,6 +57,9 @@ class Notification(models.Model):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ActiveNotificationManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["-created_at"]

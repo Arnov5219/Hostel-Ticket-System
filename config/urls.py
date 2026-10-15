@@ -11,7 +11,6 @@ urlpatterns = [
     path("", include("apps.core.urls", namespace="core")),
     path("accounts/", include("apps.accounts.urls", namespace="accounts")),
     path("tickets/", include("apps.tickets.urls", namespace="tickets")),
-    path("community/", include("apps.tickets.community_urls", namespace="community")),
     path("announcements/", include("apps.announcements.urls", namespace="announcements")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),

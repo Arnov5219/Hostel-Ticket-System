@@ -41,6 +41,7 @@ class Category(TimeStampedModel):
         choices=Priority.choices,
         default=Priority.MEDIUM,
     )
+    # DEPRECATED: Community removed, kept for historical data, no UI
     allow_community = models.BooleanField(
         default=True,
         help_text="Allow sharing tickets in this category to community feed",
@@ -134,12 +135,15 @@ class Ticket(TimeStampedModel):
     title = models.CharField(max_length=150)
     description = models.TextField()
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="tickets")
+    # DEPRECATED: Community removed, kept for historical data, no UI
     visibility = models.CharField(
         max_length=20,
         choices=TicketVisibility.choices,
         default=TicketVisibility.PRIVATE,
     )
+    # DEPRECATED: Community removed, kept for historical data, no UI
     show_reporter_name = models.BooleanField(default=False)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     base_priority = models.CharField(
         max_length=10,
         choices=Priority.choices,
@@ -182,10 +186,13 @@ class Ticket(TimeStampedModel):
         related_name="assigned_tickets",
     )
     current_level = models.PositiveSmallIntegerField(default=1)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     repost_count = models.PositiveIntegerField(default=0, db_index=True)
     level_started_at = models.DateTimeField(null=True, blank=True)
     last_activity_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     community_hidden = models.BooleanField(default=False)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     last_notified_threshold = models.PositiveSmallIntegerField(default=0)
     due_at = models.DateTimeField(null=True, blank=True, db_index=True)
     is_overdue = models.BooleanField(default=False, db_index=True)
@@ -231,6 +238,7 @@ class Ticket(TimeStampedModel):
 
     @property
     def affected_count(self):
+        # DEPRECATED: Community removed, kept for historical data, no UI
         return self.repost_count + 1
 
 
@@ -248,6 +256,7 @@ class TicketAttachment(TimeStampedModel):
         return f"Attachment for {self.ticket.ticket_no}"
 
 
+# DEPRECATED: Community removed, kept for historical data, no UI
 class TicketRepost(TimeStampedModel):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="reposts")
     user = models.ForeignKey(
@@ -270,6 +279,12 @@ class TicketRepost(TimeStampedModel):
         return f"Repost by {self.user.login_id} on {self.ticket.ticket_no}"
 
 
+class ActiveTicketCommentManager(models.Manager):
+    """Excludes legacy COMMUNITY comments from all querysets."""
+    def get_queryset(self):
+        return super().get_queryset().exclude(scope="COMMUNITY")
+
+
 class TicketComment(TimeStampedModel):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(
@@ -278,12 +293,15 @@ class TicketComment(TimeStampedModel):
         related_name="ticket_comments",
     )
     body = models.TextField()
+    # DEPRECATED: Community removed, kept for historical data, no UI
     scope = models.CharField(
         max_length=20,
         choices=CommentScope.choices,
         default=CommentScope.PRIVATE,
     )
+    # DEPRECATED: Community removed, kept for historical data, no UI
     is_hidden = models.BooleanField(default=False)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     hidden_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -291,8 +309,13 @@ class TicketComment(TimeStampedModel):
         blank=True,
         related_name="hidden_ticket_comments",
     )
+    # DEPRECATED: Community removed, kept for historical data, no UI
     hidden_reason = models.CharField(max_length=255, blank=True)
+    # DEPRECATED: Community removed, kept for historical data, no UI
     is_official = models.BooleanField(default=False)
+
+    objects = ActiveTicketCommentManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["created_at"]
@@ -309,6 +332,7 @@ class TicketComment(TimeStampedModel):
         self.scope = CommentScope.INTERNAL if val else CommentScope.PRIVATE
 
 
+# DEPRECATED: Community removed, kept for historical data, no UI
 class CommentReport(TimeStampedModel):
     comment = models.ForeignKey(
         TicketComment,
@@ -328,6 +352,7 @@ class CommentReport(TimeStampedModel):
         return f"Report by {self.reporter.login_id} on Comment {self.comment_id}"
 
 
+# DEPRECATED: Community removed, kept for historical data, no UI
 class CriticalityRule(TimeStampedModel):
     min_reposts = models.PositiveIntegerField(unique=True)
     bump_levels = models.PositiveSmallIntegerField(default=1)
@@ -372,6 +397,22 @@ class ActivityAction(models.TextChoices):
     PURGED = "PURGED", "Purged"
 
 
+class ActiveTicketActivityManager(models.Manager):
+    """Excludes legacy community actions from activity timeline."""
+    LEGACY_ACTIONS = [
+        "REPOSTED",
+        "REPOST_REMOVED",
+        "PRIORITY_AUTO_RAISED",
+        "COMMUNITY_COMMENT",
+        "COMMENT_HIDDEN",
+        "COMMUNITY_HIDDEN",
+        "VISIBILITY_CHANGED",
+    ]
+
+    def get_queryset(self):
+        return super().get_queryset().exclude(action__in=self.LEGACY_ACTIONS)
+
+
 class TicketActivity(TimeStampedModel):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="activities")
     actor = models.ForeignKey(
@@ -385,6 +426,9 @@ class TicketActivity(TimeStampedModel):
     from_value = models.CharField(max_length=150, blank=True, default="")
     to_value = models.CharField(max_length=150, blank=True, default="")
     note = models.TextField(blank=True, default="")
+
+    objects = ActiveTicketActivityManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["created_at"]

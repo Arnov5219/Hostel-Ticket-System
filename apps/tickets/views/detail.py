@@ -6,8 +6,6 @@ from django.utils import timezone
 from apps.accounts.models import Role, User
 from apps.core.permissions import (
     can_add_internal_note,
-    can_moderate_community,
-    can_view_reposters_and_notes,
     can_view_ticket,
 )
 from apps.tickets.forms import CommentForm
@@ -15,9 +13,18 @@ from apps.tickets.models import (
     CommentScope,
     Status,
     Ticket,
-    TicketVisibility,
 )
 from apps.tickets.services.deletion import can_delete
+
+DEPRECATED_COMMUNITY_ACTIONS = [
+    "REPOSTED",
+    "REPOST_REMOVED",
+    "PRIORITY_AUTO_RAISED",
+    "COMMUNITY_COMMENT",
+    "COMMENT_HIDDEN",
+    "COMMUNITY_HIDDEN",
+    "VISIBILITY_CHANGED",
+]
 
 
 @login_required
@@ -42,12 +49,10 @@ def ticket_detail(request, ticket_no):
     if not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to view this ticket.")
 
-    # Comments visibility: internal notes hidden from hostelers; community comments hidden from staff
-    comments_qs = ticket.comments.all()
+    # Comments visibility: COMMUNITY scope excluded everywhere; internal notes hidden from hostelers
+    comments_qs = ticket.comments.exclude(scope=CommentScope.COMMUNITY)
     if request.user.is_hosteler:
         comments_qs = comments_qs.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
-    else:
-        comments_qs = comments_qs.exclude(scope=CommentScope.COMMUNITY)
 
     # SLA time calculation
     sla_percentage = 0
@@ -85,20 +90,11 @@ def ticket_detail(request, ticket_no):
         role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
         is_active=True,
     )
-    if ticket.hostel:
-        eligible_staff = (
-            eligible_staff.filter(models_Q_hostel=ticket.hostel) if False else eligible_staff
-        )
 
-    activities_qs = ticket.activities.all()
+    # Activity timeline: hide legacy community actions
+    activities_qs = ticket.activities.exclude(action__in=DEPRECATED_COMMUNITY_ACTIONS)
     if request.user.is_hosteler:
         activities_qs = activities_qs.exclude(note__icontains="internal")
-
-    can_mod = can_moderate_community(request.user)
-    can_repost_view = can_view_reposters_and_notes(request.user, ticket)
-    reposts_qs = []
-    if can_repost_view and (ticket.visibility == TicketVisibility.HOSTEL or ticket.repost_count > 0):
-        reposts_qs = ticket.reposts.select_related("user").order_by("-created_at")
 
     user_can_delete, delete_block_reason = can_delete(request.user, ticket)
 
@@ -115,10 +111,6 @@ def ticket_detail(request, ticket_no):
         "current_section": "tickets",
         "eligible_staff": eligible_staff,
         "statuses": Status.choices,
-        "can_moderate": can_mod,
-        "can_view_reposters": can_repost_view,
-        "reposts": reposts_qs,
-        "affected_count": ticket.repost_count + 1 if ticket.visibility == TicketVisibility.HOSTEL else 1,
         "user_can_delete": user_can_delete,
         "delete_block_reason": delete_block_reason,
     }

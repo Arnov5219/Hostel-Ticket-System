@@ -37,12 +37,6 @@ def can_delete(user, ticket):
         if ticket.status not in ["OPEN", "ASSIGNED"]:
             return False, f"Ticket cannot be deleted because it is already {ticket.get_status_display().lower()}."
 
-        if ticket.repost_count > 0:
-            return (
-                False,
-                "Other hostelers have reposted this issue, so it can't be deleted. Ask your Warden to close it.",
-            )
-
         # Check for staff comments
         has_staff_comment = ticket.comments.filter(
             author__role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
@@ -62,7 +56,7 @@ def can_delete(user, ticket):
 def soft_delete(ticket, actor, reason=""):
     """
     Performs safe soft-delete of a ticket, logging activity, clearing pending notifications,
-    and alerting assignees / reposters if applicable.
+    and alerting assignees if applicable.
     """
     allowed, block_reason = can_delete(actor, ticket)
     if not allowed:
@@ -104,17 +98,6 @@ def soft_delete(ticket, actor, reason=""):
                 verb="TICKET_DELETED",
                 message=f"Ticket {ticket.ticket_no} was deleted by {actor_title}." + (f" Reason: {clean_reason}" if clean_reason else ""),
             )
-
-        # Notify reposters if deleted by staff
-        if not actor.is_hosteler and ticket.reposts.exists():
-            for repost in ticket.reposts.select_related("user").all():
-                if repost.user != actor:
-                    Notification.objects.create(
-                        recipient=repost.user,
-                        ticket=ticket,
-                        verb="TICKET_REMOVED",
-                        message=f"Ticket {ticket.ticket_no} you reposted was removed by {actor_title}: {clean_reason}",
-                    )
 
         # Mark all pending unread notifications for this ticket as read
         Notification.objects.filter(ticket=ticket, is_read=False).update(is_read=True)

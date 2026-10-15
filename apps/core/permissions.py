@@ -7,7 +7,6 @@ from apps.accounts.models import Role
 
 
 class Capability(str, Enum):
-    COMMUNITY_ACCESS = "COMMUNITY_ACCESS"
     RAISE_TICKET = "RAISE_TICKET"
     VIEW_ASSIGNED_TICKETS = "VIEW_ASSIGNED_TICKETS"
     VIEW_HOSTEL_TICKETS = "VIEW_HOSTEL_TICKETS"
@@ -80,7 +79,6 @@ CARETAKER_CAPABILITIES = frozenset({
 })
 
 HOSTELER_CAPABILITIES = frozenset({
-    Capability.COMMUNITY_ACCESS,
     Capability.RAISE_TICKET,
     Capability.CHANGE_STATUS,
     Capability.DELETE_TICKET,
@@ -99,10 +97,6 @@ def has_capability(user, capability: Capability | str) -> bool:
     """Check if user has given capability."""
     if not user or not user.is_authenticated or not getattr(user, "is_active", False):
         return False
-
-    # Community is strictly for hostelers only (even superusers get False)
-    if capability == Capability.COMMUNITY_ACCESS:
-        return getattr(user, "role", None) == Role.HOSTELER
 
     if user.is_superuser:
         return True
@@ -230,42 +224,6 @@ def can_publish_announcements(user, targeted_hostels=None):
         return True
 
     return True
-
-
-def can_moderate_community(user):
-    """Authorities no longer moderate community - hostelers self-moderate."""
-    return False
-
-
-def can_view_reposters_and_notes(user, ticket=None):
-    """Staff do not see reposter identities or community text."""
-    return False
-
-
-def can_repost_ticket(user, ticket):
-    """Hostelers only can repost tickets in their own hostel."""
-    if not user or not user.is_authenticated or not has_capability(user, Capability.COMMUNITY_ACCESS):
-        return False
-    if ticket.reporter_id == user.id:
-        return False
-    if ticket.hostel_id != getattr(user.hostel, "id", None):
-        return False
-    if ticket.visibility != "HOSTEL" or getattr(ticket, "community_hidden", False):
-        return False
-    return ticket.status in ["OPEN", "ASSIGNED", "IN_PROGRESS", "ON_HOLD"]
-
-
-def can_comment_publicly(user, ticket):
-    """Hostelers only can post community comments."""
-    if not user or not user.is_authenticated or not has_capability(user, Capability.COMMUNITY_ACCESS):
-        return False
-    if ticket.visibility != "HOSTEL":
-        return False
-    return ticket.hostel_id == getattr(user.hostel, "id", None)
-
-
-def can_edit_criticality_rules(user):
-    return has_capability(user, Capability.MANAGE_TICKET_SETTINGS)
 
 
 def can_verify_residents(user):

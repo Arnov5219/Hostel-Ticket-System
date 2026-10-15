@@ -165,17 +165,6 @@ def get_overdue_tickets(user, limit=5):
     )
 
 
-def get_most_reported_issues(user, limit=5):
-    """Fetches top community-reported issues by repost count for staff dashboard."""
-    return (
-        Ticket.objects.visible_to(user)
-        .filter(
-            status__in=[Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD],
-            repost_count__gt=0,
-        )
-        .select_related("hostel", "category")
-        .order_by("-repost_count", "-created_at")[:limit]
-    )
 
 
 def get_latest_announcements_staff(user, limit=3):
