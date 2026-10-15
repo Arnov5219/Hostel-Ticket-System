@@ -991,6 +991,20 @@ input:-webkit-autofill:active {
   align-items: start;
 }
 
+.ticket-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.ticket-detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .hosteler-home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -1002,6 +1016,9 @@ input:-webkit-autofill:active {
   .ticket-detail-grid {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
+  }
+  .ticket-detail-side {
+    order: -1;
   }
   .hosteler-home-grid {
     grid-template-columns: 1fr !important;

@@ -53,51 +53,31 @@
   {% endif %}
 
   <!-- 1. Top 4 Stat Cards Row -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-    <div class="stat-card">
-      <div class="stat-card-header">
-        <span class="stat-label">Created this month</span>
-        <div class="stat-icon" style="color: var(--accent); background: var(--accent-light);">
-          <i data-lucide="plus-circle" style="width: 15px; height: 15px;"></i>
-        </div>
-      </div>
-      <div class="stat-value">{{ kpis.total_month }}</div>
-      <div class="stat-hint">Active operational month</div>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <span class="kpi-label">Created this month</span>
+      <div class="kpi-value">{{ kpis.total_month }}</div>
+      <div class="kpi-subtext">Active operational month</div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-card-header">
-        <span class="stat-label">Resolved tickets</span>
-        <div class="stat-icon" style="color: var(--st-resolved-fg); background: var(--st-resolved-bg);">
-          <i data-lucide="check-circle-2" style="width: 15px; height: 15px;"></i>
-        </div>
-      </div>
-      <div class="stat-value" style="color: var(--st-resolved-fg);">{{ kpis.resolved_count }}</div>
-      <div class="stat-hint">Fixed and confirmed</div>
+    <div class="kpi-card">
+      <span class="kpi-label">Resolved tickets</span>
+      <div class="kpi-value resolved">{{ kpis.resolved_count }}</div>
+      <div class="kpi-subtext">Fixed and confirmed</div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-card-header">
-        <span class="stat-label">Open / in progress</span>
-        <div class="stat-icon" style="color: var(--st-assigned-fg); background: var(--st-assigned-bg);">
-          <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
-        </div>
-      </div>
-      <div class="stat-value" style="color: var(--st-assigned-fg);">{{ kpis.open_count }}</div>
-      <div class="stat-hint">Currently assigned to staff</div>
+    <div class="kpi-card">
+      <span class="kpi-label">Open / in progress</span>
+      <div class="kpi-value open">{{ kpis.open_count }}</div>
+      <div class="kpi-subtext">Currently assigned to staff</div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-card-header">
-        <span class="stat-label">Overdue SLA breaches</span>
-        <div class="stat-icon" style="color: {% if kpis.overdue_count > 0 %}var(--st-open-fg){% else %}var(--text-muted){% endif %}; background: {% if kpis.overdue_count > 0 %}var(--st-open-bg){% else %}var(--bg-subtle){% endif %};">
-          <i data-lucide="alert-triangle" style="width: 15px; height: 15px;"></i>
-        </div>
-      </div>
-      <div class="stat-value" style="color: {% if kpis.overdue_count > 0 %}var(--st-open-fg){% else %}var(--text-primary){% endif %};">
+    <div class="kpi-card">
+      <span class="kpi-label">Overdue SLA breaches</span>
+      <div class="kpi-value {% if kpis.overdue_count > 0 %}overdue{% endif %}">
         {{ kpis.overdue_count }}
       </div>
-      <div class="stat-hint">Attention needed immediately</div>
+      <div class="kpi-subtext">Attention needed immediately</div>
     </div>
   </div>
 
@@ -216,10 +196,10 @@
         {% for ticket in overdue_tickets %}
           <a href="{% url 'tickets:detail' ticket.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); border-left: 3px solid var(--st-open-fg); color: var(--text-primary); text-decoration: none; transition: transform var(--duration-fast), box-shadow var(--duration-fast);" onmouseover="this.style.boxShadow='var(--shadow-card)'" onmouseout="this.style.boxShadow='none'">
             <div style="min-width: 0; flex: 1;">
-              <div style="font-weight: 600; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--accent);">{{ ticket.ticket_no }}</div>
-              <div style="font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">{{ ticket.title }}</div>
+              <div><span class="ticket-id">{{ ticket.ticket_no }}</span></div>
+              <div style="font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;">{{ ticket.title }}</div>
             </div>
-            <span style="font-size: 11px; color: var(--st-open-fg); font-weight: 600; white-space: nowrap;">Overdue</span>
+            <span style="font-size: var(--fs-xs); color: var(--st-open-fg); font-weight: 600; white-space: nowrap;">Overdue</span>
           </a>
         {% empty %}
           <div style="padding: 16px; text-align: center; color: var(--st-resolved-fg); font-size: var(--fs-sm);">

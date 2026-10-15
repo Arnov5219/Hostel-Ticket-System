@@ -14,19 +14,27 @@ function getChartThemeTokens() {
 
   return {
     isDark: isDark,
-    textPrimary: rootStyle.getPropertyValue('--text-primary').trim() || (isDark ? '#E8EAED' : '#0F172A'),
-    textSecondary: rootStyle.getPropertyValue('--text-secondary').trim() || (isDark ? '#A9B1BE' : '#475569'),
-    textMuted: rootStyle.getPropertyValue('--text-muted').trim() || (isDark ? '#7D8696' : '#64748B'),
-    border: rootStyle.getPropertyValue('--border').trim() || (isDark ? '#272D37' : '#E2E8F0'),
+    textPrimary: rootStyle.getPropertyValue('--text-primary').trim() || (isDark ? '#E8EAED' : '#171717'),
+    textSecondary: rootStyle.getPropertyValue('--text-secondary').trim() || (isDark ? '#A9B1BE' : '#454D5A'),
+    textMuted: rootStyle.getPropertyValue('--text-muted').trim() || (isDark ? '#7D8696' : '#5F6877'),
+    border: rootStyle.getPropertyValue('--border').trim() || (isDark ? '#272D37' : '#E3E6EB'),
     bgSurface: rootStyle.getPropertyValue('--bg-surface').trim() || (isDark ? '#161A20' : '#FFFFFF'),
-    bgSubtle: rootStyle.getPropertyValue('--bg-subtle').trim() || (isDark ? '#1D222A' : '#F1F5F9'),
-    gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)',
-    accent: rootStyle.getPropertyValue('--accent').trim() || '#3B82F6',
-    createdBar: isDark ? '#4DA3FF' : '#1A56DB',
-    resolvedBar: isDark ? '#5FD39A' : '#059669',
-    overdueBar: isDark ? '#FF8A8A' : '#E03131',
-    categoryBar: isDark ? '#7DB8FF' : '#3B82F6',
-    resolutionBar: isDark ? '#C3A6FF' : '#6366F1',
+    bgSubtle: rootStyle.getPropertyValue('--bg-subtle').trim() || (isDark ? '#1D222A' : '#F0F2F5'),
+    gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    accent: rootStyle.getPropertyValue('--primary').trim() || (isDark ? '#3B82C4' : '#1D5FB4'),
+    createdBar: rootStyle.getPropertyValue('--primary').trim() || (isDark ? '#3B82C4' : '#1D5FB4'),
+    resolvedBar: rootStyle.getPropertyValue('--st-resolved-dot').trim() || (isDark ? '#34D399' : '#10B981'),
+    overdueBar: rootStyle.getPropertyValue('--prio-urgent').trim() || (isDark ? '#FF6B6B' : '#E03E3E'),
+    categoryBar: rootStyle.getPropertyValue('--chart-2').trim() || (isDark ? '#5A9FE2' : '#3B82C4'),
+    resolutionBar: rootStyle.getPropertyValue('--chart-5').trim() || (isDark ? '#A292E0' : '#8573C9'),
+    charts: [
+      rootStyle.getPropertyValue('--chart-1').trim() || '#5B6B84',
+      rootStyle.getPropertyValue('--chart-2').trim() || '#3B82C4',
+      rootStyle.getPropertyValue('--chart-3').trim() || '#2A9D8F',
+      rootStyle.getPropertyValue('--chart-4').trim() || '#E0A030',
+      rootStyle.getPropertyValue('--chart-5').trim() || '#8573C9',
+      rootStyle.getPropertyValue('--chart-6').trim() || '#CF6A87',
+    ],
   };
 }
 
@@ -40,7 +48,7 @@ function initDashboardCharts() {
   }
 
   const tokens = getChartThemeTokens();
-  const fontConfig = { family: 'Inter, system-ui, sans-serif', size: 11 };
+  const fontConfig = { family: 'Inter, system-ui, sans-serif', size: 12 };
 
   if (trendCanvas) {
     const existing = Chart.getChart(trendCanvas);
@@ -138,6 +146,9 @@ function initDashboardCharts() {
       .then(res => res.json())
       .then(data => {
         const isHorizontal = data.labels && data.labels.length > 5;
+        const barColors = data.labels && data.labels.length > 0
+          ? data.labels.map((_, i) => tokens.charts[i % tokens.charts.length])
+          : tokens.categoryBar;
         new Chart(categoryCanvas, {
           type: 'bar',
           data: {
@@ -146,7 +157,7 @@ function initDashboardCharts() {
               {
                 label: 'Tickets',
                 data: data.data,
-                backgroundColor: tokens.categoryBar,
+                backgroundColor: barColors,
                 borderRadius: 4,
                 maxBarThickness: 40,
                 categoryPercentage: 0.7,

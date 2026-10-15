@@ -113,7 +113,7 @@
 <div class="ticket-detail-grid">
 
   <!-- LEFT COLUMN: Main Ticket Content & Activity -->
-  <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+  <div class="ticket-detail-main">
     
     <!-- Ticket Summary Card -->
     <div class="card" style="padding: 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
@@ -174,7 +174,7 @@
   </div>
 
   <!-- RIGHT COLUMN: Metadata & SLA Sidebar -->
-  <aside style="display: flex; flex-direction: column; gap: 16px;">
+  <aside class="ticket-detail-side">
     
     <!-- SLA & Escalation Card -->
     <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
@@ -234,7 +234,7 @@
         <div style="font-weight: 500; font-size: var(--fs-sm); margin-top: 4px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>{{ ticket.hostel.name }}</span>
           {% if ticket.outside_own_hostel %}
-            <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 11px;">Outside own hostel</span>
+            <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: var(--fs-xs);">Outside own hostel</span>
           {% endif %}
         </div>
       </div>
