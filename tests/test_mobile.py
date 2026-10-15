@@ -25,7 +25,7 @@ def test_manifest_file_exists_and_valid():
 
 @pytest.mark.django_db
 def test_mobile_bottom_nav_renders_for_hosteler(client):
-    """Hosteler bottom nav must contain Home, Community, Raise, News, and More."""
+    """Hosteler bottom nav must contain Home, My tickets, Raise, News, and More."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     room = Room.objects.create(hostel=hostel, room_number="101", floor=1)
     hosteler = UserFactory(
@@ -42,7 +42,8 @@ def test_mobile_bottom_nav_renders_for_hosteler(client):
 
     assert "mobile-bottom-nav" in content
     assert "raise-center-btn" in content
-    assert "Community" in content
+    assert "My Tickets" in content
+    assert "Community" not in content
     assert "News" in content
     assert "moreOpen" in content
 

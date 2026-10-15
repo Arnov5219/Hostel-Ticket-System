@@ -127,14 +127,14 @@ class TestCanDeleteRules:
         assert allowed is False
         assert "in progress" in reason.lower()
 
-    def test_hosteler_reposted_ticket_denied(self, deletion_setup):
+    def test_hosteler_can_delete_without_repost_conditions(self, deletion_setup):
         s1 = deletion_setup["student1"]
         t1 = deletion_setup["ticket1"]
-        t1.repost_count = 1
+        t1.repost_count = 5
         t1.save()
         allowed, reason = can_delete(s1, t1)
-        assert allowed is False
-        assert "reposted" in reason
+        assert allowed is True
+        assert reason == ""
 
     def test_hosteler_staff_comment_denied(self, deletion_setup):
         s1 = deletion_setup["student1"]

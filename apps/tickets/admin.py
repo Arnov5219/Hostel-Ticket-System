@@ -12,16 +12,6 @@ from apps.tickets.models import (
     TicketComment,
 )
 
-DEPRECATED_COMMUNITY_ACTIONS = [
-    "REPOSTED",
-    "REPOST_REMOVED",
-    "PRIORITY_AUTO_RAISED",
-    "COMMUNITY_COMMENT",
-    "COMMENT_HIDDEN",
-    "COMMUNITY_HIDDEN",
-    "VISIBILITY_CHANGED",
-]
-
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -80,9 +70,6 @@ class TicketCommentAdmin(admin.ModelAdmin):
     list_filter = ["scope"]
     search_fields = ["ticket__ticket_no", "author__login_id", "body"]
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).exclude(scope="COMMUNITY")
-
 
 @admin.register(TicketActivity)
 class TicketActivityAdmin(admin.ModelAdmin):
@@ -90,5 +77,3 @@ class TicketActivityAdmin(admin.ModelAdmin):
     list_filter = ["action"]
     search_fields = ["ticket__ticket_no", "actor__login_id"]
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).exclude(action__in=DEPRECATED_COMMUNITY_ACTIONS)

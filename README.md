@@ -19,18 +19,16 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
 - **Capability Matrix & Administrative Parity**:
   - Fine-grained permission system (`apps/core/permissions.py`) with `has_capability(user, cap)` enforcement across views, navigation, and services.
   - **Chief Warden Administrative Parity**: Full management access across staff and ticket settings alongside Administrators, while preserving Level 3 escalation tier and preventing Chief Warden modification of Admin accounts.
-- **Strict Hosteler Community Boundary & Resident Self-Moderation**:
-  - `/community/*` feed and community ticket interactions are **strictly hosteler-only** (staff and admins receive `403 Forbidden`).
-  - Community feed with one-click reposting, affected counter, and author comment deletion.
-  - **Student Self-Moderation**: Hostelers can report abusive comments; comments reaching 3 reports are automatically hidden from the feed without staff intervention.
-  - Operator CLI tooling (`moderate_comment`) for managing flagged comments.
+- **Streamlined Ticket Operations & Ticket Priority Single Source of Truth**:
+  - Ticket priority (`Ticket.priority`) is the single source of truth across all views, triage, assignment, and escalation workflows.
+  - Direct private ticket interactions between hostelers and staff with transparent status workflows and SLA tracking.
 - **Slim Ticket Settings (`/manage/settings/`) & SLA Fallbacks**:
-  - Streamlined administration for Categories, Tags, and Criticality rules replacing deprecated routing screens.
+  - Streamlined administration for Categories and Tags replacing deprecated routing screens.
   - Deterministic SLA fallback lookup table guaranteeing resolution deadlines even when explicit database rules are absent.
   - Seed CLI command (`seed_sla_defaults`) to populate standard SLA targets across all priority tiers.
 - **Safe Ticket Soft-Delete & Trash Management**:
   - Soft-delete audit trail preserving SLA reporting and historical ticket numbering.
-  - Hosteler D7 delete rules (own tickets only while Open/Assigned, 0 reposts, no staff comments) with an **8-second undo countdown toast**.
+  - Hosteler D7 delete rules (own tickets only while Open/Assigned, no staff comments) with an **8-second undo countdown toast**.
   - Warden/Admin delete with mandatory reason selection and note.
   - Admin trash bin (`/manage/trash/`) with one-click restore and `purge_deleted` retention pruning command.
 - **Dark Mode & Theming**:
@@ -190,14 +188,6 @@ The system includes management commands designed to be triggered via cron or Cel
    ```
    Bulk imports approved student roll numbers into the verification whitelist.
 
-8. **Moderate Community Comments (Operator CLI)**:
-   ```bash
-   python manage.py moderate_comment list-reported
-   python manage.py moderate_comment hide <comment_id>
-   python manage.py moderate_comment unhide <comment_id>
-   python manage.py moderate_comment clear-reports <comment_id>
-   ```
-   Provides administrative inspection and moderation for student-reported comments.
 
 ---
 
@@ -251,13 +241,13 @@ pytest tests/test_no_hardcoded_colors.py
 ```
 
 Test suites cover:
-- Route permissions, community lockdown (403 for non-hostelers), and removed route 404 verification.
+- Route permissions and removed route 404 verification across all user roles.
 - Chief Warden administrative parity and administrative peer invariant protection.
 - Full staff management lifecycle (create, update, login ID change, temp pw reset, active ticket deactivation blocker, audit logging).
-- Student self-moderation (3-report auto-hide and author comment deletion).
+- Community removal verification (route matrix, grep guards, legacy data isolation, ticket priority source of truth).
 - Slim ticket settings CRUD and SLA fallback determination.
 - Hostel-only residence onboarding and ticket creation.
-- Safe soft-delete rules (D7 status/repost/comment checks), 8s undo toast tokens, and admin restoration.
+- Safe soft-delete rules (D7 status/comment checks), 8s undo toast tokens, and admin restoration.
 - Theme switching persistence, zero-flash top-of-head script, and automated CSS/template color token guards.
 - Mobile bottom navigation, card-list table transformations, touch Kanban fallbacks, and photo uploads.
 - Race-condition safe sequential ticket numbering (`HTL-YYYY-00001`).

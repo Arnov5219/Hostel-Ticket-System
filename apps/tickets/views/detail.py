@@ -16,15 +16,6 @@ from apps.tickets.models import (
 )
 from apps.tickets.services.deletion import can_delete
 
-DEPRECATED_COMMUNITY_ACTIONS = [
-    "REPOSTED",
-    "REPOST_REMOVED",
-    "PRIORITY_AUTO_RAISED",
-    "COMMUNITY_COMMENT",
-    "COMMENT_HIDDEN",
-    "COMMUNITY_HIDDEN",
-    "VISIBILITY_CHANGED",
-]
 
 
 @login_required
@@ -49,8 +40,8 @@ def ticket_detail(request, ticket_no):
     if not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to view this ticket.")
 
-    # Comments visibility: COMMUNITY scope excluded everywhere; internal notes hidden from hostelers
-    comments_qs = ticket.comments.exclude(scope=CommentScope.COMMUNITY)
+    # Comments visibility: internal notes hidden from hostelers
+    comments_qs = ticket.comments.all()
     if request.user.is_hosteler:
         comments_qs = comments_qs.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
 
@@ -91,8 +82,8 @@ def ticket_detail(request, ticket_no):
         is_active=True,
     )
 
-    # Activity timeline: hide legacy community actions
-    activities_qs = ticket.activities.exclude(action__in=DEPRECATED_COMMUNITY_ACTIONS)
+    # Activity timeline: legacy actions excluded automatically by manager
+    activities_qs = ticket.activities.all()
     if request.user.is_hosteler:
         activities_qs = activities_qs.exclude(note__icontains="internal")
 

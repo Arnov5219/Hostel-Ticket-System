@@ -27,7 +27,6 @@ from apps.tickets.models import (
     TicketComment,
     TicketVisibility,
 )
-from apps.tickets.services.community import add_community_comment
 from apps.tickets.services.sla import hours_for
 
 
@@ -40,12 +39,12 @@ def hostel_environment(db):
     warden = UserFactory(role=Role.WARDEN, hostel=hostel, login_id="TB_WARDEN")
     chief_warden = UserFactory(role=Role.CHIEF_WARDEN, login_id="CHIEF_WARDEN_MAIN")
     admin = UserFactory(role=Role.ADMIN, login_id="ADMIN_MAIN")
-    category = CategoryFactory(allow_community=True)
+    category = CategoryFactory()
     ticket = TicketFactory(
         hostel=hostel,
         reporter=hosteler,
         category=category,
-        visibility=TicketVisibility.HOSTEL,
+        visibility=TicketVisibility.PRIVATE,
         status=Status.OPEN,
     )
     return {
@@ -59,54 +58,6 @@ def hostel_environment(db):
         "category": category,
         "ticket": ticket,
     }
-
-
-# ==============================================================================
-# 1. Route Permissions & Community Lockdown
-# ==============================================================================
-@pytest.mark.django_db
-class TestRoutePermissionsAndCommunityLockdown:
-    def test_hosteler_has_access_to_community_routes(self, client, hostel_environment):
-        hosteler = hostel_environment["hosteler"]
-        ticket = hostel_environment["ticket"]
-        client.force_login(hosteler)
-
-        # GET /community/
-        assert client.get(reverse("community:feed")).status_code == 200
-
-        # GET /community/feed/
-        assert client.get(reverse("community:feed_partial")).status_code == 200
-
-        # GET /tickets/<no>/community-comments/
-        comments_url = reverse("tickets:community_comments", kwargs={"ticket_no": ticket.ticket_no})
-        assert client.get(comments_url).status_code == 200
-
-        # POST /tickets/<no>/community-comments/
-        resp = client.post(comments_url, {"body": "Confirming this issue."})
-        assert resp.status_code == 200
-
-    def test_non_hostelers_denied_403_on_community_endpoints(self, client, hostel_environment):
-        ticket = hostel_environment["ticket"]
-        repost_url = reverse("tickets:repost", kwargs={"ticket_no": ticket.ticket_no})
-        comments_url = reverse("tickets:community_comments", kwargs={"ticket_no": ticket.ticket_no})
-        feed_url = reverse("community:feed")
-        feed_partial_url = reverse("community:feed_partial")
-
-        staff_roles = [
-            hostel_environment["caretaker"],
-            hostel_environment["warden"],
-            hostel_environment["chief_warden"],
-            hostel_environment["admin"],
-        ]
-
-        for staff in staff_roles:
-            client.force_login(staff)
-
-            assert client.get(feed_url).status_code == 403
-            assert client.get(feed_partial_url).status_code == 403
-            assert client.post(repost_url).status_code == 403
-            assert client.get(comments_url).status_code == 403
-            assert client.post(comments_url, {"body": "Staff test comment"}).status_code == 403
 
 
 # ==============================================================================
@@ -282,46 +233,7 @@ class TestStaffManagementLifecycle:
 
 
 # ==============================================================================
-# 5. Resident Comment Self-Moderation
-# ==============================================================================
-@pytest.mark.django_db
-class TestResidentSelfModeration:
-    def test_comment_reporting_and_auto_hide_at_three(self, client, hostel_environment):
-        ticket = hostel_environment["ticket"]
-        author = hostel_environment["hosteler"]
-        reporter1 = hostel_environment["peer_hosteler"]
-        reporter2 = UserFactory(role=Role.HOSTELER, hostel=ticket.hostel, login_id="21BCS003")
-        reporter3 = UserFactory(role=Role.HOSTELER, hostel=ticket.hostel, login_id="21BCS004")
-
-        # Author creates community comment
-        comment = add_community_comment(author, ticket, "Notice on 2nd floor.")
-        assert comment.is_hidden is False
-
-        # Report 1
-        client.force_login(reporter1)
-        resp1 = client.post(reverse("community:report_comment", kwargs={"comment_id": comment.id}))
-        assert resp1.status_code == 200
-        comment.refresh_from_db()
-        assert comment.is_hidden is False
-
-        # Report 2
-        client.force_login(reporter2)
-        resp2 = client.post(reverse("community:report_comment", kwargs={"comment_id": comment.id}))
-        assert resp2.status_code == 200
-        comment.refresh_from_db()
-        assert comment.is_hidden is False
-
-        # Report 3 -> auto-hidden
-        client.force_login(reporter3)
-        resp3 = client.post(reverse("community:report_comment", kwargs={"comment_id": comment.id}))
-        assert resp3.status_code == 200
-        comment.refresh_from_db()
-        assert comment.is_hidden is True
-        assert comment.hidden_reason == "Reported by residents"
-
-
-# ==============================================================================
-# 6. Ticket Settings Page
+# 5. Ticket Settings Page
 # ==============================================================================
 @pytest.mark.django_db
 class TestTicketSettingsPage:
@@ -340,22 +252,9 @@ class TestTicketSettingsPage:
         from apps.tickets.models import Tag
         assert Tag.objects.filter(name="UrgentWater").exists()
 
-        # POST add criticality rule
-        rule_post = {
-            "action": "add_rule",
-            "min_reposts": 8,
-            "bump_levels": 2,
-            "force_priority": "URGENT",
-            "notify_level": 2,
-        }
-        resp_rule = client.post(reverse("tickets:manage_settings"), rule_post)
-        assert resp_rule.status_code == 302
-        from apps.tickets.models import CriticalityRule
-        assert CriticalityRule.objects.filter(min_reposts=8).exists()
-
 
 # ==============================================================================
-# 7. Fallback SLA Defaults
+# 6. Fallback SLA Defaults
 # ==============================================================================
 @pytest.mark.django_db
 class TestSlaFallbackDefaults:
@@ -372,7 +271,7 @@ class TestSlaFallbackDefaults:
 
 
 # ==============================================================================
-# 8. Unified Navigation Structure
+# 7. Unified Navigation Structure
 # ==============================================================================
 @pytest.mark.django_db
 class TestUnifiedNavigation:
@@ -382,7 +281,7 @@ class TestUnifiedNavigation:
         sidebar_keys = [item.key for item in nav["sidebar_items"]]
 
         assert "home" in sidebar_keys
-        assert "community" in sidebar_keys
+        assert "community" not in sidebar_keys
         assert "tickets" in sidebar_keys
         assert "manage_hostels" not in sidebar_keys
 

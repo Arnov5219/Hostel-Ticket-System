@@ -18,17 +18,14 @@ from apps.tickets.models import (
     ActivityAction,
     Category,
     CommentScope,
-    CriticalityRule,
     Priority,
     RoutingRule,
     Status,
     Ticket,
     TicketActivity,
     TicketComment,
-    TicketRepost,
     TicketVisibility,
 )
-from apps.tickets.services.criticality import recompute_criticality
 from apps.tickets.services.deletion import soft_delete
 
 
@@ -194,7 +191,7 @@ class Command(BaseCommand):
         hostel_b.responsible_staff = caretakers_b[0]
         hostel_b.save()
 
-        # 22 Hostelers (allows up to 11+ reposters in Hostel A)
+        # 22 Hostelers (14 in Hostel A, 8 in Hostel B)
         # Note: student_14 and student_22 are deliberately unassigned to demo onboarding gate
         # student_12 is pending verification; student_13 is rejected to test verification queues
         now = timezone.now()
@@ -578,106 +575,7 @@ class Command(BaseCommand):
                 created_count += 1
 
         # ==============================================================================
-        # 6. Seed Community Feed Tickets & Reposts (12 tickets with 0 to 11 reposts)
-        # ==============================================================================
-        self.stdout.write("Seeding 12 community tickets with varying reposts...")
-        community_specs = [
-            ("Bicycle stand solar light not powering on", "Light turns off immediately after dusk near parking.", categories[0], Priority.LOW, 0),
-            ("Water cooler on 1st floor dripping slowly", "Small pool of water forming under cooler near room 108.", categories[1], Priority.LOW, 1),
-            ("Gym room dumbbell rack bolt loose", "Rack wobbles when returning heavier weights. Needs tightening.", categories[2], Priority.LOW, 2),
-            ("Common washroom tap 3 leaking continuously", "Continuous stream wasting water in west wing washroom.", categories[1], Priority.LOW, 3),
-            ("Recreation room table tennis net torn", "Net bracket detached from table, unusable for matches.", categories[2], Priority.LOW, 4),
-            ("Washing machine 2 timer knob stuck", "Drum spins but timer does not advance past rinse cycle.", categories[0], Priority.LOW, 5),
-            ("Wi-Fi router on Block A floor 2 keeps dropping connection", "Students getting disconnected every 5 minutes during online quizzes.", categories[3], Priority.LOW, 6),
-            ("Hot water geyser tripping MCB on floor 3", "Geyser causes breaker to trip within 30 seconds of turning on.", categories[0], Priority.MEDIUM, 7),
-            ("Reading room AC blowing warm air", "Compressor does not engage; room becomes very humid.", categories[0], Priority.MEDIUM, 8),
-            ("Water pressure very low in 2nd floor morning showers", "Almost no flow between 7:30 AM and 9:00 AM.", categories[1], Priority.LOW, 9),
-            ("Main water pump failure - no water on upper floors", "Tank empty; third and fourth floor washrooms completely dry.", categories[1], Priority.LOW, 10),
-            ("Passenger elevator stuck between floor 2 and 3", "Elevator halted with alert buzzer sounding.", categories[0], Priority.MEDIUM, 11),
-        ]
-
-        comm_tickets = []
-        for idx, (title, desc, cat, base_prio, target_reposts) in enumerate(community_specs, start=1):
-            t_num = f"TICK-COMM-{idx:03d}"
-            reporter_user = students_a[0]
-            comm_ticket, _ = Ticket.objects.get_or_create(
-                ticket_no=t_num,
-                defaults={
-                    "title": title,
-                    "description": desc,
-                    "category": cat,
-                    "hostel": hostel_a,
-                    "reporter": reporter_user,
-                    "visibility": TicketVisibility.HOSTEL,
-                    "show_reporter_name": idx % 2 == 0,
-                    "base_priority": base_prio,
-                    "priority": base_prio,
-                    "status": Status.OPEN if idx > 2 else Status.ASSIGNED,
-                    "assigned_to": caretakers_a[0] if idx <= 2 else None,
-                    "created_at": now - timedelta(days=random.randint(1, 5)),
-                    "level_started_at": now - timedelta(days=random.randint(1, 5)),
-                },
-            )
-            # Add target reposts
-            for r_idx in range(1, target_reposts + 1):
-                reposter = students_a[r_idx]
-                TicketRepost.objects.get_or_create(
-                    ticket=comm_ticket,
-                    user=reposter,
-                    defaults={"note": f"Confirmed issue affecting room {100 + r_idx}." if r_idx % 2 == 0 else ""},
-                )
-            comm_ticket.repost_count = target_reposts
-            comm_ticket.save(update_fields=["repost_count"])
-            # Recompute criticality
-            recompute_criticality(comm_ticket)
-            comm_tickets.append(comm_ticket)
-
-        # ==============================================================================
-        # 7. Seed 25 Community Comments
-        # ==============================================================================
-        self.stdout.write("Seeding 25 community comments (hosteler & official staff)...")
-        comment_samples = [
-            ("Facing this in room 104 as well.", False, students_a[1]),
-            ("Same here, please resolve quickly.", False, students_a[2]),
-            ("We have registered this with the maintenance team.", True, caretakers_a[0]),
-            ("Electrician has been dispatched with spare parts.", True, caretakers_a[1]),
-            ("Is there an estimated time for repair?", False, students_a[3]),
-            ("Water tank valve being serviced by municipal engineer.", True, warden_a),
-            ("Still facing this issue this morning.", False, students_a[4]),
-            ("Temporary alternative available on ground floor.", True, caretakers_a[0]),
-            ("Exam week is starting, urgent fix needed.", False, students_a[5]),
-            ("Replacement switchboard arrived at central store.", True, caretakers_a[1]),
-            ("Working fine now in wing 1.", False, students_a[6]),
-            ("Technician is on site inspecting wiring.", True, caretakers_a[0]),
-            ("Affecting entire second floor corridor.", False, students_a[7]),
-            ("Plumber has replaced the seal washer.", True, caretakers_a[1]),
-            ("Thank you for the quick follow up!", False, students_a[8]),
-            ("Elevator maintenance agency scheduled for 3 PM.", True, warden_a),
-            ("Buzzer was muted by caretaker.", True, caretakers_a[0]),
-            ("Confirmed working on 3rd floor.", False, students_a[9]),
-            ("Please check water pressure on floor 4 too.", False, students_a[10]),
-            ("Boiler heating coils replaced under warranty.", True, caretakers_a[0]),
-            ("Appreciate the prompt update from warden.", False, students_a[11]),
-            ("Backup pump activated.", True, caretakers_a[1]),
-            ("Any update on Wi-Fi connectivity?", False, students_a[12]),
-            ("IT department restarted router switch.", True, caretakers_a[0]),
-            ("All systems normal now.", False, students_a[13]),
-        ]
-
-        for i, (text, is_off, author_u) in enumerate(comment_samples):
-            target_t = comm_tickets[i % len(comm_tickets)]
-            TicketComment.objects.get_or_create(
-                ticket=target_t,
-                author=author_u,
-                body=text,
-                defaults={
-                    "scope": CommentScope.COMMUNITY,
-                    "is_official": is_off,
-                },
-            )
-
-        # ==============================================================================
-        # 8. Seed 5 Announcements Across Severities and Statuses
+        # 6. Seed 5 Announcements Across Severities and Statuses
         # ==============================================================================
         self.stdout.write("Seeding 5 announcements across severities and statuses...")
         announcements_data = [
@@ -806,6 +704,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Successfully seeded demo dataset with {created_count} realistic tickets, 3 soft-deleted trash tickets, 12 community tickets (0-11 reposts), 25 comments, and 5 announcements!"
+                f"Successfully seeded demo dataset with {created_count} realistic tickets, 3 soft-deleted trash tickets, and 5 announcements!"
             )
         )

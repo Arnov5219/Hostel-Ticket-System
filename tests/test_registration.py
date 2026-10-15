@@ -316,29 +316,3 @@ class TestWardenResidentVerification:
                 os.remove(f_path)
 
 
-@pytest.mark.django_db
-class TestResidentCommunityParticipation:
-    def test_resident_can_repost_and_comment_without_verification(self, client, hostel_setup):
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        creator = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1)
-        ticket = TicketFactory(
-            reporter=creator,
-            hostel=h1,
-            room=r1,
-            visibility=TicketVisibility.HOSTEL,
-        )
-
-        user = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1)
-        client.force_login(user)
-
-        # Repost succeeds immediately
-        repost_url = reverse("tickets:repost", kwargs={"ticket_no": ticket.ticket_no})
-        resp = client.post(repost_url)
-        assert resp.status_code == 200
-
-        # Comment succeeds immediately
-        comment_url = reverse("tickets:community_comments", kwargs={"ticket_no": ticket.ticket_no})
-        resp = client.post(comment_url, {"body": "I have this issue too!"})
-        assert resp.status_code == 200
-        assert "I have this issue too!" in resp.content.decode("utf-8")

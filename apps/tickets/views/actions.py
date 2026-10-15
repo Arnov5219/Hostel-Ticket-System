@@ -59,14 +59,10 @@ def add_comment(request, ticket_no):
                 )
 
             if request.headers.get("HX-Request") == "true":
-                comments = ticket.comments.exclude(scope=CommentScope.COMMUNITY)
+                comments = ticket.comments.all()
                 if request.user.is_hosteler:
                     comments = comments.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
-                deprecated_actions = [
-                    "REPOSTED", "REPOST_REMOVED", "PRIORITY_AUTO_RAISED",
-                    "COMMUNITY_COMMENT", "COMMENT_HIDDEN", "COMMUNITY_HIDDEN", "VISIBILITY_CHANGED"
-                ]
-                activities = ticket.activities.exclude(action__in=deprecated_actions)
+                activities = ticket.activities.all()
                 if request.user.is_hosteler:
                     activities = activities.exclude(note__icontains="internal")
                 return render(

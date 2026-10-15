@@ -13,7 +13,6 @@ from apps.tickets.models import (
     TicketActivity,
     TicketAttachment,
     TicketComment,
-    TicketRepost,
 )
 
 
@@ -34,12 +33,9 @@ class Command(BaseCommand):
         self.stdout.write("Cleaning demo/fake data...")
 
         with transaction.atomic():
-            # 1. Delete all attachments & tickets (cascades comments, reposts, activities)
+            # 1. Delete all attachments & tickets (cascades comments, activities)
             attachment_count = TicketAttachment.objects.count()
             TicketAttachment.objects.all().delete()
-
-            repost_count = TicketRepost.objects.count()
-            TicketRepost.objects.all().delete()
 
             comment_count = TicketComment.objects.count()
             TicketComment.objects.all().delete()
@@ -80,7 +76,6 @@ class Command(BaseCommand):
                 f"Successfully removed:\n"
                 f"  - {ticket_count} tickets\n"
                 f"  - {comment_count} ticket comments\n"
-                f"  - {repost_count} ticket reposts\n"
                 f"  - {activity_count} ticket activities\n"
                 f"  - {attachment_count} attachments\n"
                 f"  - {ann_count} announcements ({ann_read_count} read markers)\n"
@@ -89,6 +84,6 @@ class Command(BaseCommand):
                 f"Preserved:\n"
                 f"  - All 12 Hostels & 1,440 Rooms\n"
                 f"  - All Staff & Admin accounts\n"
-                f"  - Categories, Tags, Routing Rules, SLAs, Criticality Rules"
+                f"  - Categories, Tags, Routing Rules, SLAs"
             )
         )
