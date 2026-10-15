@@ -20,7 +20,7 @@
 {% block content %}
 <div style="display: flex; flex-direction: column; gap: 20px;">
 
-  {# 1. Urgent Announcement Banner (Section 7.1 & 7.4) #}
+  {# 1. Urgent Announcement Banner #}
   {% if urgent_banner %}
     <div id="urgent-banner" class="urgent-banner">
       <div class="urgent-banner-title">
@@ -109,84 +109,86 @@
     </a>
   </div>
 
-  {# 4. Main 8/4 Grid Layout (Section 7.1) #}
+  {# 4. Main Grid: Recent Tickets Table + Announcements Rail #}
   <div class="hosteler-home-grid" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start;">
 
-    {# Left Column: Hostel Community Feed #}
-    <div>
-      {# Feed Header & Tabs #}
-      <div class="card" style="margin-bottom: 16px; padding: 14px 18px; background: var(--bg-surface-glass);">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="users" style="width: 18px; height: 18px; color: var(--accent);"></i>
-            <h3 style="font-size: var(--fs-md); font-weight: 700; margin: 0; color: var(--text-primary);">
-              Hostel Feed
-            </h3>
-          </div>
-          <a href="{% url 'community:feed' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 600;">
-            Open full feed →
-          </a>
+    {# Left Column: Recent Tickets Table #}
+    <div class="card" style="padding: 20px 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="ticket" style="width: 18px; height: 18px; color: var(--accent);"></i>
+          <h3 style="font-size: var(--fs-md); font-weight: 700; margin: 0; color: var(--text-primary);">
+            My Recent Tickets
+          </h3>
         </div>
+        <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 600;">
+          View all tickets →
+        </a>
+      </div>
 
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-          <div class="segmented-control" style="display: inline-flex; background-color: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm);">
-            <button type="button"
-                    class="segmented-btn active"
-                    hx-get="{% url 'community:feed_partial' %}?sort=recent"
-                    hx-target="#community-feed-container"
-                    onclick="activateTab(this)">
-              Recent
-            </button>
-            <button type="button"
-                    class="segmented-btn"
-                    hx-get="{% url 'community:feed_partial' %}?sort=trending"
-                    hx-target="#community-feed-container"
-                    onclick="activateTab(this)">
-              Trending
-            </button>
-            <button type="button"
-                    class="segmented-btn"
-                    hx-get="{% url 'community:feed_partial' %}?sort=critical"
-                    hx-target="#community-feed-container"
-                    onclick="activateTab(this)">
-              Critical
-            </button>
-            <button type="button"
-                    class="segmented-btn"
-                    hx-get="{% url 'community:feed_partial' %}?sort=mine"
-                    hx-target="#community-feed-container"
-                    onclick="activateTab(this)">
-              Mine
-            </button>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <select class="form-select"
-                    style="height: 32px; padding: 2px 8px; font-size: 11.5px;"
-                    name="category"
-                    hx-get="{% url 'community:feed_partial' %}"
-                    hx-target="#community-feed-container"
-                    hx-include="[name='status']"
-                    hx-params="*">
-              <option value="">All Categories</option>
-              {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.name }}</option>
+      {% if recent_tickets %}
+        <div class="table-container" style="border: none; margin: 0;">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ticket in recent_tickets %}
+                <tr onclick="window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';" style="cursor: pointer;">
+                  <td style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 600; white-space: nowrap;">
+                    {{ ticket.ticket_no }}
+                  </td>
+                  <td style="font-weight: 500;">
+                    <span style="color: var(--text-primary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">
+                      {{ ticket.title }}
+                    </span>
+                  </td>
+                  <td style="white-space: nowrap; font-size: var(--fs-xs); color: var(--text-secondary);">
+                    {% if ticket.category.icon %}
+                      <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px; color: var(--text-muted); vertical-align: middle; margin-right: 4px;"></i>
+                    {% endif %}
+                    {{ ticket.category.name }}
+                  </td>
+                  <td style="white-space: nowrap;">
+                    {% status_pill ticket.status %}
+                  </td>
+                  <td style="white-space: nowrap;">
+                    {% priority_dot ticket.priority %}
+                  </td>
+                  <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+                    {% time_ago ticket.updated_at %}
+                  </td>
+                </tr>
               {% endfor %}
-            </select>
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div style="padding: 36px 16px; text-align: center; color: var(--text-muted);">
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
+            </div>
+            <h4 class="empty-state-title" style="margin-top: 8px; font-weight: 600;">No tickets raised yet</h4>
+            <p class="empty-state-text" style="font-size: var(--fs-xs); margin-top: 4px;">Submit a maintenance or room issue whenever you need assistance.</p>
+            <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm" style="margin-top: 12px;">
+              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+              <span>Raise ticket</span>
+            </a>
           </div>
         </div>
-      </div>
-
-      {# Infinite Feed List #}
-      <div id="community-feed-container">
-        {% include 'community/_feed_list.html' %}
-      </div>
+      {% endif %}
     </div>
 
-    {# Right Column: Sticky Widgets #}
+    {# Right Column: Sticky Announcements Rail #}
     <div style="position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px;">
-
-      {# Widget 1: Announcements #}
       <div class="right-rail-card">
         <div class="rail-widget-title">
           <div style="display: flex; align-items: center; gap: 6px;">
@@ -230,105 +232,9 @@
           </div>
         {% endif %}
       </div>
-
-      {# Widget 2: Trending in your hostel #}
-      <div class="right-rail-card">
-        <div class="rail-widget-title">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span>🔥 Trending in {{ user.hostel.name|default:"hostel" }}</span>
-          </div>
-        </div>
-
-        {% if trending_tickets %}
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            {% for t in trending_tickets %}
-              <a href="{% url 'tickets:detail' t.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: inherit;">
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {{ t.title }}
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                    {{ t.category.name }}
-                  </div>
-                </div>
-                <span class="badge" style="background-color: var(--accent-light); color: var(--accent); font-size: 11px; font-weight: 700; white-space: nowrap;">
-                  <i data-lucide="repeat" style="width: 10px; height: 10px; margin-right: 2px;"></i>
-                  {{ t.repost_count }}
-                </span>
-              </a>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 8px 0;">
-            No trending reposts right now.
-          </div>
-        {% endif %}
-      </div>
-
-      {# Widget 3: My Tickets (Recent 3) #}
-      <div class="right-rail-card">
-        <div class="rail-widget-title">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="ticket" style="width: 15px; height: 15px; color: var(--text-muted);"></i>
-            <span>My tickets</span>
-          </div>
-          <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 500;">
-            View all →
-          </a>
-        </div>
-
-        {% if recent_tickets %}
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            {% for t in recent_tickets %}
-              <a href="{% url 'tickets:detail' t.ticket_no %}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: inherit;">
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {{ t.title }}
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                    {{ t.ticket_no }} · {{ t.created_at|timesince }} ago
-                  </div>
-                </div>
-                <div>
-                  {% status_pill t.status %}
-                </div>
-              </a>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 8px 0;">
-            You have not raised any tickets.
-          </div>
-        {% endif %}
-      </div>
-
     </div>
+
   </div>
 
 </div>
-
-<script>
-  function activateTab(btn) {
-    btn.parentElement.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  function toggleCommentSection(ticketNo) {
-    const el = document.getElementById('comments-' + ticketNo);
-    if (!el) return;
-    if (el.style.display === 'none') {
-      el.style.display = 'block';
-      htmx.trigger(document.body, 'load-comments-' + ticketNo);
-    } else {
-      el.style.display = 'none';
-    }
-  }
-
-
-  document.body.addEventListener('htmx:afterSwap', function() {
-    if (window.lucide) {
-      lucide.createIcons();
-    }
-  });
-</script>
 {% endblock %}

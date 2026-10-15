@@ -52,12 +52,6 @@
   --prio-medium:       #2490EF;
   --prio-low:          #8D96A0;
 
-  /* Criticality & Community Tokens */
-  --crit-low:          #8D8D8D;
-  --crit-med:          #2490EF;
-  --crit-high:         #F08C00;
-  --crit-urgent:       #E03E3E;
-
   /* Announcement Severity Tokens */
   --ann-info-bg:       #E8F1FD;
   --ann-info-fg:       #1D5FB4;
@@ -182,16 +176,11 @@
   --col-hold:          rgba(140, 100, 220, 0.08);
   --col-resolved:      rgba(52, 160, 107, 0.07);
 
-  /* Priority & Criticality */
+  /* Priority */
   --prio-urgent:       #FF6B6B;
   --prio-high:         #FFA94D;
   --prio-medium:       #4DA3FF;
   --prio-low:          #8A93A3;
-  --crit-low:          #8A93A3;
-  --crit-med:          #4DA3FF;
-  --crit-high:         #FFA94D;
-  --crit-urgent:       #FF6B6B;
-
   /* Announcement Severities */
   --ann-info-bg:       rgba(36, 144, 239, 0.16);
   --ann-info-fg:       #7DB8FF;

@@ -115,7 +115,6 @@
         <label class="form-label" for="{{ form.title.id_for_label }}">Title / Summary *</label>
         {{ form.title }}
         {% if form.title.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.title.errors.0 }}</span>{% endif %}
-        <div id="similar-issues-target"></div>
       </div>
 
       <!-- Description -->
@@ -156,34 +155,6 @@
               <span x-text="count + ' file(s) selected: ' + names.join(', ')"></span>
             </div>
           </template>
-        </div>
-      </div>
-
-      <!-- Community Feed Sharing Toggle (Section 7.3) -->
-      <div class="card" style="padding: 14px 16px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md);" x-data="{ shared: true }">
-        <div style="display: flex; align-items: flex-start; gap: 10px;">
-          <input type="checkbox"
-                 name="share_with_community"
-                 id="id_share_with_community"
-                 class="form-check-input"
-                 style="margin-top: 3px;"
-                 x-model="shared"
-                 {% if form.share_with_community.value %}checked{% endif %}>
-          <div style="flex: 1;">
-            <label for="id_share_with_community" style="font-weight: 600; font-size: var(--fs-base); color: var(--text-primary); cursor: pointer;">
-              Share this with other hostelers in my hostel
-            </label>
-            <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 2px 0 0;">
-              Allows hostelers in your hostel to view, repost ("facing this too"), and upvote this issue.
-            </p>
-
-            <div x-show="shared" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 8px;">
-              {{ form.show_reporter_name }}
-              <label for="{{ form.show_reporter_name.id_for_label }}" style="font-size: var(--fs-xs); color: var(--text-secondary); cursor: pointer;">
-                Show my name in the feed (default is hidden as "A hosteler")
-              </label>
-            </div>
-          </div>
         </div>
       </div>
 

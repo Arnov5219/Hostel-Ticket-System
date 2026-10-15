@@ -79,19 +79,7 @@ def nav_for(user) -> dict:
             )
         )
 
-    # 4. Community (Hostelers ONLY - strictly excluded for staff)
-    if is_hosteler and user.can(Capability.COMMUNITY_ACCESS):
-        sidebar_items.append(
-            NavItem(
-                key="community",
-                label="Community",
-                icon="users",
-                url_name="community:feed",
-                section="community",
-            )
-        )
-
-    # 5. Announcements
+    # 4. Announcements
     sidebar_items.append(
         NavItem(
             key="announcements",
@@ -102,7 +90,7 @@ def nav_for(user) -> dict:
         )
     )
 
-    # 6. Admin / Chief Warden Management Items
+    # 5. Admin / Chief Warden Management Items
     if user.can(Capability.MANAGE_HOSTELS):
         sidebar_items.append(
             NavItem(
@@ -144,7 +132,7 @@ def nav_for(user) -> dict:
             )
         )
 
-    # 7. Trash (Warden, Chief Warden, Admin)
+    # 6. Trash (Warden, Chief Warden, Admin)
     if is_warden or is_cw_or_admin:
         sidebar_items.append(
             NavItem(
@@ -156,7 +144,7 @@ def nav_for(user) -> dict:
             )
         )
 
-    # 8. Notifications
+    # 7. Notifications
     sidebar_items.append(
         NavItem(
             key="notifications",
@@ -168,21 +156,20 @@ def nav_for(user) -> dict:
         )
     )
 
-    # Mobile Bottom Bar Items (Exact 5 items per role matrix Section 9.2)
+    # Mobile Bottom Bar Items
     mobile_bar_items = []
     mobile_more_items = []
 
     if is_hosteler:
-        # Hosteler = Home · Community · ＋ Raise · News · More
+        # Hosteler = Home · My tickets · ＋ Raise · News · More
         mobile_bar_items = [
             NavItem(key="home", label="Home", icon="home", url_name="core:home", section="dashboard"),
-            NavItem(key="community", label="Community", icon="users", url_name="community:feed", section="community"),
+            NavItem(key="tickets", label="My Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
             NavItem(key="raise", label="Raise", icon="plus", url_name="tickets:create", section="tickets_create", is_action=True),
             NavItem(key="news", label="News", icon="megaphone", url_name="announcements:list", section="announcements"),
             NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
         ]
         mobile_more_items = [
-            NavItem(key="tickets", label="My Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
             NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="profile", label="Profile & Residence", icon="user", url_name="accounts:profile", section="profile"),
         ]

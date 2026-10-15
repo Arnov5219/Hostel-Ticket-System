@@ -2,11 +2,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from apps.accounts.models import Role, User
-from apps.hostels.models import Hostel, Room
+from apps.hostels.models import Hostel
 from apps.tickets.models import (
     Category,
     CommentScope,
-    CriticalityRule,
     Priority,
     RoutingRule,
     SLAPolicy,
@@ -17,29 +16,16 @@ from apps.tickets.models import (
 )
 
 
-class CriticalityRuleForm(forms.ModelForm):
-    class Meta:
-        model = CriticalityRule
-        fields = ["min_reposts", "bump_levels", "force_priority", "notify_level"]
-        widgets = {
-            "min_reposts": forms.NumberInput(attrs={"class": "form-control", "min": 1, "placeholder": "e.g. 3"}),
-            "bump_levels": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 3, "placeholder": "e.g. 1"}),
-            "force_priority": forms.Select(attrs={"class": "form-select"}),
-            "notify_level": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 4, "placeholder": "e.g. 2"}),
-        }
-
-
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ["name", "icon", "default_priority", "allow_community", "is_active"]
+        fields = ["name", "icon", "default_priority", "is_active"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "icon": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "e.g. zap, droplet"}
             ),
             "default_priority": forms.Select(attrs={"class": "form-select"}),
-            "allow_community": forms.CheckboxInput(),
             "is_active": forms.CheckboxInput(),
         }
 
@@ -84,18 +70,6 @@ class TagForm(forms.ModelForm):
 
 
 class TicketCreateForm(forms.ModelForm):
-    share_with_community = forms.BooleanField(
-        required=False,
-        initial=True,
-        label="Share this with other hostelers in my hostel",
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_share_with_community"}),
-    )
-    show_reporter_name = forms.BooleanField(
-        required=False,
-        initial=False,
-        label="Show my name",
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_show_reporter_name"}),
-    )
     different_hostel = forms.BooleanField(
         required=False,
         initial=False,
@@ -111,7 +85,6 @@ class TicketCreateForm(forms.ModelForm):
             "priority",
             "description",
             "hostel",
-            "show_reporter_name",
         ]
         widgets = {
             "title": forms.TextInput(
@@ -119,10 +92,6 @@ class TicketCreateForm(forms.ModelForm):
                     "class": "form-control",
                     "placeholder": "Brief summary of the issue...",
                     "autofocus": True,
-                    "hx-get": "/community/similar/",
-                    "hx-trigger": "keyup changed delay:400ms",
-                    "hx-target": "#similar-issues-target",
-                    "hx-include": "#id_category",
                 }
             ),
             "category": forms.Select(attrs={"class": "form-select", "id": "id_category"}),
@@ -172,25 +141,15 @@ class TicketCreateForm(forms.ModelForm):
             outside_own_hostel = True
 
         cleaned_data["outside_own_hostel"] = outside_own_hostel
-
-        cat = cleaned_data.get("category")
-        if cat and not cat.allow_community:
-            cleaned_data["share_with_community"] = False
         return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        cat = self.cleaned_data.get("category")
-        share = self.cleaned_data.get("share_with_community")
-        if share and (not cat or cat.allow_community):
-            instance.visibility = TicketVisibility.HOSTEL
-        else:
-            instance.visibility = TicketVisibility.PRIVATE
-
+        instance.visibility = TicketVisibility.PRIVATE
         instance.room = None
         instance.location_detail = ""
         instance.outside_own_hostel = self.cleaned_data.get("outside_own_hostel", False)
-        instance.show_reporter_name = bool(self.cleaned_data.get("show_reporter_name"))
+        instance.show_reporter_name = False
         instance.base_priority = instance.priority
         if commit:
             instance.save()
@@ -242,7 +201,7 @@ class CommentForm(forms.ModelForm):
         instance = super().save(commit=False)
         if self.cleaned_data.get("is_internal"):
             instance.scope = CommentScope.INTERNAL
-        elif instance.scope == CommentScope.INTERNAL:
+        else:
             instance.scope = CommentScope.PRIVATE
         if commit:
             instance.save()
