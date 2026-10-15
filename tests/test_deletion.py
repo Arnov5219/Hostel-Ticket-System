@@ -1,7 +1,8 @@
 import datetime
 from io import StringIO
+
 import pytest
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
@@ -17,7 +18,6 @@ from apps.tickets.models import (
     Ticket,
     TicketActivity,
     TicketComment,
-    TicketVisibility,
 )
 from apps.tickets.services.deletion import (
     can_delete,
@@ -34,7 +34,7 @@ def deletion_setup(db):
     h2 = Hostel.objects.create(name="Hostel Two", code="H2", gender_type=GenderType.BOYS)
 
     r1 = Room.objects.create(hostel=h1, room_number="101", floor=1, capacity=2)
-    r2 = Room.objects.create(hostel=h2, room_number="201", floor=2, capacity=2)
+    Room.objects.create(hostel=h2, room_number="201", floor=2, capacity=2)
 
     cat, _ = Category.objects.get_or_create(name="Maintenance", defaults={"is_active": True})
 

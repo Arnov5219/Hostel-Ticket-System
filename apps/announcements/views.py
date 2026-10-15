@@ -1,8 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -12,7 +12,6 @@ from apps.announcements.forms import AnnouncementForm
 from apps.announcements.models import (
     Announcement,
     AnnouncementRead,
-    AnnouncementSeverity,
     AnnouncementStatus,
 )
 from apps.announcements.services import (
@@ -21,7 +20,6 @@ from apps.announcements.services import (
     can_publish,
     mark_read,
     publish,
-    schedule,
     unread_count,
     visible_to,
 )

@@ -1,5 +1,3 @@
-import time
-from unittest.mock import patch
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.signing import TimestampSigner
@@ -9,16 +7,9 @@ from django.utils import timezone
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role, User
 from apps.accounts.services import (
-    bulk_verify_residents,
-    generate_registration_token,
     register_hosteler,
-    reject_resident,
-    reset_resident_password,
-    verify_resident,
 )
 from apps.hostels.models import GenderType, Hostel, Room
-from apps.tickets.factories import TicketFactory
-from apps.tickets.models import Category, Priority, Ticket, TicketVisibility
 
 
 @pytest.fixture
@@ -201,7 +192,6 @@ class TestRegistrationView:
 
     def test_post_registration_success(self, client, hostel_setup):
         h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
 
         url = reverse("accounts:register")
         post_data = {
@@ -287,6 +277,7 @@ class TestWardenResidentVerification:
 
     def test_cli_reset_user_password(self, hostel_setup):
         from io import StringIO
+
         from django.core.management import call_command
         student = UserFactory(role=Role.HOSTELER, login_id="STU_RESET_CLI")
         out = StringIO()
@@ -296,10 +287,12 @@ class TestWardenResidentVerification:
         assert "Password reset successfully" in out.getvalue()
 
     def test_cli_import_allowed_roll_numbers(self):
-        import tempfile
         import os
+        import tempfile
         from io import StringIO
+
         from django.core.management import call_command
+
         from apps.accounts.models import AllowedRollNumber
 
         with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".txt") as f:

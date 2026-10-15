@@ -1,10 +1,9 @@
 from django.urls import path
 
 from apps.tickets import views
+from apps.tickets.views.settings import manage_settings
 
 app_name = "tickets"
-
-from apps.tickets.views.settings import manage_settings
 
 urlpatterns = [
     path("", views.ticket_list, name="list"),

@@ -8,6 +8,12 @@ from .actions import (
     toggle_follow,
 )
 from .create import ticket_create
+from .deletion import (
+    ticket_delete_view,
+    ticket_restore_view,
+    ticket_undo_delete_view,
+    trash_list_view,
+)
 from .detail import ticket_detail
 from .kanban import ticket_kanban
 from .list import (
@@ -19,12 +25,6 @@ from .list import (
     ticket_list,
 )
 from .manage import manage_routing
-from .deletion import (
-    ticket_delete_view,
-    ticket_undo_delete_view,
-    ticket_restore_view,
-    trash_list_view,
-)
 
 __all__ = [
     "ticket_list",

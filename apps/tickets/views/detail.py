@@ -17,7 +17,6 @@ from apps.tickets.models import (
 from apps.tickets.services.deletion import can_delete
 
 
-
 @login_required
 def ticket_detail(request, ticket_no):
     ticket = get_object_or_404(

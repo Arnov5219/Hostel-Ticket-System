@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+
 from django.urls import reverse
 
 from apps.accounts.models import Role
@@ -13,7 +13,7 @@ class NavItem:
     icon: str
     url_name: str
     section: str
-    badge_key: Optional[str] = None
+    badge_key: str | None = None
     is_action: bool = False
 
     @property
@@ -37,7 +37,6 @@ def nav_for(user) -> dict:
         }
 
     is_hosteler = getattr(user, "is_hosteler", False)
-    is_caretaker = getattr(user, "role", None) == Role.CARETAKER
     is_warden = getattr(user, "role", None) == Role.WARDEN
     is_cw_or_admin = getattr(user, "role", None) in [Role.CHIEF_WARDEN, Role.ADMIN]
 

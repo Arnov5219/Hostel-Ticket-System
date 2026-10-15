@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.models import Role, User
 from apps.core.permissions import can_manage_config
-from apps.hostels.forms import AssignStaffHostelForm, ChangeResponsibleStaffForm, HostelForm
+from apps.hostels.forms import HostelForm
 from apps.hostels.models import Hostel, Room
 from apps.hostels.services import (
     assign_staff_to_hostel,
@@ -15,8 +15,6 @@ from apps.hostels.services import (
     deactivate_hostel,
     deactivate_staff,
     generate_rooms,
-    get_active_tickets_count_for_hostel,
-    get_active_tickets_count_for_staff,
     natural_sort_key,
     room_options,
     update_hostel,
@@ -485,8 +483,9 @@ def manage_residents(request):
     Wardens see residents in their own hostel.
     Admins & Chief Wardens see campus-wide residents.
     """
-    from apps.core.permissions import can_verify_residents
     from django.core.paginator import Paginator
+
+    from apps.core.permissions import can_verify_residents
 
     if not can_verify_residents(request.user):
         raise PermissionDenied("You do not have permission to view residents.")

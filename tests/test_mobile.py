@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
+
 import pytest
 from django.urls import reverse
+
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role
 from apps.hostels.models import GenderType, Hostel, Room
 from apps.tickets.factories import TicketFactory
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -71,7 +72,7 @@ def test_ticket_list_renders_both_desktop_and_mobile_views(client):
     """Ticket list table includes responsive desktop table view and mobile card list."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     user = UserFactory(role=Role.CARETAKER, hostel=hostel, password="password123")
-    ticket = TicketFactory(hostel=hostel, title="Water heater broken")
+    TicketFactory(hostel=hostel, title="Water heater broken")
     client.login(username=user.login_id, password="password123")
 
     response = client.get(reverse("tickets:list"))
@@ -89,7 +90,7 @@ def test_kanban_renders_mobile_tab_strip_and_move_fallback(client):
     """Kanban board includes status tab strip and card action fallback for mobile."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     caretaker = UserFactory(role=Role.CARETAKER, hostel=hostel, password="password123")
-    ticket = TicketFactory(hostel=hostel, assigned_to=caretaker, status="ASSIGNED", title="Leaking tap")
+    TicketFactory(hostel=hostel, assigned_to=caretaker, status="ASSIGNED", title="Leaking tap")
     client.login(username=caretaker.login_id, password="password123")
 
     response = client.get(reverse("tickets:kanban"))

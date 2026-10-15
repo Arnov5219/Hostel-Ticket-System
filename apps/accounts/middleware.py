@@ -64,8 +64,8 @@ class EnforcePasswordChangeAndSessionMiddleware:
         if request.user.is_authenticated:
             # 1. Deactivated or archived user check
             if not request.user.is_active or getattr(request.user, "archived_at", None):
-                from django.contrib.auth import logout
                 from django.contrib import messages
+                from django.contrib.auth import logout
                 logout(request)
                 messages.error(request, "Your account is deactivated. Contact your administrator.")
                 return redirect("accounts:login")
@@ -74,8 +74,8 @@ class EnforcePasswordChangeAndSessionMiddleware:
             sess_version = request.session.get("session_version")
             user_version = getattr(request.user, "session_version", 1) or 1
             if sess_version is not None and sess_version != user_version:
-                from django.contrib.auth import logout
                 from django.contrib import messages
+                from django.contrib.auth import logout
                 logout(request)
                 messages.warning(request, "Your session has expired due to account changes. Please log in again.")
                 return redirect("accounts:login")

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import pytest
 from django.urls import reverse
 
@@ -173,7 +174,7 @@ class TestLegacyDataRendering:
         )
 
         # 3. Create regular comment
-        regular_comment = TicketComment.objects.create(
+        TicketComment.objects.create(
             ticket=ticket,
             author=hosteler,
             body="Legitimate reporter message",

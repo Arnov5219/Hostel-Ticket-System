@@ -1,9 +1,8 @@
 import pytest
-from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
 
 from apps.accounts.factories import UserFactory
-from apps.accounts.models import Role, StaffAuditLog, User
+from apps.accounts.models import Role, StaffAuditLog
 from apps.accounts.services.staff import (
     ActiveTicketsError,
     archive_staff,
@@ -16,15 +15,10 @@ from apps.accounts.services.staff import (
 from apps.core.navigation import nav_for
 from apps.core.permissions import Capability, has_capability
 from apps.hostels.factories import HostelFactory
-from apps.hostels.models import Hostel
 from apps.tickets.factories import CategoryFactory, TicketFactory
 from apps.tickets.models import (
-    CommentReport,
-    CommentScope,
     Priority,
     Status,
-    Ticket,
-    TicketComment,
     TicketVisibility,
 )
 from apps.tickets.services.sla import hours_for

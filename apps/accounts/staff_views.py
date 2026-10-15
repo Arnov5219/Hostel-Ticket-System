@@ -1,16 +1,13 @@
-import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_control
-from django.views.decorators.http import require_POST
 
 from apps.accounts.models import Role, User
 from apps.accounts.services.staff import (
-    ActiveTicketsError,
     archive_staff,
     change_login_id,
     create_staff,

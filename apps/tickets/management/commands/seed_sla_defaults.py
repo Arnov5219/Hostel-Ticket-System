@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from apps.tickets.models import Priority, SLAPolicy
+from apps.tickets.models import SLAPolicy
 from apps.tickets.services.sla import DEFAULT_SLA_HOURS
 
 

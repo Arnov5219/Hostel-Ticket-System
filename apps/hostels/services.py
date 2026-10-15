@@ -191,6 +191,7 @@ def room_options(hostel: Hostel, floor: int | None = None):
     annotated with their current resident count.
     """
     from django.db.models import Count
+
     from apps.hostels.models import Room
 
     qs = Room.objects.filter(hostel=hostel, is_active=True)

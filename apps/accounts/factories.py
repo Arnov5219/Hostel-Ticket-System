@@ -26,6 +26,7 @@ class UserFactory(factory.django.DjangoModelFactory):
 
         if user.role == Role.HOSTELER and with_residence and not user.has_residence:
             from django.utils import timezone
+
             from apps.hostels.factories import HostelFactory, RoomFactory
 
             if not user.hostel:

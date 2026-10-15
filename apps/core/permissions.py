@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from functools import wraps
 
 from django.core.exceptions import PermissionDenied
@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from apps.accounts.models import Role
 
 
-class Capability(str, Enum):
+class Capability(StrEnum):
     RAISE_TICKET = "RAISE_TICKET"
     VIEW_ASSIGNED_TICKETS = "VIEW_ASSIGNED_TICKETS"
     VIEW_HOSTEL_TICKETS = "VIEW_HOSTEL_TICKETS"

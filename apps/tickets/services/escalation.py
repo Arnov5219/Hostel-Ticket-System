@@ -6,13 +6,10 @@ from apps.accounts.models import Role, User
 from apps.notifications.models import Notification
 from apps.tickets.models import (
     ActivityAction,
-    SLAPolicy,
     Status,
     Ticket,
     TicketActivity,
 )
-
-
 from apps.tickets.services.sla import hours_for
 
 

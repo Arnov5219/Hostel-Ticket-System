@@ -1,6 +1,5 @@
 import pytest
 from django.core.exceptions import ValidationError
-from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import ResidenceHistory, Role, User

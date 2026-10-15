@@ -1,4 +1,5 @@
 import hashlib
+
 from django import template
 from django.utils import timezone
 from django.utils.safestring import mark_safe

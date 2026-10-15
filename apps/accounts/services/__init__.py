@@ -1,10 +1,10 @@
-from django.conf import settings
+import secrets
+
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.db import transaction
 from django.utils import timezone
-import secrets
 
 from apps.accounts.models import ResidenceHistory, Role, User
 from apps.hostels.models import Hostel, Room

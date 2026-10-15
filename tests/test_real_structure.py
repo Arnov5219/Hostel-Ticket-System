@@ -1,9 +1,8 @@
 import pytest
-from django.urls import reverse
 
 from apps.accounts.models import Role, User
-from apps.hostels.models import GenderType, Hostel, Room
-from apps.hostels.services import generate_rooms, natural_sort_key, room_options
+from apps.hostels.models import GenderType, Hostel
+from apps.hostels.services import generate_rooms, natural_sort_key
 
 
 @pytest.mark.django_db

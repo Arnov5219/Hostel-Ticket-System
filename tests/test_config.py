@@ -3,9 +3,8 @@ from django.urls import reverse
 
 from apps.accounts.factories import UserFactory
 from apps.accounts.models import Role
-from apps.hostels.factories import HostelFactory
 from apps.hostels.models import Hostel
-from apps.tickets.models import Category, Priority, RoutingRule, SLAPolicy
+from apps.tickets.models import Priority, SLAPolicy
 
 
 @pytest.mark.django_db

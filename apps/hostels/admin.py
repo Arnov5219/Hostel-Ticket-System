@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from apps.hostels.models import Hostel, Room
 
 

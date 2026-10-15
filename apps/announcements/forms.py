@@ -4,9 +4,7 @@ from django.core.exceptions import ValidationError
 from apps.accounts.models import Role
 from apps.announcements.models import (
     Announcement,
-    AnnouncementKind,
     AnnouncementSeverity,
-    AnnouncementStatus,
 )
 from apps.hostels.models import Hostel
 from apps.tickets.models import Ticket

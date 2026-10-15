@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 
 from apps.accounts.models import User
-from apps.hostels.models import Hostel, Room
+from apps.hostels.models import Hostel
 
 
 class LoginForm(forms.Form):
@@ -145,6 +145,7 @@ class HostelerRegistrationForm(forms.Form):
 
     def clean_login_id(self):
         from django.conf import settings
+
         from apps.accounts.models import AllowedRollNumber
 
         login_id = (self.cleaned_data.get("login_id") or "").strip().upper()

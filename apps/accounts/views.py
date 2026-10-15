@@ -6,7 +6,12 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 
-from apps.accounts.forms import HostelerRegistrationForm, LoginForm, ProfileUpdateForm, ResidenceForm
+from apps.accounts.forms import (
+    HostelerRegistrationForm,
+    LoginForm,
+    ProfileUpdateForm,
+    ResidenceForm,
+)
 from apps.accounts.services import (
     generate_registration_token,
     register_hosteler,

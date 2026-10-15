@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.accounts.models import Role, User, Theme, ResidenceHistory
+from apps.accounts.models import ResidenceHistory, Role, Theme, User
 from apps.announcements.models import (
     Announcement,
     AnnouncementKind,
@@ -13,18 +13,16 @@ from apps.announcements.models import (
     AnnouncementSeverity,
     AnnouncementStatus,
 )
-from apps.hostels.models import GenderType, Hostel, Room
+from apps.hostels.models import Hostel
 from apps.tickets.models import (
     ActivityAction,
     Category,
-    CommentScope,
     Priority,
     RoutingRule,
     Status,
     Ticket,
     TicketActivity,
     TicketComment,
-    TicketVisibility,
 )
 from apps.tickets.services.deletion import soft_delete
 

@@ -1,5 +1,6 @@
 import csv
 import os
+
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.models import AllowedRollNumber
@@ -20,7 +21,7 @@ class Command(BaseCommand):
         created_count = 0
         updated_count = 0
 
-        with open(csv_path, mode="r", encoding="utf-8-sig") as f:
+        with open(csv_path, encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             # If CSV has no header, fall back to plain reading
             if "roll_no" not in (reader.fieldnames or []):
