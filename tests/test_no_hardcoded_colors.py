@@ -64,9 +64,6 @@ def test_no_hardcoded_colors_in_templates():
     style_attr_regex = re.compile(r'style="([^"]*)"', re.IGNORECASE)
 
     for tmpl_file in templates_dir.rglob("*.html"):
-        if tmpl_file.name == "ui_kit.html":
-            continue
-
         content = tmpl_file.read_text(encoding="utf-8")
         lines = content.splitlines()
 

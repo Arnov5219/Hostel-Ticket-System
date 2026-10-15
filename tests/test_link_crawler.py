@@ -46,6 +46,7 @@ class TestTemplateUrlsAndNavigationCrawler:
             Role.CARETAKER,
             Role.WARDEN,
             Role.CHIEF_WARDEN,
+            Role.DEAN,
             Role.ADMIN,
         ]
 
