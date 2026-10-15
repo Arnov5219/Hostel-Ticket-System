@@ -1,17 +1,28 @@
-# Permission & Role-Name Audit (Phase X0)
+# Permission & Role-Name Audit (Phase A0: Role Separation)
 
-## 1. Role-Name & Direct Role Check Audit
-Direct checks on `user.role`, `is_admin`, `is_warden`, `is_chief_warden`, `is_hosteler` were identified in:
-- `apps/core/permissions.py`: `can_raise_ticket`, `can_view_kanban`, `can_manage_config`, `can_view_ticket`, `can_moderate_community`, `can_publish_announcements`, etc.
-- `apps/core/mixins.py`: `RoleRequiredMixin` checking `request.user.role in self.allowed_roles`.
-- `apps/tickets/querysets.py`: `visible_to`, `can_see_history`.
-- `apps/tickets/services/community.py`: staff checks on community comment actions.
-- `apps/tickets/services/deletion.py`: `can_delete`, `restore_ticket`.
-- `apps/tickets/views/deletion.py`: trash and restore views.
-- `apps/announcements/views.py` & `services.py`: publication scoping.
-- `apps/hostels/views.py`: scoping for management views.
+## 1. Places where Chief Warden or Dean is Treated as Admin
+- `apps/core/permissions.py`:
+  - `CHIEF_WARDEN_CAPABILITIES = frozenset(ADMIN_CAPABILITIES - {Capability.RAISE_TICKET})` -> To be replaced with dedicated non-admin capability sets.
+  - `can_manage_user`: Branch checking `actor.role == Role.CHIEF_WARDEN` and `CHIEF_WARDEN_CAN_MANAGE_ADMINS` -> To be deleted; only Admin can manage staff.
+- `apps/core/navigation.py`:
+  - `is_cw_or_admin = getattr(user, "role", None) in [Role.CHIEF_WARDEN, Role.ADMIN]` -> Replaced with separate navigation definitions for Chief Warden, Dean, and Admin.
+- `apps/tickets/views/deletion.py`:
+  - `request.user.is_admin or request.user.is_chief_warden` -> Restrict restore & trash view to Admin (`Capability.RESTORE_TICKET`, `Capability.VIEW_TRASH_ALL`).
+- `apps/announcements/views.py` & `services.py`:
+  - `user.role in [Role.ADMIN, Role.CHIEF_WARDEN]` -> Handled by `Capability.PUBLISH_ANNOUNCEMENT` with role scoping (Warden: own; Chief Warden: any; Dean: all; Admin: system).
+- `apps/accounts/services/staff.py`:
+  - `role in [Role.CHIEF_WARDEN, Role.ADMIN]` for campus assignment -> Extended to Dean; Admin is system without escalation tier.
 
-## 2. Refactoring Target
-Replace role-name checks with `Capability` enum checks via `has_capability(user, Capability.X)` or `user.can(Capability.X)` and `CapabilityRequiredMixin`.
-Chief Warden will inherit all administrative capabilities equal to Admin (with the exception of peer account management policy `can_manage_user` and superuser Django-admin).
-Community access will be restricted exclusively to `Capability.COMMUNITY_ACCESS` (Hostelers only).
+## 2. Template Audit for `admin` / `Admin` Literals
+- `templates/components/_admin_subnav.html`:
+  - Line 1: `{% if request.user.is_authenticated and request.user.is_admin or request.user.is_chief_warden %}` -> Change to Admin only (`request.user.is_admin`).
+- `templates/tickets/detail.html`:
+  - Admin controls vs Staff controls: Admin does not change status or escalate tickets directly.
+- `templates/tickets/kanban.html`:
+  - Line 37 & 88: `{% if request.user.is_admin %}` -> Kanban is not a system admin tool; Dean/Warden/Caretaker use Kanban, Admin navigation excludes Kanban.
+- `templates/tickets/_list_table.html` & `templates/tickets/list.html`:
+  - `{% if request.user.is_hosteler or request.user.is_admin %}` for "Raise ticket" button -> Kept for Admin support / raise on behalf.
+- `templates/accounts/login.html`:
+  - Demo accounts disclosure: Replace with L0..L5 chips.
+- `templates/components/_sidebar.html`:
+  - Rendered dynamically through `core/navigation.py` using capability checks.
