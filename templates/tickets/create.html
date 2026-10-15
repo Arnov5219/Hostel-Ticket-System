@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block page_title %}Raise ticket{% endblock %}
-{% block page_subtitle %}Submit a maintenance request or issue in your hostel{% endblock %}
+{% block page_subtitle %}Submit a hostel maintenance request or report an issue{% endblock %}
 {% block page_actions %}{% endblock %}
 
 {% block content %}
@@ -38,10 +38,26 @@
       {% csrf_token %}
       {{ form.priority }}
 
-      <!-- Category -->
-      <div class="form-group" style="margin: 0;">
-        <label class="form-label" for="{{ form.category.id_for_label }}">Category *</label>
-        {{ form.category }}
+      <!-- Category Selection: 3-column radio-cards on desktop, 2-column on mobile -->
+      <div class="form-group" style="margin: 0;" x-data="{ selectedCategory: '{{ form.category.value|default:'' }}' }">
+        <label class="form-label">Category *</label>
+        <select name="category" id="id_category" style="display: none;" required x-model="selectedCategory">
+          <option value="">Select category</option>
+          {% for cat in form.fields.category.queryset %}
+            <option value="{{ cat.id }}" {% if form.category.value == cat.id or form.category.value == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+
+        <div class="category-radio-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          {% for cat in form.fields.category.queryset %}
+            <div class="form-radio-card"
+                 :class="{ 'active': selectedCategory == '{{ cat.id }}' }"
+                 @click="selectedCategory = '{{ cat.id }}'; document.getElementById('id_category').value = '{{ cat.id }}';">
+              <i data-lucide="{{ cat.icon|default:'tag' }}" style="width: 18px; height: 18px; color: var(--primary); flex-shrink: 0;"></i>
+              <span style="font-size: var(--fs-xs); font-weight: 500; line-height: 1.3;">{{ cat.name }}</span>
+            </div>
+          {% endfor %}
+        </div>
         {% if form.category.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.category.errors.0 }}</span>{% endif %}
       </div>
 
@@ -49,13 +65,13 @@
       <div class="form-group" style="margin: 0;">
         <label class="form-label">Priority</label>
         <div class="segmented-control" id="priority-segmented">
-          <button type="button" class="segmented-option" data-priority="LOW" onclick="setPriority('LOW', this)">Low</button>
-          <button type="button" class="segmented-option active" data-priority="MEDIUM" onclick="setPriority('MEDIUM', this)">Medium</button>
-          <button type="button" class="segmented-option" data-priority="HIGH" onclick="setPriority('HIGH', this)">High</button>
-          <button type="button" class="segmented-option" data-priority="URGENT" onclick="setPriority('URGENT', this)">Urgent</button>
+          <button type="button" class="segmented-option" data-priority="LOW" onclick="setPriority('LOW', this)">Low (48h)</button>
+          <button type="button" class="segmented-option active" data-priority="MEDIUM" onclick="setPriority('MEDIUM', this)">Medium (24h)</button>
+          <button type="button" class="segmented-option" data-priority="HIGH" onclick="setPriority('HIGH', this)">High (8h)</button>
+          <button type="button" class="segmented-option" data-priority="URGENT" onclick="setPriority('URGENT', this)">Urgent (2h)</button>
         </div>
         <span class="form-help" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
-          Urgent is for active safety hazards, water leaks, or electrical hazards.
+          Urgent (2h SLA) is for active safety hazards, major water leaks, or electrical hazards.
         </span>
       </div>
 
@@ -73,7 +89,7 @@
            }">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
-            <i data-lucide="map-pin" style="width: 16px; height: 16px; color: var(--accent);"></i>
+            <i data-lucide="map-pin" style="width: 16px; height: 16px; color: var(--primary);"></i>
             <span>Hostel</span>
           </div>
 
@@ -88,8 +104,8 @@
         </div>
 
         <!-- Helper message when different hostel is checked -->
-        <div x-show="differentHostel" style="font-size: var(--fs-xs); color: var(--accent); background-color: var(--accent-light); padding: 6px 10px; border-radius: var(--radius-xs); margin-bottom: 12px;">
-          ⓘ Staff in that hostel will receive this ticket.
+        <div x-show="differentHostel" style="font-size: var(--fs-xs); color: var(--primary); background-color: var(--primary-soft); padding: 6px 10px; border-radius: var(--radius-xs); margin-bottom: 12px;">
+          ⓘ Staff in that hostel will receive and resolve this ticket.
         </div>
 
         <!-- Hostel select -->
@@ -110,7 +126,7 @@
         </div>
       </div>
 
-      <!-- Title -->
+      <!-- Title / Summary -->
       <div class="form-group" style="margin: 0;">
         <label class="form-label" for="{{ form.title.id_for_label }}">Title / Summary *</label>
         {{ form.title }}
@@ -128,10 +144,10 @@
       </div>
 
       <!-- Image Attachments (up to 3 images, 5 MB each) -->
-      <div class="form-group" style="margin: 0;" x-data="{ count: 0, names: [] }">
+      <div class="form-group" style="margin: 0;" x-data="{ files: [] }">
         <label class="form-label">Image attachments <span style="font-weight: 400; color: var(--text-muted);">(Up to 3 photos, max 5 MB each)</span></label>
         <div style="border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 18px; text-align: center; background-color: var(--bg-subtle); transition: border-color var(--duration-fast);"
-             :style="count > 0 ? 'border-color: var(--accent); background-color: var(--accent-light);' : ''">
+             :style="files.length > 0 ? 'border-color: var(--primary); background-color: var(--primary-soft);' : ''">
           <i data-lucide="image-plus" style="width: 24px; height: 24px; color: var(--text-muted); margin-bottom: 6px;"></i>
           
           <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 6px;">
@@ -139,20 +155,25 @@
               <i data-lucide="camera" style="width: 14px; height: 14px;"></i>
               <span>Take photo</span>
               <input type="file" name="images" accept="image/*" capture="environment" style="display: none;"
-                     @change="count += $event.target.files.length; names.push(...Array.from($event.target.files).map(f => f.name))">
+                     @change="files.push(...Array.from($event.target.files).map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(1) + ' MB' })))">
             </label>
             <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i data-lucide="image" style="width: 14px; height: 14px;"></i>
               <span>Choose from gallery</span>
               <input type="file" name="images" multiple accept="image/*" style="display: none;"
-                     @change="count += $event.target.files.length; names.push(...Array.from($event.target.files).map(f => f.name))">
+                     @change="files.push(...Array.from($event.target.files).map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(1) + ' MB' })))">
             </label>
           </div>
 
           <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px;">PNG, JPG, WEBP supported</div>
-          <template x-if="count > 0">
-            <div style="margin-top: 8px; font-size: var(--fs-xs); color: var(--accent); font-weight: 500;">
-              <span x-text="count + ' file(s) selected: ' + names.join(', ')"></span>
+          <template x-if="files.length > 0">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px;">
+              <template x-for="(file, index) in files" :key="index">
+                <span class="badge" style="background: var(--bg-surface); border: 1px solid var(--border); padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+                  <span x-text="file.name"></span>
+                  <button type="button" @click="files.splice(index, 1)" style="border: none; background: transparent; cursor: pointer; color: var(--prio-urgent); font-size: 12px; padding: 0;">✕</button>
+                </span>
+              </template>
             </div>
           </template>
         </div>

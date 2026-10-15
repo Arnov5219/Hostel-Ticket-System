@@ -73,39 +73,24 @@
     </a>
   </div>
 
-  {# 3. Status Stats #}
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
-    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="stat-card" style="cursor: pointer; text-decoration: none;">
-      <div class="stat-card-header">
-        <span class="stat-label">In progress</span>
-        <div class="stat-icon" style="color: var(--st-assigned-fg); background-color: var(--st-assigned-bg);">
-          <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
-        </div>
-      </div>
-      <div class="stat-value" style="color: var(--st-assigned-fg);">{{ kpis.my_open }}</div>
-      <div class="stat-hint">Active issues in progress</div>
+  {# 3. Status KPIs #}
+  <div class="kpi-row" style="grid-template-columns: repeat(3, 1fr);">
+    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="kpi-card" style="cursor: pointer; text-decoration: none;">
+      <span class="kpi-label">Active &amp; in progress</span>
+      <span class="kpi-value" style="color: var(--primary);">{{ kpis.my_open }}</span>
+      <span class="kpi-subtext">Issues being addressed</span>
     </a>
 
-    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="stat-card" style="cursor: pointer; text-decoration: none;">
-      <div class="stat-card-header">
-        <span class="stat-label">Resolved</span>
-        <div class="stat-icon" style="color: var(--st-resolved-fg); background-color: var(--st-resolved-bg);">
-          <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i>
-        </div>
-      </div>
-      <div class="stat-value" style="color: var(--st-resolved-fg);">{{ kpis.my_resolved }}</div>
-      <div class="stat-hint">Awaiting your closure confirmation</div>
+    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="kpi-card" style="cursor: pointer; text-decoration: none;">
+      <span class="kpi-label">Resolved</span>
+      <span class="kpi-value resolved">{{ kpis.my_resolved }}</span>
+      <span class="kpi-subtext">Awaiting your closure confirmation</span>
     </a>
 
-    <a href="{% url 'tickets:list' %}?status=CLOSED" class="stat-card" style="cursor: pointer; text-decoration: none;">
-      <div class="stat-card-header">
-        <span class="stat-label">Closed</span>
-        <div class="stat-icon" style="color: var(--text-muted); background-color: var(--bg-subtle);">
-          <i data-lucide="archive" style="width: 14px; height: 14px;"></i>
-        </div>
-      </div>
-      <div class="stat-value">{{ kpis.my_closed }}</div>
-      <div class="stat-hint">Completed historical tickets</div>
+    <a href="{% url 'tickets:list' %}?status=CLOSED" class="kpi-card" style="cursor: pointer; text-decoration: none;">
+      <span class="kpi-label">Closed history</span>
+      <span class="kpi-value">{{ kpis.my_closed }}</span>
+      <span class="kpi-subtext">Completed historical tickets</span>
     </a>
   </div>
 

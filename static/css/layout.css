@@ -794,6 +794,18 @@ input:-webkit-autofill:active {
   }
 }
 
+.category-radio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .category-radio-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 @media (max-width: 768px) {
   .user-role-hint {
     display: none;
