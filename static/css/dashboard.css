@@ -8,7 +8,7 @@
 /* Number cards row */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   background-color: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -16,16 +16,52 @@
   overflow: hidden;
 }
 
+@media (max-width: 1199px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .kpi-card {
   padding: 16px 20px;
   border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.kpi-card:last-child {
-  border-right: none;
+@media (min-width: 1200px) {
+  .kpi-card {
+    border-bottom: none;
+  }
+  .kpi-card:last-child {
+    border-right: none;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1199px) {
+  .kpi-card:nth-child(2n) {
+    border-right: none;
+  }
+  .kpi-card:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .kpi-card {
+    border-right: none;
+  }
+  .kpi-card:last-child {
+    border-bottom: none;
+  }
 }
 
 .kpi-label {

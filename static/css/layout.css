@@ -383,6 +383,26 @@
   max-width: 100%;
 }
 
+.page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure flex/grid children don't cause blowout */
+.page-main,
+.page-side,
+.card,
+.table-container,
+.grid-col,
+.dashboard-grid,
+.ticket-detail-grid > *,
+.hosteler-home-grid > * {
+  min-width: 0;
+}
+
 /* Toasts (Fix B-09) */
 .toast-container {
   position: fixed;
@@ -684,8 +704,19 @@ input:-webkit-autofill:active {
   align-items: start;
 }
 
-@media (max-width: 900px) {
+.hosteler-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
   .ticket-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .hosteler-home-grid {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
