@@ -31,6 +31,13 @@
     radial-gradient(circle at 92% 88%, var(--bg-glow-violet) 0%, transparent 45%);
 }
 
+@media (max-width: 639px) {
+  .app-background::before,
+  .app-background::after {
+    display: none;
+  }
+}
+
 /* Global App Container */
 .app-container {
   display: flex;
