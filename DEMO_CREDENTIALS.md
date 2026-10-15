@@ -1,88 +1,81 @@
-# 🔑 Demo Quick Login Credentials
+# 🔑 Demo Quick Login Credentials (L0..L5)
 
-This document lists the pre-seeded demo accounts available for quick testing and review across all system roles in the **Hostel Ticket System**.
+This document lists the standardized demo accounts available for quick testing, role verification, and presentations in the **Hostel Ticket System**.
 
 > **⚡ Quick Login Shortcut:**
-> When opening the login page at [`/accounts/login/`](http://127.0.0.1:8000/accounts/login/), expand the **"Quick demo accounts ▾"** section below the sign-in form to fill in credentials with a single click.
+> When opening the login page at [`/accounts/login/`](http://127.0.0.1:8000/accounts/login/) (in development/demo mode), the **"Demo accounts"** grid displays clickable chips for **L0** through **L5**. Clicking any chip automatically fills the login form.
 
 ---
 
-## 🚀 1. Primary Quick Login Accounts
+## 🚀 1. Primary Standardized Demo Matrix (L0..L5)
 
-These are the primary accounts mapped to the quick login shortcuts on the login screen:
+All demo accounts share the uniform default password: **`me1234`**
 
-| Role | Escalation Level | Login ID | Password | Name / Scope | Permissions & Focus |
-|---|:---:|---|---|---|---|
-| **System Administrator** | **Level 4** | `admin` | `admin123` | System Administrator (Campus-wide) | Full system configuration, SLA settings, user directory, manage hostels/rooms/staff, audit logs |
-| **Chief Warden** | **Level 3** | `chief_warden` | `pass1234` | Prof. S. K. Sharma (All 12 Hostels) | Campus-wide oversight, L3 ticket escalations, campus announcements, hostel performance metrics |
-| **Warden** | **Level 2** | `warden_bha` | `pass1234` | Dr. Ramesh Verma (BH-1) | L2 ticket escalations, hostel announcements, resident directory, student password resets |
-| **Caretaker** | **Level 1** | `caretaker_bha1` | `pass1234` | Mukesh Kumar (BH-1 Maintenance) | Frontline ticket triage, assignment, in-progress resolution, work orders, kanban board |
-| **Hosteler (Resident)** | **Resident** | `student_01` | `pass1234` | Hosteler 1 (BH-1, Room 101) | Raise complaints, track tickets, community feed discussions, upvote/repost issues, change residence |
-
----
-
-## 🏢 2. All Hostel Staff Accounts (BH-1 to BH-12)
-
-Every hostel has dedicated Level 1 (Caretaker) and Level 2 (Warden) accounts. All passwords are set to `pass1234`.
-
-| Hostel | Caretaker (Level 1) | Warden (Level 2) | Default Password |
-|---|---|---|---|
-| **BH-1** (Boys Hostel 1) | `caretaker_bh1` / `caretaker_bha1` | `warden_bh1` / `warden_bha` | `pass1234` |
-| **BH-2** (Girls Hostel 2) | `caretaker_bh2` / `caretaker_ghb1` | `warden_bh2` / `warden_ghb` | `pass1234` |
-| **BH-3** | `caretaker_bh3` | `warden_bh3` | `pass1234` |
-| **BH-4** | `caretaker_bh4` | `warden_bh4` | `pass1234` |
-| **BH-5** | `caretaker_bh5` | `warden_bh5` | `pass1234` |
-| **BH-6** | `caretaker_bh6` | `warden_bh6` | `pass1234` |
-| **BH-7** | `caretaker_bh7` | `warden_bh7` | `pass1234` |
-| **BH-8** | `caretaker_bh8` | `warden_bh8` | `pass1234` |
-| **BH-9** | `caretaker_bh9` | `warden_bh9` | `pass1234` |
-| **BH-10** | `caretaker_bh10` | `warden_bh10` | `pass1234` |
-| **BH-11** | `caretaker_bh11` | `warden_bh11` | `pass1234` |
-| **BH-12** | `caretaker_bh12` | `warden_bh12` | `pass1234` |
+| ID | Role | Escalation Level | Display Name | Scope / Hostel | Password | Key Capabilities & Purpose |
+|:---:|---|:---:|---|---|:---:|---|
+| **L0** | **Hosteler** | — | Aarav Sharma (Demo) | Mandakini Hostel (MH-101) | `me1234` | Report personal tickets, status chips, 8s undo deletion |
+| **L1** | **Caretaker** | **L1** | Mukesh Caretaker (Demo) | Mandakini Hostel | `me1234` | Frontline triage, change status, add internal notes, kanban |
+| **L2** | **Hostel Warden** | **L2** | Dr. Ramesh Warden (Demo) | Mandakini Hostel | `me1234` | Hostel overview, reassign tickets, escalate to Chief Warden, kanban |
+| **L3** | **Chief Warden** | **L3** | Prof. Sunita Chief Warden (Demo) | Campus-wide | `me1234` | Cross-hostel comparison, category breakdown, escalate to Dean, kanban |
+| **L4** | **Dean** | **L4** | Dr. K. V. Dean (Demo) | Campus Authority | `me1234` | Final escalation queue, campus compliance, SLA health, kanban |
+| **L5** | **Admin** | — | System Administrator (Demo) | System | `me1234` | Manage staff, hostels, responsibility, settings, trash restore, audit log |
 
 ---
 
-## 🎓 3. Sample Student (Hosteler) Accounts
+## 🔒 2. Role Boundaries & Separation of Powers
 
-All demo student accounts have the password set to `pass1234`.
+1. **Dean (L4)**:
+   - Holds campus-wide authority and handles top-tier escalations (Level 4).
+   - Operational workflow user: views kanban, changes ticket status, reassigns tickets.
+   - **Does NOT hold administrative controls** (`/manage/*` is blocked with 403).
 
-| Login ID | Password | Hostel Assignment | Room Number | Test Purpose |
-|---|---|---|:---:|---|
-| `student_01` | `pass1234` | **BH-1** | 101 | Standard active resident (Boys Hostel 1) |
-| `student_02` | `pass1234` | **BH-1** | 102 | Community feed comments & repost testing |
-| `student_03` | `pass1234` | **BH-1** | 103 | Multi-ticket reporter |
-| `student_09` | `pass1234` | **BH-1** | 109 | Active resident |
-| `student_14` | `pass1234` | *None (Unassigned)* | — | **Onboarding Gate Test**: Redirects to room selection upon login |
-| `student_15` | `pass1234` | **BH-2** | 101 | Standard active resident (Girls Hostel 2) |
-| `student_16` | `pass1234` | **BH-2** | 102 | Active resident |
-| `student_22` | `pass1234` | *None (Unassigned)* | — | **Onboarding Gate Test**: Unassigned resident flow |
+2. **Admin (L5)**:
+   - System administrator: manages staff, hostels, room allocation, ticket SLA settings, and restores soft-deleted tickets.
+   - **Does NOT participate in ticket resolution**: cannot change status, post comments, or escalate tickets.
+   - Outside the operational escalation chain (`escalation_level = None`).
+   - Does not have Kanban in the navigation bar.
 
----
+3. **Chief Warden (L3)**:
+   - Campus-wide escalation authority (Level 3).
+   - Operational workflow user: views kanban, escalates to Dean.
+   - **Does NOT hold administrative controls** (`/manage/*` is blocked with 403).
 
-## 💡 4. How to Sign In
-
-1. Open **`/accounts/login/`** in your browser.
-2. Either:
-   - Click **"Quick demo accounts ▾"** and tap any role button (`Admin`, `Chief Warden`, `Warden`, `Caretaker`, `Hosteler`) to auto-fill the form, **OR**
-   - Enter any **Login ID** (or registered **Email Address**) and **Password** manually from the tables above.
-3. Click **Sign In**.
+4. **Warden (L2)**:
+   - Hostel supervisor for assigned hostel (Level 2).
+   - Can soft-delete tickets within own hostel (with mandatory reason).
+   - **Does NOT have access to Trash view or ticket restoration** (Trash is Admin-only).
 
 ---
 
-## 🔄 5. Managing Demo & Test Data
+## 🛠️ 3. Managing Demo Accounts
 
-### To clean and remove all fake/test data at any time:
+### Seeding Demo Accounts
 ```bash
-# Wipes all tickets, fake students, announcements, and notifications
-# Preserves all 12 Hostels, 1,440 rooms, and Staff/Admin accounts
-python manage.py clear_demo_data
+# Seeds or resets L0..L5 accounts with password 'me1234'
+# Requires DEBUG=True or ENABLE_DEMO_ACCOUNTS=1
+python manage.py seed_demo_accounts
 ```
 
-### To reseed demo data (for presentations or mock testing):
+### Full Demo Dataset Seeding
 ```bash
-# Seed 12 hostels and 1,440 rooms
-python manage.py seed_hostels
-
-# Seed full demo environment (users, routing rules, announcements, 60+ tickets)
+# Seeds 12 hostels, rooms, L0..L5 accounts, and realistic tickets
 python manage.py seed_demo_data
 ```
+
+### Purging Demo Accounts Before Production
+```bash
+# Dry run: inspect demo accounts without deleting
+python manage.py purge_demo_accounts
+
+# Permanent purge: removes all is_demo=True accounts safely
+python manage.py purge_demo_accounts --confirm
+```
+
+---
+
+## 🛡️ 4. Production Security Safeguard
+
+A Django system check (`accounts.E001`) automatically protects production deployments:
+- When running `python manage.py check --deploy` with `DEBUG=False`, the check scans for any `is_demo=True` accounts with known passwords in the database.
+- If demo accounts exist, the deployment check halts with an error.
+- To bypass only in staging environments, set `ALLOW_DEMO_ACCOUNTS=1`.

@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -81,7 +84,11 @@ def login_view(request):
     else:
         form = LoginForm()
 
-    return render(request, "accounts/login.html", {"form": form})
+    show_demo_accounts = settings.DEBUG or os.environ.get("ENABLE_DEMO_ACCOUNTS") == "1"
+    return render(request, "accounts/login.html", {
+        "form": form,
+        "show_demo_accounts": show_demo_accounts,
+    })
 
 
 def logout_view(request):

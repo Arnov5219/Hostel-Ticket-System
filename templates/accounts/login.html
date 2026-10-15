@@ -91,31 +91,41 @@
       </button>
     </form>
 
-    <!-- Collapsible Demo Accounts (Fix U-18) -->
-    <details style="border-top: 1px solid var(--border); padding-top: 14px; font-size: var(--fs-xs);">
-      <summary style="cursor: pointer; color: var(--text-muted); font-weight: 500; user-select: none;">
-        Quick demo accounts ▾
+    <!-- Collapsible Demo Accounts (L0..L5) -->
+    {% if show_demo_accounts %}
+    <details style="border-top: 1px solid var(--border); padding-top: 14px; font-size: var(--fs-xs);" open>
+      <summary style="cursor: pointer; color: var(--text-muted); font-weight: 500; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+        <span>Demo accounts (password: <code style="font-family: var(--font-mono); font-weight: 600; color: var(--text-primary);">me1234</code>)</span>
+        <span style="font-size: 10px; color: var(--text-muted);">Click to fill ▾</span>
       </summary>
-      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('admin', 'admin123')">
-            Admin (L4)
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('chief_warden', 'pass1234')">
-            Chief Warden (L3)
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('warden_bha', 'pass1234')">
-            Warden (L2)
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('caretaker_bha1', 'pass1234')">
-            Caretaker (L1)
-          </button>
-        </div>
-        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="setCreds('student_01', 'pass1234')">
-          Hosteler (Student)
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px;">
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L0', 'me1234')">
+          <span>L0: Hosteler</span>
+          <span class="role-badge" style="font-size: 10px;">Student</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L1', 'me1234')">
+          <span>L1: Caretaker</span>
+          <span class="level-chip l1" style="font-size: 10px;">L1</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L2', 'me1234')">
+          <span>L2: Warden</span>
+          <span class="level-chip l2" style="font-size: 10px;">L2</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L3', 'me1234')">
+          <span>L3: Chief Warden</span>
+          <span class="level-chip l3" style="font-size: 10px;">L3</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L4', 'me1234')">
+          <span>L4: Dean</span>
+          <span class="level-chip l4" style="font-size: 10px;">L4</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px;" onclick="setCreds('L5', 'me1234')">
+          <span>L5: Admin</span>
+          <span class="role-badge" style="font-size: 10px;">System</span>
         </button>
       </div>
     </details>
+    {% endif %}
 
   </div>
 </div>

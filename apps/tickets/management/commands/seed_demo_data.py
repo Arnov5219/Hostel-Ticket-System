@@ -46,22 +46,43 @@ class Command(BaseCommand):
         self.stdout.write("Hostel structure initialized (12 hostels, 1,440 rooms).")
 
         # 3. Seed Users
+        call_command("seed_demo_accounts")
+
         # Admin
         admin_user, _ = User.objects.get_or_create(
             login_id="admin",
             defaults={
                 "full_name": "System Administrator",
                 "role": Role.ADMIN,
-                "escalation_level": 4,
+                "escalation_level": None,
                 "is_staff": True,
                 "is_superuser": True,
+                "is_demo": True,
             },
         )
-        admin_user.set_password("admin123")
+        admin_user.set_password("me1234")
         admin_user.theme = Theme.DARK
+        admin_user.is_demo = True
+        admin_user.escalation_level = None
         admin_user.save()
 
-        # Chief Warden
+        # Dean (L4)
+        dean_user, _ = User.objects.get_or_create(
+            login_id="dean",
+            defaults={
+                "full_name": "Dr. K. V. Dean",
+                "role": Role.DEAN,
+                "escalation_level": 4,
+                "is_staff": True,
+                "is_demo": True,
+            },
+        )
+        dean_user.set_password("me1234")
+        dean_user.theme = Theme.SYSTEM
+        dean_user.is_demo = True
+        dean_user.save()
+
+        # Chief Warden (L3)
         chief_warden, _ = User.objects.get_or_create(
             login_id="chief_warden",
             defaults={
@@ -69,10 +90,12 @@ class Command(BaseCommand):
                 "role": Role.CHIEF_WARDEN,
                 "escalation_level": 3,
                 "is_staff": True,
+                "is_demo": True,
             },
         )
-        chief_warden.set_password("pass1234")
+        chief_warden.set_password("me1234")
         chief_warden.theme = Theme.SYSTEM
+        chief_warden.is_demo = True
         chief_warden.save()
 
         # Wardens

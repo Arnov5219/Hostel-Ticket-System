@@ -307,3 +307,94 @@ class TestManageRouteSecurity:
             res = client.get(route)
             assert res.status_code == 403, f"Hosteler must be blocked (403) from {route}, got {res.status_code}"
 
+
+@pytest.mark.django_db
+class TestDemoAccountsManagement:
+    def test_seed_demo_accounts_creates_l0_to_l5(self, settings):
+        from django.core.management import call_command
+        from apps.accounts.models import Role, User
+
+        settings.DEBUG = True
+        call_command("seed_demo_accounts")
+
+        expected_roles = {
+            "L0": (Role.HOSTELER, None),
+            "L1": (Role.CARETAKER, 1),
+            "L2": (Role.WARDEN, 2),
+            "L3": (Role.CHIEF_WARDEN, 3),
+            "L4": (Role.DEAN, 4),
+            "L5": (Role.ADMIN, None),
+        }
+
+        for login_id, (role, level) in expected_roles.items():
+            u = User.objects.get(login_id=login_id)
+            assert u.role == role
+            assert u.escalation_level == level
+            assert u.is_demo is True
+            assert u.check_password("me1234") is True
+
+    def test_seed_demo_accounts_guard_in_production(self, settings):
+        import os
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        settings.DEBUG = False
+        old_env = os.environ.get("ENABLE_DEMO_ACCOUNTS")
+        try:
+            if "ENABLE_DEMO_ACCOUNTS" in os.environ:
+                del os.environ["ENABLE_DEMO_ACCOUNTS"]
+            with pytest.raises(CommandError, match="Refusing to seed demo accounts in non-DEBUG environment"):
+                call_command("seed_demo_accounts")
+        finally:
+            if old_env is not None:
+                os.environ["ENABLE_DEMO_ACCOUNTS"] = old_env
+
+    def test_purge_demo_accounts_dry_run_and_confirm(self, settings):
+        from django.core.management import call_command
+        from apps.accounts.models import User
+
+        settings.DEBUG = True
+        call_command("seed_demo_accounts")
+        assert User.objects.filter(is_demo=True).count() >= 6
+
+        # Dry run does not delete
+        call_command("purge_demo_accounts")
+        assert User.objects.filter(is_demo=True).count() >= 6
+
+        # With confirm, deletes demo accounts
+        call_command("purge_demo_accounts", confirm=True)
+        assert User.objects.filter(is_demo=True).count() == 0
+
+    def test_deploy_check_catches_demo_accounts_in_prod(self, settings):
+        from apps.accounts.apps import check_demo_accounts_in_production
+        from apps.accounts.models import User
+
+        User.objects.create_user(
+            login_id="L0",
+            role="HOSTELER",
+            password="password123",
+            is_demo=True,
+        )
+
+        settings.DEBUG = False
+        import os
+        old_env = os.environ.get("ALLOW_DEMO_ACCOUNTS")
+        try:
+            if "ALLOW_DEMO_ACCOUNTS" in os.environ:
+                del os.environ["ALLOW_DEMO_ACCOUNTS"]
+
+            errors = check_demo_accounts_in_production(None)
+            assert len(errors) == 1
+            assert errors[0].id == "accounts.E001"
+
+            # When ALLOW_DEMO_ACCOUNTS=1, it should not error
+            os.environ["ALLOW_DEMO_ACCOUNTS"] = "1"
+            errors = check_demo_accounts_in_production(None)
+            assert len(errors) == 0
+        finally:
+            if old_env is not None:
+                os.environ["ALLOW_DEMO_ACCOUNTS"] = old_env
+            elif "ALLOW_DEMO_ACCOUNTS" in os.environ:
+                del os.environ["ALLOW_DEMO_ACCOUNTS"]
+
+
