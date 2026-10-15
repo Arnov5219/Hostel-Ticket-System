@@ -47,6 +47,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.EnforcePasswordChangeAndSessionMiddleware",
     "apps.accounts.middleware.RequireResidenceMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -110,3 +111,5 @@ LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 ENFORCE_ROOM_CAPACITY = env.bool("ENFORCE_ROOM_CAPACITY", default=False)
+CHIEF_WARDEN_CAN_MANAGE_ADMINS = env.bool("CHIEF_WARDEN_CAN_MANAGE_ADMINS", default=False)
+SHOW_AFFECTED_COUNT_TO_STAFF = env.bool("SHOW_AFFECTED_COUNT_TO_STAFF", default=True)

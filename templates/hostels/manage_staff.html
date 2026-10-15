@@ -10,16 +10,77 @@
 {% endblock %}
 
 {% block page_title %}Staff Management{% endblock %}
-{% block page_subtitle %}Manage staff assignments, roles, and operational capacity{% endblock %}
-{% block page_actions %}{% endblock %}
+{% block page_subtitle %}Manage staff lifecycle, roles, credentials, and hostel responsibilities{% endblock %}
+
+{% block page_actions %}
+  <button type="button" class="btn btn-primary" onclick="openModal('add-staff-modal');">
+    <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
+    <span>Add staff</span>
+  </button>
+{% endblock %}
 
 {% block content %}
 <div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
 
-  <!-- Admin Sub-Navigation (Fix U-09) -->
+  <!-- Admin Sub-Navigation -->
   {% include 'components/_admin_subnav.html' %}
 
-  <!-- Staff Overview Card -->
+  <!-- Filters & Search Bar -->
+  <div class="card" style="padding: 14px 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <form method="get" action="{% url 'hostels:manage_staff' %}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+      
+      <!-- Search -->
+      <div class="form-group" style="margin: 0; flex: 1; min-width: 180px;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Search staff</label>
+        <div style="position: relative;">
+          <input type="text" name="search" value="{{ curr_search }}" placeholder="Search by name or login ID..." class="form-control" style="padding-left: 32px; font-size: var(--fs-xs); height: 32px;">
+          <i data-lucide="search" style="position: absolute; left: 10px; top: 8px; width: 14px; height: 14px; color: var(--text-muted);"></i>
+        </div>
+      </div>
+
+      <!-- Role Filter -->
+      <div class="form-group" style="margin: 0; min-width: 140px;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Role</label>
+        <select name="role" class="form-select" style="font-size: var(--fs-xs); height: 32px;" onchange="this.form.submit()">
+          <option value="">All roles</option>
+          {% for r in all_roles %}
+            <option value="{{ r }}" {% if curr_role == r %}selected{% endif %}>{{ r|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Hostel Filter -->
+      <div class="form-group" style="margin: 0; min-width: 140px;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Hostel</label>
+        <select name="hostel" class="form-select" style="font-size: var(--fs-xs); height: 32px;" onchange="this.form.submit()">
+          <option value="">All hostels</option>
+          <option value="CAMPUS" {% if curr_hostel == 'CAMPUS' %}selected{% endif %}>Campus-wide</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}" {% if curr_hostel == h.id|stringformat:'s' %}selected{% endif %}>{{ h.code }} ({{ h.name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="form-group" style="margin: 0; min-width: 130px;">
+        <label class="form-label" style="font-size: var(--fs-xs);">Status</label>
+        <select name="status" class="form-select" style="font-size: var(--fs-xs); height: 32px;" onchange="this.form.submit()">
+          <option value="ACTIVE" {% if curr_status == 'ACTIVE' %}selected{% endif %}>Active</option>
+          <option value="DEACTIVATED" {% if curr_status == 'DEACTIVATED' %}selected{% endif %}>Deactivated</option>
+          <option value="ARCHIVED" {% if curr_status == 'ARCHIVED' %}selected{% endif %}>Archived</option>
+          <option value="ALL" {% if curr_status == 'ALL' %}selected{% endif %}>All</option>
+        </select>
+      </div>
+
+      {% if curr_search or curr_role or curr_hostel or curr_status != 'ACTIVE' %}
+        <a href="{% url 'hostels:manage_staff' %}" class="btn btn-ghost btn-sm" style="font-size: var(--fs-xs); height: 32px; align-self: flex-end;">
+          Reset
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Staff Table Card (Desktop) -->
   <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
     <div class="table-container" style="border: none;">
       <table class="app-table">
@@ -28,10 +89,10 @@
             <th>Name</th>
             <th>Role</th>
             <th style="text-align: center;">Level</th>
-            <th>Assigned hostel</th>
+            <th>Hostel</th>
             <th style="text-align: center;">Active tickets</th>
             <th>Status</th>
-            <th style="text-align: right;">Actions</th>
+            <th style="text-align: right; min-width: 200px;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -41,8 +102,13 @@
                 <div style="display: flex; align-items: center; gap: 10px;">
                   {% user_avatar member size="sm" %}
                   <div>
-                    <div style="font-weight: 600; color: var(--text-primary);">{{ member.full_name|default:member.login_id }}</div>
-                    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ member.login_id }}</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">
+                      {{ member.full_name|default:member.login_id }}
+                    </div>
+                    <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">
+                      {{ member.login_id }}
+                      {% if member.phone %} · <span style="font-family: inherit;">{{ member.phone }}</span>{% endif %}
+                    </div>
                   </div>
                 </div>
               </td>
@@ -56,15 +122,12 @@
               </td>
               <td>
                 {% if member.hostel %}
-                  <span style="font-weight: 500; font-size: var(--fs-sm);">{{ member.hostel.name }}</span>
-                {% elif member.role == "CHIEF_WARDEN" or member.role == "ADMIN" %}
-                  <span style="color: var(--text-muted); font-style: italic; font-size: var(--fs-xs);">All Hostels (Campus-wide)</span>
+                  <span style="font-weight: 500; font-size: var(--fs-sm);">{{ member.hostel.code }} ({{ member.hostel.name }})</span>
                 {% else %}
-                  <span style="color: var(--text-muted); font-style: italic; font-size: var(--fs-xs);">Unassigned</span>
+                  <span style="color: var(--text-muted); font-style: italic; font-size: var(--fs-xs);">Campus-wide</span>
                 {% endif %}
               </td>
               <td style="text-align: center;">
-                {# Fix U-12: Neutral text for normal ticket counts, amber warning only if >= 6 #}
                 {% if member.active_tickets >= 6 %}
                   <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--st-progress-fg); font-variant-numeric: tabular-nums;">
                     <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--st-progress-dot);"></span>
@@ -77,30 +140,61 @@
                 {% endif %}
               </td>
               <td>
-                {% if member.is_active %}
-                  <span class="status-pill resolved">Active</span>
+                {% if member.archived_at %}
+                  <span class="status-pill closed" style="font-size: 11px;">Archived</span>
+                {% elif member.is_active %}
+                  <span class="status-pill resolved" style="font-size: 11px;">Active</span>
                 {% else %}
-                  <span class="status-pill closed">Inactive</span>
+                  <span class="status-pill on_hold" style="font-size: 11px;">Deactivated</span>
                 {% endif %}
               </td>
               <td style="text-align: right;">
-                <div style="display: inline-flex; gap: 4px; align-items: center;">
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="openAssignHostelModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', '{{ member.get_role_display|escapejs }}', '{{ member.hostel.id|default:'' }}');">
-                    <i data-lucide="building" style="width: 12px; height: 12px;"></i>
-                    <span>Assign hostel</span>
-                  </button>
+                {% if member.actor_can_manage %}
+                  <div style="display: inline-flex; gap: 4px; align-items: center;">
+                    
+                    <!-- Edit -->
+                    <button type="button" class="btn btn-ghost btn-xs" onclick="openEditStaffModal('{{ member.id }}', '{{ member.full_name|escapejs }}', '{{ member.phone|escapejs }}', '{{ member.email|escapejs }}', '{{ member.role }}', '{{ member.hostel.id|default:'' }}');" title="Edit details">
+                      <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                      <span>Edit</span>
+                    </button>
 
-                  {# Fix U-11: Quiet row action danger-ghost for deactivation #}
-                  {% if member.is_active %}
-                    <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', true, {{ member.active_tickets }}, {{ member.responsible_hostels.count }});">
-                      <span>Deactivate</span>
+                    <!-- Reset Password -->
+                    <button type="button" class="btn btn-ghost btn-xs" onclick="openResetPasswordModal('{{ member.id }}', '{{ member.login_id|escapejs }}');" title="Reset password">
+                      <i data-lucide="key" style="width: 12px; height: 12px;"></i>
+                      <span>Reset</span>
                     </button>
-                  {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="openStaffToggleModal('{{ member.id }}', '{{ member.full_name|default:member.login_id|escapejs }}', false, 0, 0);" style="color: var(--st-resolved-fg);">
-                      <span>Activate</span>
-                    </button>
-                  {% endif %}
-                </div>
+
+                    {% if member.is_active %}
+                      <!-- Deactivate -->
+                      <button type="button" class="btn btn-ghost btn-xs" style="color: var(--st-progress-fg);"
+                              hx-get="{% url 'hostels:reassign_preview' member.id %}?action=deactivate"
+                              hx-target="#deactivate-dialog-slot"
+                              onclick="openModal('deactivate-modal-container');"
+                              title="Deactivate staff account">
+                        <span>Deactivate</span>
+                      </button>
+
+                      <!-- Delete (Archive) -->
+                      <button type="button" class="btn btn-danger-ghost btn-xs"
+                              hx-get="{% url 'hostels:reassign_preview' member.id %}?action=archive"
+                              hx-target="#deactivate-dialog-slot"
+                              onclick="openModal('deactivate-modal-container');"
+                              title="Delete/archive staff account">
+                        <span>Delete</span>
+                      </button>
+                    {% else %}
+                      <!-- Reactivate -->
+                      <form method="post" action="{% url 'hostels:reactivate_staff' member.id %}" style="display: inline;" onsubmit="return confirm('Reactivate {{ member.login_id|escapejs }}? A password change will be enforced.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-xs" style="color: var(--st-resolved-fg);">
+                          <span>Reactivate</span>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <span style="font-size: var(--fs-xs); color: var(--text-muted); font-style: italic;">Protected</span>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
@@ -111,7 +205,7 @@
                     <i data-lucide="users" style="width: 20px; height: 20px;"></i>
                   </div>
                   <h3 class="empty-state-title">No staff members found</h3>
-                  <p class="empty-state-text">No staff profiles registered in the system yet.</p>
+                  <p class="empty-state-text">Adjust your filters or click "+ Add staff" to create a new staff account.</p>
                 </div>
               </td>
             </tr>
@@ -123,132 +217,258 @@
 
 </div>
 
-<!-- Assign Hostel Modal -->
-<div id="assign-hostel-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+<!-- Modal Container: HTMX Deactivate / Delete Dialog -->
+<div id="deactivate-modal-container" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div id="deactivate-dialog-slot" style="width: 100%; display: flex; justify-content: center;">
+    <!-- HTMX injects dialog here -->
+  </div>
+</div>
+
+<!-- Modal: Add Staff -->
+<div id="add-staff-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 520px;" x-data="{
+    selectedRole: '{{ assignable_roles.0|default:'CARETAKER' }}',
+    pwMode: 'generate',
+    get isHostelRequired() {
+      return this.selectedRole === 'CARETAKER' || this.selectedRole === 'WARDEN';
+    }
+  }">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Change Staff Assignment</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('assign-hostel-modal').style.display='none';">✕</button>
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Add Staff Member</h2>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('add-staff-modal');">✕</button>
     </div>
 
-    <form id="assign-hostel-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
+    <form method="post" action="{% url 'hostels:create_staff' %}" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
-      <div style="padding: 10px 14px; background: var(--bg-subtle); border-radius: var(--radius-md); font-size: var(--fs-sm); border: 1px solid var(--border);">
-        <div>Staff: <strong id="assign-modal-staff-name"></strong></div>
-        <div style="color: var(--text-secondary); margin-top: 2px;">Role: <span id="assign-modal-staff-role"></span></div>
-      </div>
 
       <div class="form-group" style="margin: 0;">
-        <label class="form-label">Assigned Hostel</label>
-        <select name="hostel_id" id="assign-hostel-select" class="form-select">
-          <option value="">-- No Hostel / All Hostels --</option>
+        <label class="form-label">Full Name *</label>
+        <input type="text" name="full_name" class="form-control" placeholder="e.g. Mukesh Kumar" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Login ID *</label>
+          <input type="text" name="login_id" class="form-control" placeholder="e.g. mukesh_k" required pattern="[A-Za-z0-9._-]{3,30}" title="3-30 letters, digits, ., _, -">
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Role *</label>
+          <select name="role" class="form-select" x-model="selectedRole" required>
+            {% for r in assignable_roles %}
+              <option value="{{ r }}">{{ r|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Hostel (Required for Caretaker/Warden, hidden for Chief Warden/Admin) -->
+      <div class="form-group" style="margin: 0;" x-show="isHostelRequired">
+        <label class="form-label">Assigned Hostel *</label>
+        <select name="hostel_id" class="form-select" :required="isHostelRequired">
+          <option value="">-- Select Hostel --</option>
           {% for h in hostels %}
             <option value="{{ h.id }}">{{ h.name }} ({{ h.code }})</option>
           {% endfor %}
         </select>
       </div>
 
-      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 0;">
-        The updated hostel assignment will immediately be used for ticket routing and escalation scope.
-      </p>
+      <!-- Make L1 responsible toggle (for Caretaker) -->
+      <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin: 0;" x-show="selectedRole === 'CARETAKER'">
+        <input type="checkbox" name="is_l1_responsible" id="id_is_l1_responsible" checked>
+        <label for="id_is_l1_responsible" style="font-size: var(--fs-xs); cursor: pointer;">
+          Set as Level 1 responsible caretaker for this hostel
+        </label>
+      </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('assign-hostel-modal').style.display='none';">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Assignment</button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Phone</label>
+          <input type="text" name="phone" class="form-control" placeholder="e.g. 9876543210">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Email (Optional)</label>
+          <input type="email" name="email" class="form-control" placeholder="e.g. staff@college.edu">
+        </div>
+      </div>
+
+      <!-- Password Mode -->
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Password Setup</label>
+        <div style="display: flex; gap: 14px; font-size: var(--fs-xs);">
+          <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="password_mode" value="generate" x-model="pwMode">
+            <span>Generate secure temporary password</span>
+          </label>
+          <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="password_mode" value="manual" x-model="pwMode">
+            <span>Set manual password</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin: 0;" x-show="pwMode === 'manual'">
+        <label class="form-label">Initial Password</label>
+        <input type="password" name="custom_password" class="form-control" placeholder="At least 8 characters">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('add-staff-modal');">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Staff Member</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Deactivate / Activate Staff Modal -->
-<div id="toggle-staff-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px; max-width: 500px;">
+<!-- Modal: Edit Staff -->
+<div id="edit-staff-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 500px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 id="toggle-staff-title" style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Deactivate Staff Member</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('toggle-staff-modal').style.display='none';">✕</button>
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Edit Staff Member</h2>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('edit-staff-modal');">✕</button>
     </div>
 
-    <form id="toggle-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
+    <form id="edit-staff-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
 
-      <div id="deactivate-warnings" style="display: flex; flex-direction: column; gap: 10px;">
-        <p style="font-size: var(--fs-sm); margin: 0;">
-          Are you sure you want to deactivate <strong id="toggle-staff-name"></strong>?
-        </p>
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Full Name *</label>
+        <input type="text" name="full_name" id="edit-staff-name" class="form-control" required>
+      </div>
 
-        <div id="active-tickets-warning" style="display: none; padding: 10px 14px; background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); border-radius: var(--radius-md); font-size: var(--fs-xs);">
-          ⚠️ This staff member currently has <strong id="toggle-staff-tickets-count">0</strong> active tickets assigned.
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Phone</label>
+          <input type="text" name="phone" id="edit-staff-phone" class="form-control">
         </div>
-
-        <div id="replacement-staff-block" style="display: none;">
-          <div style="padding: 10px 14px; background: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 10px;">
-            ⚠️ This staff member is currently the responsible Level 1 staff member for one or more active hostels. You must assign a replacement Level 1 staff member before deactivating.
-          </div>
-
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label">Replacement Level 1 Staff Member *</label>
-            <select name="replacement_staff" id="toggle-replacement-select" class="form-select">
-              <option value="">-- Select Replacement Caretaker --</option>
-              {% for ct in available_caretakers %}
-                <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
-              {% endfor %}
-            </select>
-          </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" id="edit-staff-email" class="form-control">
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('toggle-staff-modal').style.display='none';">Cancel</button>
-        <button type="submit" id="toggle-staff-submit-btn" class="btn btn-primary" style="background: var(--st-open-fg); border-color: var(--st-open-fg);">Confirm Deactivation</button>
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Role</label>
+        <select name="role" id="edit-staff-role" class="form-select">
+          {% for r in assignable_roles %}
+            <option value="{{ r }}">{{ r|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Hostel (Caretaker/Warden)</label>
+        <select name="hostel_id" id="edit-staff-hostel" class="form-select">
+          <option value="">Campus-wide</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}">{{ h.name }} ({{ h.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openChangeLoginIdFromEdit();">
+          Change Login ID...
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('edit-staff-modal');">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Change Login ID -->
+<div id="change-login-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 440px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Change Login ID</h2>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('change-login-modal');">✕</button>
+    </div>
+
+    <form id="change-login-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0;">
+        Changing the login ID will immediately log this user out of all devices. They must use the new ID for all future logins.
+      </p>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">New Login ID *</label>
+        <input type="text" name="new_login_id" class="form-control" required pattern="[A-Za-z0-9._-]{3,30}" placeholder="e.g. new_login_id">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('change-login-modal');">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Login ID</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Reset Password -->
+<div id="reset-password-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 460px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Reset Password</h2>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('reset-password-modal');">✕</button>
+    </div>
+
+    <form id="reset-password-form" method="post" action=""
+          hx-post=""
+          hx-target="#pw-reset-target"
+          style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      
+      <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0;">
+        Resetting password for <strong id="reset-target-login"></strong>. To confirm, please enter <strong>your own administrator password</strong>.
+      </p>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Your password (re-authentication) *</label>
+        <input type="password" name="actor_password" class="form-control" required placeholder="Enter your password">
+      </div>
+
+      <div id="pw-reset-target"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('reset-password-modal');">Close</button>
+        <button type="submit" class="btn btn-primary">Generate New Password</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-function openAssignHostelModal(userId, name, role, currentHostelId) {
-  document.getElementById('assign-modal-staff-name').innerText = name;
-  document.getElementById('assign-modal-staff-role').innerText = role;
-  document.getElementById('assign-hostel-select').value = currentHostelId;
-  document.getElementById('assign-hostel-form').action = '/hostels/staff/' + userId + '/assign-hostel/';
-  document.getElementById('assign-hostel-modal').style.display = 'flex';
+let currentEditingStaffId = null;
+
+function openEditStaffModal(id, name, phone, email, role, hostelId) {
+  currentEditingStaffId = id;
+  document.getElementById('edit-staff-name').value = name;
+  document.getElementById('edit-staff-phone').value = phone;
+  document.getElementById('edit-staff-email').value = email;
+  document.getElementById('edit-staff-role').value = role;
+  document.getElementById('edit-staff-hostel').value = hostelId;
+  document.getElementById('edit-staff-form').action = '/manage/staff/' + id + '/edit/';
+  openModal('edit-staff-modal');
 }
 
-function openStaffToggleModal(userId, name, isActive, activeTickets, responsibleHostelsCount) {
-  const form = document.getElementById('toggle-staff-form');
-  form.action = '/hostels/staff/' + userId + '/toggle-status/';
+function openChangeLoginIdFromEdit() {
+  if (!currentEditingStaffId) return;
+  closeModal('edit-staff-modal');
+  document.getElementById('change-login-form').action = '/manage/staff/' + currentEditingStaffId + '/login-id/';
+  openModal('change-login-modal');
+}
 
-  document.getElementById('toggle-staff-name').innerText = name;
-
-  if (isActive) {
-    document.getElementById('toggle-staff-title').innerText = 'Deactivate Staff Member';
-    document.getElementById('toggle-staff-submit-btn').innerText = 'Confirm Deactivation';
-    document.getElementById('toggle-staff-submit-btn').style.background = 'var(--st-open-fg)';
-
-    if (activeTickets > 0) {
-      document.getElementById('active-tickets-warning').style.display = 'block';
-      document.getElementById('toggle-staff-tickets-count').innerText = activeTickets;
-    } else {
-      document.getElementById('active-tickets-warning').style.display = 'none';
-    }
-
-    if (responsibleHostelsCount > 0) {
-      document.getElementById('replacement-staff-block').style.display = 'block';
-      document.getElementById('toggle-replacement-select').required = true;
-    } else {
-      document.getElementById('replacement-staff-block').style.display = 'none';
-      document.getElementById('toggle-replacement-select').required = false;
-    }
-  } else {
-    document.getElementById('toggle-staff-title').innerText = 'Activate Staff Member';
-    document.getElementById('toggle-staff-submit-btn').innerText = 'Confirm Activation';
-    document.getElementById('toggle-staff-submit-btn').style.background = 'var(--primary)';
-    document.getElementById('active-tickets-warning').style.display = 'none';
-    document.getElementById('replacement-staff-block').style.display = 'none';
-    document.getElementById('toggle-replacement-select').required = false;
-  }
-
-  document.getElementById('toggle-staff-modal').style.display = 'flex';
+function openResetPasswordModal(id, loginId) {
+  document.getElementById('reset-target-login').innerText = loginId;
+  const form = document.getElementById('reset-password-form');
+  const actionUrl = '/manage/staff/' + id + '/reset-password/';
+  form.action = actionUrl;
+  form.setAttribute('hx-post', actionUrl);
+  htmx.process(form);
+  document.getElementById('pw-reset-target').innerHTML = '';
+  openModal('reset-password-modal');
 }
 </script>
 {% endblock %}

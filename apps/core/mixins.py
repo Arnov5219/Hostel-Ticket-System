@@ -18,6 +18,37 @@ class RoleRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+class CapabilityRequiredMixin(AccessMixin):
+    """Verify that current user has the required capability."""
+
+    required_capability = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        if self.required_capability:
+            from apps.core.permissions import has_capability
+            if not has_capability(request.user, self.required_capability):
+                raise PermissionDenied(f"Missing required capability: {self.required_capability}")
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+class HostelerOnlyMixin(AccessMixin):
+    """Guarantees only authenticated hostelers can access endpoint (Community)."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        from apps.core.permissions import Capability, has_capability
+        if not has_capability(request.user, Capability.COMMUNITY_ACCESS):
+            raise PermissionDenied("Community is reserved for residents only.")
+
+        return super().dispatch(request, *args, **kwargs)
+
+
 class HtmxMixin:
     """Helper mixin to easily handle HTMX vs standard HTTP requests."""
 

@@ -1,16 +1,15 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
-from apps.accounts.models import Role
-from apps.core.permissions import can_moderate_community
+from apps.core.permissions import Capability, has_capability
 from apps.tickets.models import (
     Category,
+    CommentReport,
     CommentScope,
-    Status,
     Ticket,
     TicketComment,
     TicketVisibility,
@@ -18,14 +17,24 @@ from apps.tickets.models import (
 from apps.tickets.services.community import (
     add_community_comment,
     feed_queryset,
-    hide_comment,
-    set_community_hidden,
     similar_open_tickets,
     toggle_repost,
 )
 
 
-@login_required
+def hosteler_community_required(view_func):
+    """Enforces that only authenticated hostelers have access to Community endpoints."""
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path())
+        if not has_capability(request.user, Capability.COMMUNITY_ACCESS):
+            raise PermissionDenied("Community is reserved for residents only.")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+@hosteler_community_required
 def feed_page(request):
     """Full-page view of the community feed."""
     sort = request.GET.get("sort", "recent")
@@ -53,7 +62,7 @@ def feed_page(request):
     )
 
 
-@login_required
+@hosteler_community_required
 def feed_partial(request):
     """HTMX endpoint returning paged post cards for infinite scroll and filtering."""
     sort = request.GET.get("sort", "recent")
@@ -78,7 +87,7 @@ def feed_partial(request):
     )
 
 
-@login_required
+@hosteler_community_required
 def similar_issues(request):
     """HTMX endpoint returning similar issues while raising a ticket."""
     title = request.GET.get("title", "").strip()
@@ -104,7 +113,7 @@ def similar_issues(request):
     )
 
 
-@login_required
+@hosteler_community_required
 @require_POST
 def toggle_repost_view(request, ticket_no):
     """HTMX endpoint to toggle repost on a ticket."""
@@ -121,7 +130,6 @@ def toggle_repost_view(request, ticket_no):
         )
 
     updated_ticket = result["ticket"]
-    # Provide has_reposted attribute for template
     updated_ticket.has_reposted = result["reposted"]
 
     return render(
@@ -138,7 +146,7 @@ def toggle_repost_view(request, ticket_no):
     )
 
 
-@login_required
+@hosteler_community_required
 def community_comments_view(request, ticket_no):
     """HTMX endpoint to view and add community comments on a ticket."""
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
@@ -157,10 +165,12 @@ def community_comments_view(request, ticket_no):
                 status=400,
             )
 
-    # Fetch community comments
-    comments_qs = ticket.comments.filter(scope=CommentScope.COMMUNITY).select_related("author")
-    if request.user.is_hosteler:
-        comments_qs = comments_qs.filter(is_hidden=False)
+    # Fetch active community comments
+    comments_qs = (
+        ticket.comments.filter(scope=CommentScope.COMMUNITY, is_hidden=False)
+        .select_related("author")
+        .prefetch_related("reports")
+    )
 
     return render(
         request,
@@ -168,42 +178,62 @@ def community_comments_view(request, ticket_no):
         {
             "ticket": ticket,
             "comments": comments_qs,
-            "can_moderate": can_moderate_community(request.user),
         },
     )
 
 
-@login_required
+# ---------------------------------------------------------
+# Hosteler Self-Moderation Endpoints (Section 4.5)
+# ---------------------------------------------------------
+
+@hosteler_community_required
 @require_POST
-def hide_comment_view(request, comment_id):
-    """Staff moderation endpoint to hide a community comment."""
-    comment = get_object_or_404(TicketComment, id=comment_id)
-    reason = request.POST.get("reason", "Inappropriate content")
+def delete_comment_view(request, comment_id):
+    """Hosteler deletes their own comment."""
+    comment = get_object_or_404(TicketComment, id=comment_id, scope=CommentScope.COMMUNITY)
+    if comment.author_id != request.user.id:
+        raise PermissionDenied("You can only delete your own comment.")
 
-    try:
-        hide_comment(request.user, comment, reason=reason)
-    except PermissionDenied as e:
-        return HttpResponse(str(e), status=403)
+    comment.delete()
+    return HttpResponse("")
 
+
+@hosteler_community_required
+@require_POST
+def reporter_hide_comment_view(request, comment_id):
+    """Ticket reporter can hide comments on their own ticket."""
+    comment = get_object_or_404(TicketComment, id=comment_id, scope=CommentScope.COMMUNITY)
+    if comment.ticket.reporter_id != request.user.id:
+        raise PermissionDenied("Only the ticket creator can moderate comments on this post.")
+
+    comment.is_hidden = True
+    comment.hidden_by = request.user
+    comment.hidden_reason = "Hidden by ticket reporter"
+    comment.save(update_fields=["is_hidden", "hidden_by", "hidden_reason"])
     return HttpResponse(
-        f'<span class="badge" style="background-color: var(--bg-subtle); color: var(--text-muted); font-size: 11px;">Hidden: {reason}</span>'
+        '<div class="text-muted" style="font-size: var(--fs-xs); font-style: italic;">Comment hidden by post author</div>'
     )
 
 
-@login_required
+@hosteler_community_required
 @require_POST
-def hide_ticket_view(request, ticket_no):
-    """Staff moderation endpoint to remove/restore a ticket from community feed."""
-    ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    hidden = request.POST.get("hidden", "true").lower() == "true"
-    reason = request.POST.get("reason", "")
+def report_comment_view(request, comment_id):
+    """Hosteler reports a comment. Auto-hides when 3 distinct reports are recorded."""
+    comment = get_object_or_404(TicketComment, id=comment_id, scope=CommentScope.COMMUNITY)
+    if comment.author_id == request.user.id:
+        return HttpResponse("You cannot report your own comment.", status=400)
 
-    try:
-        set_community_hidden(request.user, ticket, hidden=hidden, reason=reason)
-    except PermissionDenied as e:
-        return HttpResponse(str(e), status=403)
+    report, created = CommentReport.objects.get_or_create(comment=comment, reporter=request.user)
+    report_count = comment.reports.count()
+
+    if report_count >= 3:
+        comment.is_hidden = True
+        comment.hidden_reason = "Reported by residents"
+        comment.save(update_fields=["is_hidden", "hidden_reason"])
+        return HttpResponse(
+            '<div class="text-muted" style="font-size: var(--fs-xs); font-style: italic;">Comment hidden due to resident reports</div>'
+        )
 
     return HttpResponse(
-        f'<div class="community-hidden-status" style="font-size: var(--fs-xs); color: var(--text-muted);">'
-        f'Community visibility: {"Hidden" if hidden else "Visible"}</div>'
+        '<span class="badge" style="color: var(--text-muted); font-size: 11px;">Reported</span>'
     )

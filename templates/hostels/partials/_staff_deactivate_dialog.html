@@ -1,0 +1,85 @@
+<div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 520px;" x-data="{
+  hasActive: {{ active_count }},
+  replacement: '',
+  get canSubmit() {
+    if (this.hasActive > 0) {
+      return this.replacement !== '';
+    }
+    return true;
+  }
+}">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--st-open-fg);">
+      {% if action_type == 'archive' %}Delete (Archive) Staff Member{% else %}Deactivate Staff Member{% endif %}
+    </h2>
+    <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('deactivate-modal-container');">✕</button>
+  </div>
+
+  <form method="post" action="{% if action_type == 'archive' %}{% url 'hostels:archive_staff' target.id %}{% else %}{% url 'hostels:deactivate_staff' target.id %}{% endif %}" style="display: flex; flex-direction: column; gap: 14px;">
+    {% csrf_token %}
+
+    <div style="font-size: var(--fs-sm); color: var(--text-primary); line-height: 1.5;">
+      {% if action_type == 'archive' %}
+        Archive <strong>{{ target.full_name|default:target.login_id }}</strong> ({{ target.get_role_display }} · {{ target.hostel.code|default:"Campus-wide" }})?
+        <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px;">
+          This account will be removed from active lists, but all historical tickets and activity remain completely preserved.
+        </div>
+      {% else %}
+        Deactivate <strong>{{ target.full_name|default:target.login_id }}</strong> ({{ target.get_role_display }} · {{ target.hostel.code|default:"Campus-wide" }})?
+      {% endif %}
+    </div>
+
+    {% if active_count > 0 %}
+      <div style="background-color: var(--st-progress-bg); border: 1px solid var(--st-progress-dot); border-radius: var(--radius-md); padding: 12px 14px; font-size: var(--fs-xs); color: var(--st-progress-fg);">
+        <div style="font-weight: 600; margin-bottom: 2px;">
+          ⚠️ Active tickets blocking deactivation
+        </div>
+        <div>
+          This person currently has <strong>{{ active_count }} active ticket{{ active_count|pluralize }}</strong>
+          {% if is_l1_default_hostel %}
+            and is the Level 1 default caretaker for <strong>{{ is_l1_default_hostel.name }} ({{ is_l1_default_hostel.code }})</strong>
+          {% endif %}.
+          Tickets must be reassigned atomically before deactivation.
+        </div>
+      </div>
+
+      {% if replacements %}
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label">Reassign active tickets to *</label>
+          <select name="replacement_id" class="form-select" x-model="replacement" required>
+            <option value="">-- Select eligible replacement staff --</option>
+            {% for rep in replacements %}
+              <option value="{{ rep.id }}">
+                {{ rep.full_name|default:rep.login_id }} ({{ rep.get_role_display }}{% if rep.hostel %} · {{ rep.hostel.code }}{% else %} · Campus{% endif %})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      {% else %}
+        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); border-radius: var(--radius-md); padding: 10px; font-size: var(--fs-xs);">
+          No eligible active staff members available for reassignment. Please assign another caretaker or warden to this hostel first.
+        </div>
+      {% endif %}
+    {% else %}
+      {% if is_l1_default_hostel %}
+        <div style="font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle); padding: 8px 10px; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+          Note: This staff member is currently the Level 1 default for {{ is_l1_default_hostel.name }}. The hostel will fall back to auto-unassigned routing.
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('deactivate-modal-container');">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger" :disabled="!canSubmit"
+              {% if active_count > 0 and not replacements %}disabled{% endif %}>
+        {% if active_count > 0 %}
+          Reassign {{ active_count }} tickets &amp; {% if action_type == 'archive' %}delete{% else %}deactivate{% endif %}
+        {% else %}
+          Confirm {% if action_type == 'archive' %}delete{% else %}deactivate{% endif %}
+        {% endif %}
+      </button>
+    </div>
+  </form>
+</div>

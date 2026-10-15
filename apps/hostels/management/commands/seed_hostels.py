@@ -1,20 +1,15 @@
 from django.core.management.base import BaseCommand
 
-from apps.hostels.models import GenderType, Hostel, Room
-from apps.hostels.services import generate_rooms
+from apps.hostels.models import GenderType, Hostel
 from apps.tickets.models import Ticket
 
 
 class Command(BaseCommand):
-    help = "Seeds real campus hostels (BH-1 to BH-12) and generates rooms per floor"
+    help = "Seeds real campus hostels (BH-1 to BH-12) without rooms"
 
     def add_arguments(self, parser):
         parser.add_argument("--hostels", type=int, default=12, help="Number of hostels to generate (default 12)")
         parser.add_argument("--prefix", type=str, default="BH", help="Hostel code prefix (default 'BH')")
-        parser.add_argument("--floors", type=int, default=3, help="Number of floors per hostel (default 3)")
-        parser.add_argument("--rooms-per-floor", type=int, default=40, help="Rooms per floor (default 40)")
-        parser.add_argument("--capacity", type=int, default=2, help="Bed capacity per room (default 2)")
-        parser.add_argument("--first-floor", type=int, default=1, help="Starting floor number (default 1)")
         parser.add_argument(
             "--remove-demo",
             action="store_true",
@@ -24,10 +19,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         num_hostels = options["hostels"]
         prefix = options["prefix"]
-        floors = options["floors"]
-        rooms_per_floor = options["rooms_per_floor"]
-        capacity = options["capacity"]
-        first_floor = options["first_floor"]
         remove_demo = options["remove_demo"]
 
         if remove_demo:
@@ -45,7 +36,6 @@ class Command(BaseCommand):
                     )
 
         total_hostels = 0
-        total_rooms = 0
 
         for i in range(1, num_hostels + 1):
             code = f"{prefix}-{i}"
@@ -60,18 +50,9 @@ class Command(BaseCommand):
                 },
             )
             total_hostels += 1
-            rooms_created = generate_rooms(
-                hostel=hostel,
-                floors=floors,
-                rooms_per_floor=rooms_per_floor,
-                capacity=capacity,
-                first_floor=first_floor,
-            )
-            total_rooms += hostel.rooms.count()
 
-        distinct_floors = num_hostels * floors
         self.stdout.write(
             self.style.SUCCESS(
-                f"Successfully seeded hostels: {total_hostels} hostels, {distinct_floors} floors, {total_rooms} rooms."
+                f"Successfully seeded hostels: {total_hostels} hostels."
             )
         )

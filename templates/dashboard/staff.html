@@ -37,6 +37,21 @@
 {% block content %}
 <div class="dashboard-grid">
 
+  <!-- Hostels without Staff Alert Banner -->
+  {% if hostels_without_staff %}
+  <div style="background-color: var(--st-open-bg); border: 1px solid var(--st-open-dot); border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--st-open-fg); flex-shrink: 0;"></i>
+      <span style="font-size: var(--fs-sm); font-weight: 500; color: var(--st-open-fg);">
+        <strong>{{ hostels_without_staff|length }} hostel{{ hostels_without_staff|length|pluralize }}</strong> currently without a Level 1 responsible staff member assigned.
+      </span>
+    </div>
+    <a href="{% url 'hostels:manage_responsibility' %}" class="btn btn-sm btn-primary" style="white-space: nowrap;">
+      Assign staff &rarr;
+    </a>
+  </div>
+  {% endif %}
+
   <!-- 1. Top 4 Stat Cards Row -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
     <div class="stat-card">

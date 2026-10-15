@@ -48,12 +48,12 @@
         </div>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('reassign-modal').style.display='flex';">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('reassign-modal');">
         <i data-lucide="user-check" style="width: 13px; height: 13px;"></i>
         <span>Reassign</span>
       </button>
 
-      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('escalate-modal').style.display='flex';">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('escalate-modal');">
         <i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i>
         <span>Escalate</span>
       </button>
@@ -90,12 +90,12 @@
     <!-- Delete Ticket Actions -->
     {% if user_can_delete %}
       {% if request.user.is_hosteler %}
-        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="document.getElementById('hosteler-delete-modal').style.display='flex';" title="Delete ticket">
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openModal('hosteler-delete-modal');" title="Delete ticket">
           <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
           <span>Delete ticket</span>
         </button>
       {% else %}
-        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="document.getElementById('staff-delete-modal').style.display='flex';" title="Delete ticket">
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openModal('staff-delete-modal');" title="Delete ticket">
           <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
           <span>Delete</span>
         </button>
@@ -173,27 +173,6 @@
             {% endif %}
           </p>
         </div>
-
-        {% if can_moderate %}
-        <div id="community-hide-action-container">
-          <form method="post" action="{% url 'community:hide_ticket' ticket.ticket_no %}" hx-post="{% url 'community:hide_ticket' ticket.ticket_no %}" hx-target="#community-hide-action-container" hx-swap="outerHTML" style="margin: 0;">
-            {% csrf_token %}
-            {% if ticket.community_hidden %}
-              <input type="hidden" name="hidden" value="false">
-              <button type="submit" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
-                <span>Restore to Community Feed</span>
-              </button>
-            {% else %}
-              <input type="hidden" name="hidden" value="true">
-              <button type="submit" class="btn btn-danger-ghost btn-sm" style="display: inline-flex; align-items: center; gap: 6px;" onclick="const r = prompt('Reason for removing from feed:'); if(r===null) return false; const inp=document.createElement('input'); inp.type='hidden'; inp.name='reason'; inp.value=r; this.form.appendChild(inp);">
-                <i data-lucide="eye-off" style="width: 13px; height: 13px;"></i>
-                <span>Remove from Community Feed</span>
-              </button>
-            {% endif %}
-          </form>
-        </div>
-        {% endif %}
       </div>
 
       <!-- Reposters list table -->
@@ -329,22 +308,13 @@
       </div>
 
       <div style="border-top: 1px solid var(--border); padding-top: 12px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500;">Hostel & Room</div>
+        <div style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500;">Hostel</div>
         <div style="font-weight: 500; font-size: var(--fs-sm); margin-top: 4px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>{{ ticket.hostel.name }}</span>
-          {% if ticket.room %}
-            <span>·</span>
-            <span>{{ ticket.room.block.name }}, Room {{ ticket.room.room_number }} (Floor {{ ticket.room.floor }})</span>
-          {% endif %}
           {% if ticket.outside_own_hostel %}
             <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 11px;">Outside own hostel</span>
           {% endif %}
         </div>
-        {% if ticket.location_detail %}
-          <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 4px;">
-            Detail: {{ ticket.location_detail }}
-          </div>
-        {% endif %}
       </div>
 
       <div style="border-top: 1px solid var(--border); padding-top: 12px;">
@@ -381,11 +351,11 @@
 
 <!-- Reassign Staff Modal -->
 {% if not request.user.is_hosteler %}
-<div id="reassign-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px;">
+<div id="reassign-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 500px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Reassign Ticket</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('reassign-modal').style.display='none';">✕</button>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('reassign-modal');">✕</button>
     </div>
 
     <form method="post" action="{% url 'tickets:reassign' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 14px;">
@@ -407,7 +377,7 @@
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('reassign-modal').style.display='none';">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('reassign-modal');">Cancel</button>
         <button type="submit" class="btn btn-primary">Reassign</button>
       </div>
     </form>
@@ -415,11 +385,11 @@
 </div>
 
 <!-- Manual Escalate Modal -->
-<div id="escalate-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px;">
+<div id="escalate-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 500px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Escalate to Next Level</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('escalate-modal').style.display='none';">✕</button>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('escalate-modal');">✕</button>
     </div>
 
     <form method="post" action="{% url 'tickets:escalate' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 14px;">
@@ -434,7 +404,7 @@
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('escalate-modal').style.display='none';">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('escalate-modal');">Cancel</button>
         <button type="submit" class="btn btn-primary" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">Escalate Ticket</button>
       </div>
     </form>
@@ -444,11 +414,11 @@
 
 <!-- Hosteler Delete Modal -->
 {% if user_can_delete and request.user.is_hosteler %}
-<div id="hosteler-delete-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px; max-width: 440px;">
+<div id="hosteler-delete-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 440px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--st-open-fg);">Delete Ticket</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('hosteler-delete-modal').style.display='none';">✕</button>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('hosteler-delete-modal');">✕</button>
     </div>
 
     <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0 0 16px; line-height: 1.5;">
@@ -458,7 +428,7 @@
     <form method="post" action="{% url 'tickets:delete' ticket.ticket_no %}" style="display: flex; gap: 8px; justify-content: flex-end; margin: 0;">
       {% csrf_token %}
       <input type="hidden" name="from_detail" value="true">
-      <button type="button" class="btn btn-secondary" onclick="document.getElementById('hosteler-delete-modal').style.display='none';">Cancel</button>
+      <button type="button" class="btn btn-secondary" onclick="closeModal('hosteler-delete-modal');">Cancel</button>
       <button type="submit" class="btn btn-primary" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">Delete</button>
     </form>
   </div>
@@ -467,11 +437,11 @@
 
 <!-- Staff Delete Modal -->
 {% if user_can_delete and not request.user.is_hosteler %}
-<div id="staff-delete-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';" x-data="{ reasonChoice: '', otherReason: '', get fullReason() { return this.reasonChoice === 'Other' ? this.otherReason.trim() : this.reasonChoice; } }">
-  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
+<div id="staff-delete-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;" x-data="{ reasonChoice: '', otherReason: '', get fullReason() { return this.reasonChoice === 'Other' ? this.otherReason.trim() : this.reasonChoice; } }">
+  <div class="app-modal-dialog command-palette-modal" style="padding: 24px; max-width: 480px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0; color: var(--st-open-fg);">Delete Ticket</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('staff-delete-modal').style.display='none';">✕</button>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('staff-delete-modal');">✕</button>
     </div>
 
     <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0 0 16px;">
@@ -501,7 +471,7 @@
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('staff-delete-modal').style.display='none';">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('staff-delete-modal');">Cancel</button>
         <button type="submit" class="btn btn-primary" :disabled="fullReason.length < 5" style="background-color: var(--st-open-fg); border-color: var(--st-open-fg);">
           Delete ticket
         </button>

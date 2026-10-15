@@ -108,7 +108,6 @@ def test_raise_ticket_and_comment_flow(client):
             "description": "Geyser does not heat water in room 201",
             "priority": "MEDIUM",
             "hostel": hostel.id,
-            "room": student.room.id,
         },
     )
     assert response.status_code == 302

@@ -187,24 +187,6 @@ class TestRegistrationService:
                 "website": "",
             })
 
-    def test_room_hostel_mismatch(self, hostel_setup):
-        h1 = hostel_setup["hostel1"]
-        r2 = hostel_setup["room2"]  # belongs to hostel2!
-
-        data = {
-            "login_id": "MISMATCH01",
-            "full_name": "Mismatch Student",
-            "email": "mismatch@example.com",
-            "password": "Password123!",
-            "hostel": h1,
-            "room": r2,
-            "ts_token": make_valid_ts_token(5),
-            "website": "",
-        }
-
-        with pytest.raises(ValidationError, match="does not belong to"):
-            register_hosteler(data)
-
 
 @pytest.mark.django_db
 class TestRegistrationView:
@@ -228,8 +210,6 @@ class TestRegistrationView:
             "email": "rohan@example.com",
             "phone": "9876543211",
             "hostel": h1.id,
-            "floor": 1,
-            "room": r1.id,
             "password": "Password@123",
             "confirm_password": "Password@123",
             "ts_token": make_valid_ts_token(10),
@@ -244,11 +224,9 @@ class TestRegistrationView:
         assert user.role == Role.HOSTELER
         assert user.is_verified is True
         assert user.hostel == h1
-        assert user.room == r1
 
     def test_post_registration_without_optional_fields(self, client, hostel_setup):
         h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
 
         url = reverse("accounts:register")
         post_data = {
@@ -257,8 +235,6 @@ class TestRegistrationView:
             "email": "",
             "phone": "",
             "hostel": h1.id,
-            "floor": 1,
-            "room": r1.id,
             "password": "Password@123",
             "confirm_password": "Password@123",
             "ts_token": make_valid_ts_token(10),
@@ -302,130 +278,42 @@ class TestRegistrationView:
 
 @pytest.mark.django_db
 class TestWardenResidentVerification:
-    def test_permissions_access(self, client, hostel_setup):
-        manage_url = reverse("hostels:manage_residents")
-
-        # Caretaker -> 403
-        client.force_login(hostel_setup["caretaker"])
-        resp = client.get(manage_url)
-        assert resp.status_code == 403
-
-        # Hosteler -> 403
-        hosteler = UserFactory(role=Role.HOSTELER)
-        client.force_login(hosteler)
-        resp = client.get(manage_url)
-        assert resp.status_code == 403
-
-        # Warden -> 200
+    def test_manage_residents_removed_returns_404(self, client, hostel_setup):
         client.force_login(hostel_setup["warden1"])
-        resp = client.get(manage_url)
-        assert resp.status_code == 200
+        assert client.get("/manage/residents/").status_code == 404
 
-        # Admin -> 200
         client.force_login(hostel_setup["admin"])
-        resp = client.get(manage_url)
-        assert resp.status_code == 200
+        assert client.get("/manage/residents/").status_code == 404
 
-    def test_warden_queryset_scoping(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h1 = hostel_setup["hostel1"]
-        h2 = hostel_setup["hostel2"]
-        r1 = hostel_setup["room1"]
-        r2 = hostel_setup["room2"]
-
-        u1 = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False, login_id="STU_H1")
-        u2 = UserFactory(role=Role.HOSTELER, hostel=h2, room=r2, is_verified=False, login_id="STU_H2")
-
-        client.force_login(w1)
-        resp = client.get(reverse("hostels:manage_residents"))
-        assert resp.status_code == 200
-        content = resp.content.decode("utf-8")
-        assert "STU_H1" in content
-        assert "STU_H2" not in content
-
-    def test_verify_resident_action(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        student = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-
-        client.force_login(w1)
-        verify_url = reverse("hostels:verify_resident", kwargs={"resident_id": student.id})
-        resp = client.post(verify_url)
-        assert resp.status_code == 302
-
-        student.refresh_from_db()
-        assert student.is_verified is True
-        assert student.verified_by == w1
-        assert student.verified_at is not None
-
-    def test_warden_cannot_verify_other_hostel(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h2 = hostel_setup["hostel2"]
-        r2 = hostel_setup["room2"]
-        student_h2 = UserFactory(role=Role.HOSTELER, hostel=h2, room=r2, is_verified=False)
-
-        client.force_login(w1)
-        verify_url = reverse("hostels:verify_resident", kwargs={"resident_id": student_h2.id})
-        resp = client.post(verify_url)
-        assert resp.status_code == 403
-
-        student_h2.refresh_from_db()
-        assert student_h2.is_verified is False
-
-    def test_reject_resident_action(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        student = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-
-        client.force_login(w1)
-        reject_url = reverse("hostels:reject_resident", kwargs={"resident_id": student.id})
-        resp = client.post(reject_url, {"reason": "Invalid room allotment receipt."})
-        assert resp.status_code == 302
-
-        student.refresh_from_db()
-        assert student.is_verified is False
-        assert student.rejected_reason == "Invalid room allotment receipt."
-
-    def test_reset_resident_password(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        student = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=True, login_id="RESETME")
-
-        client.force_login(w1)
-        reset_url = reverse("hostels:reset_resident_password", kwargs={"resident_id": student.id})
-        resp = client.post(reset_url, follow=True)
-        assert resp.status_code == 200
-
+    def test_cli_reset_user_password(self, hostel_setup):
+        from io import StringIO
+        from django.core.management import call_command
+        student = UserFactory(role=Role.HOSTELER, login_id="STU_RESET_CLI")
+        out = StringIO()
+        call_command("reset_user_password", student.login_id, stdout=out)
         student.refresh_from_db()
         assert student.must_change_password is True
+        assert "Password reset successfully" in out.getvalue()
 
-    def test_bulk_verify_residents(self, client, hostel_setup):
-        w1 = hostel_setup["warden1"]
-        h1 = hostel_setup["hostel1"]
-        r1 = hostel_setup["room1"]
-        h2 = hostel_setup["hostel2"]
-        r2 = hostel_setup["room2"]
+    def test_cli_import_allowed_roll_numbers(self):
+        import tempfile
+        import os
+        from io import StringIO
+        from django.core.management import call_command
+        from apps.accounts.models import AllowedRollNumber
 
-        u1 = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-        u2 = UserFactory(role=Role.HOSTELER, hostel=h1, room=r1, is_verified=False)
-        u3 = UserFactory(role=Role.HOSTELER, hostel=h2, room=r2, is_verified=False)
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".txt") as f:
+            f.write("21BCS901\n21BCS902\n")
+            f_path = f.name
 
-        client.force_login(w1)
-        bulk_url = reverse("hostels:bulk_verify_residents")
-        resp = client.post(bulk_url, {"resident_ids": [str(u1.id), str(u2.id), str(u3.id)]})
-        assert resp.status_code == 302
-
-        u1.refresh_from_db()
-        u2.refresh_from_db()
-        u3.refresh_from_db()
-
-        # Warden 1 can only verify residents in Hostel 1
-        assert u1.is_verified is True
-        assert u2.is_verified is True
-        assert u3.is_verified is False
+        try:
+            out = StringIO()
+            call_command("import_allowed_roll_numbers", f_path, stdout=out)
+            assert AllowedRollNumber.objects.filter(roll_no="21BCS901").exists()
+            assert AllowedRollNumber.objects.filter(roll_no="21BCS902").exists()
+        finally:
+            if os.path.exists(f_path):
+                os.remove(f_path)
 
 
 @pytest.mark.django_db

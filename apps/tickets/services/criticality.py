@@ -91,11 +91,8 @@ def recompute_criticality(ticket: Ticket) -> Ticket:
 
         # Recompute due_at from level_started_at if present
         start_time = ticket.level_started_at or ticket.created_at or timezone.now()
-        policy = SLAPolicy.objects.filter(
-            priority=new_priority,
-            level=ticket.current_level,
-        ).first()
-        hours = policy.hours if policy else 24
+        from apps.tickets.services.sla import hours_for
+        hours = hours_for(new_priority, ticket.current_level)
         ticket.due_at = start_time + timedelta(hours=hours)
         if ticket.status in [
             Status.OPEN,

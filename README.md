@@ -6,11 +6,28 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
 
 ## 🌟 Key Features
 
-- **Mandatory Residence Onboarding Gate**:
-  - Enforced Hostel → Block → Room chain for all hostelers prior to app usage.
-  - Cascading dependent selects via HTMX with server-side validation.
-  - Location prefilled on tickets with optional location details and "Outside own hostel" detection.
-  - Resident room capacity warnings (warn-only or hard block).
+- **Hostel-Only Residence Onboarding**:
+  - Streamlined onboarding requiring only Hostel selection prior to app usage.
+  - Rooms, blocks, and floor pickers deprecated from forms and UI while preserved in the underlying database for historical records.
+  - Location prefilled on tickets with optional detail notes and "Outside own hostel" detection.
+- **Enterprise Staff Management Lifecycle (`/manage/staff/`)**:
+  - Centralized staff directory with live role and hostel filtering.
+  - Safe deactivation safeguards: blocks deactivating staff members who have open assigned tickets until reassigned.
+  - Login ID modification with unique conflict checks and audit logging.
+  - Re-authenticated temporary password reset: admin/Chief Warden must re-verify password to issue a one-time temporary password.
+  - Full audit logging (`StaffAuditLog`) tracking actor, target, timestamp, IP, and changes.
+- **Capability Matrix & Administrative Parity**:
+  - Fine-grained permission system (`apps/core/permissions.py`) with `has_capability(user, cap)` enforcement across views, navigation, and services.
+  - **Chief Warden Administrative Parity**: Full management access across staff and ticket settings alongside Administrators, while preserving Level 3 escalation tier and preventing Chief Warden modification of Admin accounts.
+- **Strict Hosteler Community Boundary & Resident Self-Moderation**:
+  - `/community/*` feed and community ticket interactions are **strictly hosteler-only** (staff and admins receive `403 Forbidden`).
+  - Community feed with one-click reposting, affected counter, and author comment deletion.
+  - **Student Self-Moderation**: Hostelers can report abusive comments; comments reaching 3 reports are automatically hidden from the feed without staff intervention.
+  - Operator CLI tooling (`moderate_comment`) for managing flagged comments.
+- **Slim Ticket Settings (`/manage/settings/`) & SLA Fallbacks**:
+  - Streamlined administration for Categories, Tags, and Criticality rules replacing deprecated routing screens.
+  - Deterministic SLA fallback lookup table guaranteeing resolution deadlines even when explicit database rules are absent.
+  - Seed CLI command (`seed_sla_defaults`) to populate standard SLA targets across all priority tiers.
 - **Safe Ticket Soft-Delete & Trash Management**:
   - Soft-delete audit trail preserving SLA reporting and historical ticket numbering.
   - Hosteler D7 delete rules (own tickets only while Open/Assigned, 0 reposts, no staff comments) with an **8-second undo countdown toast**.
@@ -29,16 +46,7 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
   - Camera direct capture (`capture="environment"`) and gallery picker for attachments.
   - 44×44px minimum touch targets and 16px input font size to eliminate iOS auto-zoom.
   - Web Application Manifest (`manifest.webmanifest`) and responsive meta viewport.
-- **Community Feed & Announcements**:
-  - Hostel-wide shared issues feed with one-click reposting, affected counter, and privacy safeguards.
-  - Campus announcements banner with severities (`Info`, `Important`, `Urgent`), pinned posts, read tracking, and scheduled publishing.
 - **Multi-Tier SLA Escalation Engine**: Automated hierarchical escalation across 4 operational levels (`L1 Caretaker` → `L2 Hostel Warden` → `L3 Chief Warden` → `L4 Admin / Dean`) with overdue countdowns and alert triggers.
-- **Strict Role-Based Access Control**:
-  - **Hostelers**: Submit tickets with attachments, track status, add comments, confirm resolution, and rate service (internal notes are strictly masked).
-  - **Caretakers (L1)**: Triage, update status, add public/internal notes, assign, and resolve within their hostel.
-  - **Wardens (L2)**: Handle L1 escalations, monitor hostel-wide maintenance, reassign, and override statuses.
-  - **Chief Warden (L3)**: Campus-wide operational oversight across all hostels, handle L2 escalations.
-  - **Administrators (L4)**: System configuration, routing rules, SLA matrices, user management, and critical overdue escalations.
 - **Interactive Kanban Board**: Drag-and-drop ticket status transitions powered by SortableJS with touch long-press delay, server-side validation, error snap-back, and activity auditing.
 - **Real-Time Operational Analytics**:
   - Staff operational dashboard with Chart.js visualization (monthly trends, category distribution, turnaround duration per hostel).
@@ -164,6 +172,51 @@ The system includes management commands designed to be triggered via cron or Cel
    ```
    Publishes scheduled announcements that have reached their target publication timestamp.
 
+5. **Seed Default SLA Matrices**:
+   ```bash
+   python manage.py seed_sla_defaults
+   ```
+   Populates baseline SLA response and resolution targets for all priorities (Urgent, High, Medium, Low) across operational tiers.
+
+6. **Reset User Password (Operator CLI)**:
+   ```bash
+   python manage.py reset_user_password <login_id> [--password <new_password>]
+   ```
+   Resets passwords directly from the terminal without web UI dependencies.
+
+7. **Import Allowed Roll Numbers (Operator CLI)**:
+   ```bash
+   python manage.py import_allowed_roll_numbers <path_to_csv_or_txt>
+   ```
+   Bulk imports approved student roll numbers into the verification whitelist.
+
+8. **Moderate Community Comments (Operator CLI)**:
+   ```bash
+   python manage.py moderate_comment list-reported
+   python manage.py moderate_comment hide <comment_id>
+   python manage.py moderate_comment unhide <comment_id>
+   python manage.py moderate_comment clear-reports <comment_id>
+   ```
+   Provides administrative inspection and moderation for student-reported comments.
+
+---
+
+## 💾 Database Backup & Restore Runbook
+
+To safely backup and restore the SQLite database during migrations or maintenance:
+
+```bash
+# 1. Create a timestamped snapshot
+cp db.sqlite3 db.sqlite3.bak-$(date +%Y%m%d%H%M%S)
+
+# 2. Verify snapshot integrity
+sqlite3 db.sqlite3.bak "PRAGMA integrity_check;"
+
+# 3. Restore snapshot if needed
+cp db.sqlite3.bak db.sqlite3
+python manage.py migrate --check
+```
+
 ---
 
 ## 🐳 Docker Deployment
@@ -187,29 +240,28 @@ The application will be accessible at **`http://localhost:8000/`**.
 Run the comprehensive test suite with `pytest`:
 
 ```bash
-# Run all 107 test cases
+# Run all test suites
 pytest
+
+# Run Access Cleanup & Staff Management test suite
+pytest tests/test_access_cleanup.py
 
 # Hardcoded color audit test
 pytest tests/test_no_hardcoded_colors.py
 ```
 
-All 107 tests cover:
-- Mandatory residence onboarding gate and room-block-hostel chain validation.
+Test suites cover:
+- Route permissions, community lockdown (403 for non-hostelers), and removed route 404 verification.
+- Chief Warden administrative parity and administrative peer invariant protection.
+- Full staff management lifecycle (create, update, login ID change, temp pw reset, active ticket deactivation blocker, audit logging).
+- Student self-moderation (3-report auto-hide and author comment deletion).
+- Slim ticket settings CRUD and SLA fallback determination.
+- Hostel-only residence onboarding and ticket creation.
 - Safe soft-delete rules (D7 status/repost/comment checks), 8s undo toast tokens, and admin restoration.
 - Theme switching persistence, zero-flash top-of-head script, and automated CSS/template color token guards.
 - Mobile bottom navigation, card-list table transformations, touch Kanban fallbacks, and photo uploads.
-- Community feed reposting, comment moderation, and scheduled announcements.
 - Race-condition safe sequential ticket numbering (`HTL-YYYY-00001`).
-- SLA policy lookup and fallback routing rules.
-- Status workflow matrix with illegal transition rejection.
-- Automated and manual multi-tier escalation hierarchy.
-- Notification dispatch and polling endpoints.
-- Analytics selectors and Chart.js JSON APIs.
-- Filtered CSV exports, quick search, and staff bulk actions.
-- Custom branded error page handlers.
-
----
+- Multi-tier escalation hierarchy and automated background tasks.
 
 ## 📁 Project Structure
 

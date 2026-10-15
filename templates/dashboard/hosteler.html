@@ -61,7 +61,6 @@
         </div>
         <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
           <span>{{ user.hostel.name|default:"Campus" }}</span>
-          {% if user.room %}<span style="opacity: 0.6;">·</span><span>Room {{ user.room }}</span>{% endif %}
           <span style="opacity: 0.6;">·</span>
           <span style="font-family: var(--font-mono); font-size: 11px;">{{ user.login_id }}</span>
         </div>
@@ -325,15 +324,6 @@
     }
   }
 
-  function hideCommentPrompt(commentId) {
-    const reason = prompt("Reason for hiding this comment:");
-    if (!reason) return;
-    htmx.ajax('POST', '/community/comments/' + commentId + '/hide/', {
-      target: '#comment-' + commentId,
-      swap: 'outerHTML',
-      values: { reason: reason }
-    });
-  }
 
   document.body.addEventListener('htmx:afterSwap', function() {
     if (window.lucide) {

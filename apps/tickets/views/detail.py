@@ -42,10 +42,12 @@ def ticket_detail(request, ticket_no):
     if not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to view this ticket.")
 
-    # Comments visibility: internal notes hidden from hostelers!
+    # Comments visibility: internal notes hidden from hostelers; community comments hidden from staff
     comments_qs = ticket.comments.all()
     if request.user.is_hosteler:
         comments_qs = comments_qs.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
+    else:
+        comments_qs = comments_qs.exclude(scope=CommentScope.COMMUNITY)
 
     # SLA time calculation
     sla_percentage = 0

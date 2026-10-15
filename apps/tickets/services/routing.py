@@ -14,10 +14,12 @@ from apps.tickets.models import (
 )
 
 
+from apps.tickets.services.sla import hours_for
+
+
 def calculate_due_date(priority: str, level: int) -> timezone.datetime:
     """Calculates due date based on priority and escalation level SLA policy."""
-    policy = SLAPolicy.objects.filter(priority=priority, level=level).first()
-    hours = policy.hours if policy else 24
+    hours = hours_for(priority, level)
     return timezone.now() + timedelta(hours=hours)
 
 
@@ -26,28 +28,33 @@ def find_initial_assignee(ticket: Ticket) -> User | None:
     Finds the responsible Level 1 staff assignee for the ticket.
     Rule: The hostel determines who receives a Level 1 ticket.
     The category only describes what the problem is.
+    Skips inactive or archived users and falls back to the next eligible person.
     """
+    active_staff_qs = User.objects.filter(is_active=True, archived_at__isnull=True)
+
     if not ticket.hostel:
-        return User.objects.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN], is_active=True).first()
+        return active_staff_qs.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN]).first()
 
     # 1. Primary Level 1 staff member configured on the hostel
-    if ticket.hostel.responsible_staff and ticket.hostel.responsible_staff.is_active:
+    if (
+        ticket.hostel.responsible_staff
+        and ticket.hostel.responsible_staff.is_active
+        and not getattr(ticket.hostel.responsible_staff, "archived_at", None)
+    ):
         return ticket.hostel.responsible_staff
 
     # 2. Caretaker assigned to that hostel
-    caretaker = User.objects.filter(
-        hostel=ticket.hostel, role=Role.CARETAKER, is_active=True
-    ).first()
+    caretaker = active_staff_qs.filter(hostel=ticket.hostel, role=Role.CARETAKER).first()
     if caretaker:
         return caretaker
 
     # 3. Warden in that hostel
-    warden = User.objects.filter(hostel=ticket.hostel, role=Role.WARDEN, is_active=True).first()
+    warden = active_staff_qs.filter(hostel=ticket.hostel, role=Role.WARDEN).first()
     if warden:
         return warden
 
     # 4. Global fallback: Chief Warden or Admin
-    fallback = User.objects.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN], is_active=True).first()
+    fallback = active_staff_qs.filter(role__in=[Role.CHIEF_WARDEN, Role.ADMIN]).first()
     return fallback
 
 

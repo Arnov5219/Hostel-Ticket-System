@@ -39,6 +39,13 @@ def feed_queryset(user, sort="recent", category_id=None, status=None):
     Scope: user's hostel, visibility=HOSTEL, community_hidden=False, category.allow_community=True.
     Reporter is not the current user (user's own tickets are shown separately in My Tickets).
     """
+    from apps.core.permissions import Capability, has_capability
+    if not has_capability(user, Capability.COMMUNITY_ACCESS):
+        return Ticket.objects.none()
+
+    if not user.hostel:
+        return Ticket.objects.none()
+
     # Active statuses + resolved within 7 days
     seven_days_ago = timezone.now() - timedelta(days=7)
     active_or_recent_resolved = (
@@ -101,7 +108,8 @@ def toggle_repost(user, ticket: Ticket, note: str = "") -> dict:
     Toggles repost on a ticket for a user.
     Transaction-safe with select_for_update.
     """
-    if not user.is_hosteler:
+    from apps.core.permissions import Capability, has_capability
+    if not has_capability(user, Capability.COMMUNITY_ACCESS):
         raise PermissionDenied("Only hostelers can repost community tickets.")
 
     if ticket.hostel != user.hostel:
@@ -206,6 +214,10 @@ def add_community_comment(user, ticket: Ticket, body: str) -> TicketComment:
     """
     Adds a public community comment to a ticket.
     """
+    from apps.core.permissions import Capability, has_capability
+    if not has_capability(user, Capability.COMMUNITY_ACCESS):
+        raise PermissionDenied("Community comments are reserved for hostelers only.")
+
     if ticket.visibility != TicketVisibility.HOSTEL:
         raise ValidationError("Community comments are only permitted on shared hostel tickets.")
 
@@ -221,21 +233,19 @@ def add_community_comment(user, ticket: Ticket, body: str) -> TicketComment:
     if recent_count >= 5:
         raise ValidationError("You are commenting too fast. Please wait a minute before replying again.")
 
-    is_staff = user.role in [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]
-
     comment = TicketComment.objects.create(
         ticket=ticket,
         author=user,
         body=body,
         scope=CommentScope.COMMUNITY,
-        is_official=is_staff,
+        is_official=False,
     )
 
     ticket.last_activity_at = timezone.now()
     ticket.save(update_fields=["last_activity_at"])
 
     # Log activity
-    act_note = f"Community comment by {user.role}: {body[:60]}" if is_staff else f"Community comment: {body[:60]}"
+    act_note = f"Community comment: {body[:60]}"
     TicketActivity.objects.create(
         ticket=ticket,
         actor=user,
@@ -243,12 +253,12 @@ def add_community_comment(user, ticket: Ticket, body: str) -> TicketComment:
         note=act_note,
     )
 
-    # Notify reporter and followers
+    # Notify reporter and followers (hostelers only)
     recipients = set()
-    if ticket.reporter and ticket.reporter != user:
+    if ticket.reporter and ticket.reporter != user and has_capability(ticket.reporter, Capability.COMMUNITY_ACCESS):
         recipients.add(ticket.reporter)
     for follower in ticket.followers.all():
-        if follower != user:
+        if follower != user and has_capability(follower, Capability.COMMUNITY_ACCESS):
             recipients.add(follower)
 
     display_name = user.full_name or user.login_id
@@ -269,38 +279,18 @@ def add_community_comment(user, ticket: Ticket, body: str) -> TicketComment:
 
 
 def hide_comment(staff_user, comment: TicketComment, reason: str = "") -> TicketComment:
-    """Hides a community comment. Restricted to Warden, Chief Warden, and Admin."""
-    if staff_user.role not in [Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]:
-        raise PermissionDenied("Only Wardens and Administrators can moderate comments.")
-
+    """Legacy helper for comment hiding."""
     comment.is_hidden = True
     comment.hidden_by = staff_user
     comment.hidden_reason = reason.strip()
     comment.save(update_fields=["is_hidden", "hidden_by", "hidden_reason"])
-
-    TicketActivity.objects.create(
-        ticket=comment.ticket,
-        actor=staff_user,
-        action=ActivityAction.COMMENT_HIDDEN,
-        note=f"Comment #{comment.id} hidden by staff: {reason}",
-    )
     return comment
 
 
 def set_community_hidden(staff_user, ticket: Ticket, hidden: bool, reason: str = "") -> Ticket:
-    """Removes or restores a ticket from the community feed."""
-    if staff_user.role not in [Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN]:
-        raise PermissionDenied("Only Wardens and Administrators can change community feed visibility.")
-
+    """Legacy helper for feed visibility."""
     ticket.community_hidden = hidden
     ticket.save(update_fields=["community_hidden"])
-
-    TicketActivity.objects.create(
-        ticket=ticket,
-        actor=staff_user,
-        action=ActivityAction.COMMUNITY_HIDDEN,
-        note=f"Community visibility changed to {'hidden' if hidden else 'visible'}. Reason: {reason}",
-    )
     return ticket
 
 
@@ -308,6 +298,10 @@ def similar_open_tickets(user, title: str, category=None):
     """
     Finds up to 3 similar open tickets in the same hostel to avoid duplicates.
     """
+    from apps.core.permissions import Capability, has_capability
+    if not has_capability(user, Capability.COMMUNITY_ACCESS):
+        return []
+
     if not user.hostel or not title or len(title.strip()) < 3:
         return []
 

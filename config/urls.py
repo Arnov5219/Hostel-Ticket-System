@@ -3,8 +3,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.hostels import views as hostels_views
-from apps.tickets.views import manage_criticality, trash_list_view
+from apps.tickets.views import trash_list_view
+from apps.tickets.views.settings import manage_settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -15,11 +15,9 @@ urlpatterns = [
     path("announcements/", include("apps.announcements.urls", namespace="announcements")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),
-    path("manage/criticality/", manage_criticality, name="manage_criticality"),
+    path("manage/settings/", manage_settings, name="manage_settings"),
     path("manage/trash/", trash_list_view, name="manage_trash"),
     path("manage/", include("apps.hostels.urls", namespace="hostels")),
-    path("hostels/options/floors/", hostels_views.options_floors_view, name="options_floors_direct"),
-    path("hostels/options/rooms/", hostels_views.options_rooms_view, name="options_rooms_direct"),
 ]
 
 if settings.DEBUG:

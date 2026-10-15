@@ -79,6 +79,14 @@ def dashboard_index(request):
     most_reported = get_most_reported_issues(user)
     latest_announcements = get_latest_announcements_staff(user)
 
+    from django.conf import settings
+    from apps.core.permissions import Capability
+    from apps.hostels.models import Hostel
+
+    hostels_without_staff = []
+    if user.can(Capability.MANAGE_HOSTELS):
+        hostels_without_staff = Hostel.objects.filter(is_active=True, responsible_staff__isnull=True)
+
     context = {
         "kpis": kpis,
         "escalations": escalations,
@@ -86,6 +94,8 @@ def dashboard_index(request):
         "overdue_tickets": overdue_tickets,
         "most_reported_issues": most_reported,
         "latest_announcements": latest_announcements,
+        "hostels_without_staff": hostels_without_staff,
+        "show_affected_count": getattr(settings, "SHOW_AFFECTED_COUNT_TO_STAFF", True),
         "current_section": "dashboard",
     }
     return render(request, "dashboard/staff.html", context)

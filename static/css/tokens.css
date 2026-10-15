@@ -8,6 +8,8 @@
   --border:            #E5E7EB;   /* Hairline divider */
   --border-strong:     #D1D5DB;
   --border-glass:      rgba(229, 231, 235, 0.8);
+  --backdrop-dark:     rgba(15, 23, 42, 0.65);
+  --backdrop-blur:     4px;
 
   /* Text & Contrast */
   --text-primary:      #111827;   /* Charcoal black */
@@ -215,7 +217,8 @@
   --bg-glow-accent:    rgba(77, 163, 255, 0.12);
   --bg-glow-violet:    rgba(140, 100, 220, 0.10);
   --bg-dot:            rgba(255, 255, 255, 0.06);
-  --backdrop-dark:     rgba(0, 0, 0, 0.7);
+  --backdrop-dark:     rgba(0, 0, 0, 0.78);
+  --backdrop-blur:     6px;
 
   /* Shadows for Dark Mode */
   --shadow-sm:         0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);

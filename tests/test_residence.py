@@ -68,52 +68,14 @@ class TestResidenceService:
         assert record.room == r1
         assert record.changed_by == user
 
-    def test_set_residence_chain_mismatch_rejected(self, student_user, residence_hierarchy):
-        h1 = residence_hierarchy["hostel1"]
-        r2 = residence_hierarchy["room2"]  # Belongs to hostel2!
-
-        with pytest.raises(ValidationError) as exc:
-            set_residence(student_user, h1, r2)
-        assert "does not belong to hostel" in str(exc.value)
-
     def test_set_residence_inactive_hostel_rejected(self, student_user, residence_hierarchy):
         h1 = residence_hierarchy["hostel1"]
-        r1 = residence_hierarchy["room1"]
         h1.is_active = False
         h1.save()
 
         with pytest.raises(ValidationError) as exc:
-            set_residence(student_user, h1, r1)
+            set_residence(student_user, h1)
         assert "currently inactive" in str(exc.value)
-
-    def test_capacity_warn_only_by_default(self, residence_hierarchy):
-        h2 = residence_hierarchy["hostel2"]
-        r2 = residence_hierarchy["room2"]  # Capacity = 1
-
-        u1 = User.objects.create_user(login_id="user_cap_1", role=Role.HOSTELER)
-        u2 = User.objects.create_user(login_id="user_cap_2", role=Role.HOSTELER)
-
-        # First user occupies room
-        set_residence(u1, h2, r2)
-        assert r2.resident_count == 1
-
-        # Second user should succeed by default (warn-only)
-        set_residence(u2, h2, r2)
-        assert r2.resident_count == 2
-
-    @override_settings(ENFORCE_ROOM_CAPACITY=True)
-    def test_capacity_enforced_when_configured(self, residence_hierarchy):
-        h2 = residence_hierarchy["hostel2"]
-        r2 = residence_hierarchy["room2"]  # Capacity = 1
-
-        u1 = User.objects.create_user(login_id="user_cap_e1", role=Role.HOSTELER)
-        u2 = User.objects.create_user(login_id="user_cap_e2", role=Role.HOSTELER)
-
-        set_residence(u1, h2, r2)
-
-        with pytest.raises(ValidationError) as exc:
-            set_residence(u2, h2, r2)
-        assert "full capacity" in str(exc.value)
 
 
 @pytest.mark.django_db
@@ -140,11 +102,6 @@ class TestResidenceMiddlewareGate:
         resp = client.get(reverse("accounts:onboarding"))
         assert resp.status_code == 200
 
-        # Options endpoints
-        h1 = residence_hierarchy["hostel1"]
-        resp_b = client.get(reverse("hostels:options_floors") + f"?hostel={h1.id}")
-        assert resp_b.status_code == 200
-
         # Theme endpoint
         resp_t = client.post(reverse("accounts:theme"), {"theme": "DARK"})
         assert resp_t.status_code == 204
@@ -159,7 +116,6 @@ class TestResidenceMiddlewareGate:
         set_residence(
             student_user,
             residence_hierarchy["hostel1"],
-            residence_hierarchy["room1"],
         )
         client.force_login(student_user)
 
@@ -171,11 +127,9 @@ class TestResidenceMiddlewareGate:
 class TestLocationValidationAndTicketForm:
     def test_validate_location_service(self, residence_hierarchy, student_user):
         h1 = residence_hierarchy["hostel1"]
-        r1 = residence_hierarchy["room1"]
 
-        h, r, outside = validate_location(h1.id, r1.id, reporter=student_user)
+        h, r, outside = validate_location(h1.id, reporter=student_user)
         assert h == h1
-        assert r == r1
         assert not outside
 
     def test_validate_location_outside_hostel_detected(self, residence_hierarchy, student_user):
@@ -183,37 +137,30 @@ class TestLocationValidationAndTicketForm:
         set_residence(
             student_user,
             residence_hierarchy["hostel1"],
-            residence_hierarchy["room1"],
         )
 
         # Validate ticket raised in hostel 2
         h2 = residence_hierarchy["hostel2"]
-        r2 = residence_hierarchy["room2"]
 
-        h, r, outside = validate_location(h2.id, r2.id, reporter=student_user)
+        h, r, outside = validate_location(h2.id, reporter=student_user)
         assert outside is True
 
     def test_raise_ticket_creates_location_and_outside_flag(self, client, student_user, residence_hierarchy):
         set_residence(
             student_user,
             residence_hierarchy["hostel1"],
-            residence_hierarchy["room1"],
         )
         client.force_login(student_user)
 
         cat = Category.objects.create(name="Furniture & Fixtures")
         h2 = residence_hierarchy["hostel2"]
-        r2 = residence_hierarchy["room2"]
 
         post_data = {
             "title": "Broken desk in other hostel",
             "category": cat.id,
             "priority": Priority.LOW,
-            "description": "Desk leg cracked during visit.",
+            "description": "Desk leg cracked during visit in room 201.",
             "hostel": h2.id,
-            "floor": r2.floor,
-            "room": r2.id,
-            "location_detail": "Room 201 near window",
             "different_hostel": True,
         }
 
@@ -222,6 +169,4 @@ class TestLocationValidationAndTicketForm:
 
         ticket = Ticket.objects.get(title="Broken desk in other hostel")
         assert ticket.hostel == h2
-        assert ticket.room == r2
         assert ticket.outside_own_hostel is True
-        assert ticket.location_detail == "Room 201 near window"

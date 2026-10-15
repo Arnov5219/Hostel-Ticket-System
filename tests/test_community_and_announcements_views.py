@@ -158,41 +158,28 @@ class TestCommunityFeedViews:
         assert comment is not None
         assert comment.is_official is False
 
-        # Warden replies officially
+        # Staff cannot post community comments (returns 403)
         client.force_login(warden)
         resp_staff = client.post(comments_url, {"body": "Electrician has been informed."})
-        assert resp_staff.status_code == 200
-        staff_comment = TicketComment.objects.filter(author=warden).first()
-        assert staff_comment.is_official is True
+        assert resp_staff.status_code == 403
 
-        # Warden hides inappropriate comment
-        hide_url = reverse("community:hide_comment", kwargs={"comment_id": comment.id})
-        resp_hide = client.post(hide_url, {"reason": "Spam content"})
-        assert resp_hide.status_code == 200
-        comment.refresh_from_db()
-        assert comment.is_hidden is True
-        assert comment.hidden_reason == "Spam content"
+        # Resident self-moderation (reporting a comment)
+        client.force_login(author)
+        report_url = reverse("community:report_comment", kwargs={"comment_id": comment.id})
+        resp_report = client.post(report_url, {"reason": "Spam"})
+        assert resp_report.status_code == 200
 
-    def test_hide_ticket_staff_view(self, client):
+    def test_non_hosteler_community_forbidden(self, client):
         hostel = HostelFactory()
         reporter = UserFactory(role=Role.HOSTELER, hostel=hostel)
         warden = UserFactory(role=Role.WARDEN, hostel=hostel)
         ticket = TicketFactory(hostel=hostel, reporter=reporter, visibility=TicketVisibility.HOSTEL)
 
         client.force_login(warden)
-        hide_ticket_url = reverse("community:hide_ticket", kwargs={"ticket_no": ticket.ticket_no})
-
-        # Remove from community
-        resp = client.post(hide_ticket_url, {"hidden": "true", "reason": "Not appropriate for feed"})
-        assert resp.status_code == 200
-        ticket.refresh_from_db()
-        assert ticket.community_hidden is True
-
-        # Hosteler can no longer see it in feed
-        hosteler = UserFactory(role=Role.HOSTELER, hostel=hostel)
-        client.force_login(hosteler)
-        resp_feed = client.get(reverse("community:feed"))
-        assert ticket.title not in resp_feed.content.decode()
+        # Non-hostelers are forbidden from community feed and repost
+        assert client.get(reverse("community:feed")).status_code == 403
+        repost_url = reverse("tickets:repost", kwargs={"ticket_no": ticket.ticket_no})
+        assert client.post(repost_url).status_code == 403
 
     def test_similar_issues_endpoint(self, client):
         hostel = HostelFactory()
@@ -294,9 +281,9 @@ class TestCriticalityAndStaffVisibility:
 
         # Admin access granted
         client.force_login(admin_user)
-        resp = client.get(reverse("tickets:manage_criticality"))
+        resp = client.get(reverse("tickets:manage_criticality") + "?tab=criticality")
         assert resp.status_code == 200
-        assert "Criticality Escalation Rules" in resp.content.decode()
+        assert "Criticality rules" in resp.content.decode()
 
         # Admin adds rule
         post_data = {
@@ -343,11 +330,11 @@ class TestCriticalityAndStaffVisibility:
         assert "Most-reported issues" in content_dash
         assert "Shared Water Dispenser Leaking" in content_dash
 
-        # 2. Staff ticket detail shows Community Impact panel
+        # 2. Staff ticket detail shows Community Impact panel with affected count, hiding student identity
         resp_detail = client.get(reverse("tickets:detail", kwargs={"ticket_no": ticket.ticket_no}))
         assert resp_detail.status_code == 200
         content_detail = resp_detail.content.decode()
         assert "Community Impact" in content_detail
-        assert "Peer Student" in content_detail
-        assert "Dispenser flooded room 102" in content_detail
-        assert "PEER_101" in content_detail
+        assert "2 affected" in content_detail
+        assert "Peer Student" not in content_detail
+        assert "Dispenser flooded room 102" not in content_detail

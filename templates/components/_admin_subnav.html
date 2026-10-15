@@ -1,29 +1,16 @@
-{% if request.user.is_authenticated and request.user.is_admin or request.user.is_chief_warden or request.user.is_warden %}
+{% if request.user.is_authenticated and request.user.is_admin or request.user.is_chief_warden %}
 <nav class="admin-subnav" aria-label="Administration sections" style="margin-bottom: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
-  {% if request.user.is_admin %}
   <a href="{% url 'hostels:manage_hostels' %}" class="admin-subnav__item {% if current_section == 'manage_hostels' %}active{% endif %}">
     Hostels
-  </a>
-  <a href="{% url 'hostels:manage_rooms' %}" class="admin-subnav__item {% if current_section == 'manage_rooms' %}active{% endif %}">
-    Rooms
   </a>
   <a href="{% url 'hostels:manage_staff' %}" class="admin-subnav__item {% if current_section == 'manage_staff' %}active{% endif %}">
     Staff
   </a>
-  {% endif %}
-  <a href="{% url 'hostels:manage_residents' %}" class="admin-subnav__item {% if current_section == 'manage_residents' %}active{% endif %}">
-    Residents
-  </a>
-  {% if request.user.is_admin %}
   <a href="{% url 'hostels:manage_responsibility' %}" class="admin-subnav__item {% if current_section == 'manage_responsibility' %}active{% endif %}">
     Responsibility
   </a>
-  <a href="{% url 'tickets:manage_routing' %}" class="admin-subnav__item {% if current_section == 'manage_config' %}active{% endif %}">
-    Routing & SLA
+  <a href="{% url 'tickets:manage_settings' %}" class="admin-subnav__item {% if current_section == 'manage_settings' %}active{% endif %}">
+    Ticket settings
   </a>
-  <a href="{% url 'tickets:manage_criticality' %}" class="admin-subnav__item {% if current_section == 'manage_criticality' %}active{% endif %}">
-    Criticality
-  </a>
-  {% endif %}
 </nav>
 {% endif %}

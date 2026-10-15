@@ -4,70 +4,19 @@
   </a>
 
   <nav class="rail-nav">
-    <a href="{% url 'dashboard:index' %}" class="rail-item {% if current_section == 'dashboard' %}active{% endif %}">
-      <i data-lucide="layout-dashboard" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Dashboard</span>
-    </a>
-
-    <a href="{% url 'tickets:list' %}" class="rail-item {% if current_section == 'tickets' and not is_kanban %}active{% endif %}">
-      <i data-lucide="ticket" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Tickets</span>
-    </a>
-
-    {% if request.user.is_authenticated and not request.user.is_hosteler %}
-    <a href="{% url 'tickets:kanban' %}" class="rail-item {% if is_kanban %}active{% endif %}">
-      <i data-lucide="columns-3" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Kanban Board</span>
-    </a>
-    {% endif %}
-
-    <a href="{% url 'community:feed' %}" class="rail-item {% if current_section == 'community' %}active{% endif %}">
-      <i data-lucide="users" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Community</span>
-    </a>
-
-    <a href="{% url 'announcements:list' %}" class="rail-item {% if current_section == 'announcements' %}active{% endif %}">
-      <i data-lucide="megaphone" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Announcements</span>
-    </a>
-
-    {% if request.user.is_authenticated and request.user.is_admin %}
-    <a href="{% url 'hostels:manage_hostels' %}" class="rail-item {% if current_section == 'manage_hostels' %}active{% endif %}">
-      <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Hostels</span>
-    </a>
-
-    <a href="{% url 'hostels:manage_staff' %}" class="rail-item {% if current_section == 'manage_staff' %}active{% endif %}">
-      <i data-lucide="users" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Staff Management</span>
-    </a>
-
-    <a href="{% url 'hostels:manage_responsibility' %}" class="rail-item {% if current_section == 'manage_responsibility' %}active{% endif %}">
-      <i data-lucide="user-check" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Hostel Responsibility</span>
-    </a>
-
-    <a href="{% url 'tickets:manage_routing' %}" class="rail-item {% if current_section == 'manage_config' %}active{% endif %}">
-      <i data-lucide="sliders-horizontal" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Categories & SLA</span>
-    </a>
-    {% endif %}
-
-    {% if request.user.is_authenticated and request.user.is_warden or request.user.is_chief_warden or request.user.is_admin %}
-    <a href="{% url 'tickets:trash' %}" class="rail-item {% if current_section == 'trash' %}active{% endif %}">
-      <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Trash</span>
-    </a>
-    {% endif %}
-
-    <a href="{% url 'notifications:list' %}" class="rail-item {% if current_section == 'notifications' %}active{% endif %}">
-      <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
-      <span class="rail-tooltip">Notifications</span>
-    </a>
+    {% for item in navigation.sidebar_items %}
+      <a href="{{ item.url }}" class="rail-item {% if current_section == item.section or is_kanban and item.key == 'kanban' or not is_kanban and item.key == 'tickets' and current_section == 'tickets' %}active{% endif %}" title="{{ item.label }}">
+        <i data-lucide="{{ item.icon }}" style="width: 20px; height: 20px;"></i>
+        {% if item.badge_key and unread_notifications_count > 0 %}
+          <span style="position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--st-open-dot);"></span>
+        {% endif %}
+        <span class="rail-tooltip">{{ item.label }}</span>
+      </a>
+    {% endfor %}
   </nav>
 
   <div class="rail-bottom">
-    <a href="{% url 'accounts:profile' %}" class="rail-item {% if current_section == 'profile' %}active{% endif %}">
+    <a href="{% url 'accounts:profile' %}" class="rail-item {% if current_section == 'profile' %}active{% endif %}" title="Profile &amp; Settings">
       <i data-lucide="user-circle" style="width: 20px; height: 20px;"></i>
       <span class="rail-tooltip">Profile</span>
     </a>

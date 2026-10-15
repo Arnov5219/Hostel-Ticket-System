@@ -1081,3 +1081,147 @@ tr:hover .row-actions {
 .ann-icon-chip.important { background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); }
 .ann-icon-chip.urgent { background-color: var(--ann-urg-bg); color: var(--ann-urg-fg); }
 
+/* ==========================================================================
+   Global Modal System (.app-modal-backdrop, .command-palette-backdrop)
+   ========================================================================== */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+.app-modal-backdrop,
+.command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--backdrop-dark);
+  backdrop-filter: blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur));
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  box-sizing: border-box;
+  overflow-y: auto;
+  animation: modalBackdropFadeIn var(--duration-fast) var(--ease-standard) forwards;
+}
+
+.app-modal-backdrop[style*="display: none"],
+.command-palette-backdrop[style*="display: none"] {
+  display: none !important;
+}
+
+.app-modal-backdrop[style*="display: flex"],
+.command-palette-backdrop[style*="display: flex"],
+.app-modal-backdrop.active,
+.command-palette-backdrop.active {
+  display: flex !important;
+}
+
+@keyframes modalBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.app-modal-dialog,
+.command-palette-modal {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 520px;
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-modal) !important;
+  color: var(--text-primary) !important;
+  max-height: calc(100vh - 48px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  margin: auto !important;
+  animation: modalDialogScaleUp var(--duration-fast) var(--ease-standard) forwards;
+}
+
+@keyframes modalDialogScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.app-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.app-modal-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.app-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-md);
+  line-height: 1;
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+
+.app-modal-close:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-subtle-hover);
+}
+
+.app-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.app-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background-color: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .app-modal-backdrop,
+  .command-palette-backdrop {
+    padding: var(--space-2) !important;
+  }
+  .app-modal-dialog,
+  .command-palette-modal {
+    max-height: calc(100vh - 24px) !important;
+    border-radius: var(--radius-md) !important;
+  }
+}
+
+

@@ -245,16 +245,14 @@ class TestCommunityFeedAndComments:
         assert c1.scope == CommentScope.COMMUNITY
         assert c1.is_official is False
 
-        # Add staff comment (official reply)
-        c2 = add_community_comment(warden, ticket, "Plumber has arrived.")
-        assert c2.scope == CommentScope.COMMUNITY
-        assert c2.is_official is True
+        # Staff cannot comment on community issues
+        with pytest.raises(PermissionDenied):
+            add_community_comment(warden, ticket, "Plumber has arrived.")
 
-        # Moderate (hide) comment
-        hide_comment(warden, c1, reason="Inappropriate language")
-        c1.refresh_from_db()
-        assert c1.is_hidden is True
-        assert c1.hidden_by == warden
+        # Resident reporting comment
+        from apps.tickets.models import CommentReport
+        CommentReport.objects.create(comment=c1, reporter=hosteler)
+        assert c1.reports.count() == 1
 
     def test_similar_open_tickets(self):
         hostel = HostelFactory()

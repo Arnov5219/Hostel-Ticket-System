@@ -10,38 +10,23 @@ from apps.accounts.models import ResidenceHistory, Role, User
 from apps.hostels.models import Hostel, Room
 
 
-def set_residence(user, hostel, room, changed_by=None, floor=None):
+def set_residence(user, hostel, room=None, changed_by=None, floor=None):
     """
-    Validates and updates the residence (hostel, room) for a user.
-    Records a ResidenceHistory log entry.
+    Validates and updates the residence for a user.
+    Residence is Hostel-only (Section 5.3). Room is kept optional for historical data compatibility.
     """
-    if not hostel or not room:
-        raise ValidationError("Hostel and Room are required.")
+    if not hostel:
+        raise ValidationError("Hostel is required.")
 
     if not hostel.is_active:
         raise ValidationError(f"Hostel '{hostel.name}' is currently inactive.")
 
-    if not room.is_active:
-        raise ValidationError(f"Room '{room.room_number}' is currently inactive.")
-
-    # Validate hierarchy chain
-    if room.hostel_id != hostel.id:
-        raise ValidationError(f"Room '{room.room_number}' does not belong to hostel '{hostel.name}'.")
-
-    if floor is not None and str(room.floor) != str(floor):
-        raise ValidationError(f"Room '{room.room_number}' is not on floor {floor}.")
-
-    # Capacity enforcement check if configured
-    enforce_capacity = getattr(settings, "ENFORCE_ROOM_CAPACITY", False)
-    current_occupants = room.residents.exclude(id=user.id).count()
-    if enforce_capacity and current_occupants >= room.capacity:
-        raise ValidationError(f"Room {room.room_number} is at full capacity ({room.capacity} residents).")
-
     with transaction.atomic():
         user.hostel = hostel
-        user.room = room
+        if room:
+            user.room = room
         user.residence_set_at = timezone.now()
-        user.save(update_fields=["hostel", "room", "residence_set_at"])
+        user.save(update_fields=["hostel", "room", "residence_set_at"] if room else ["hostel", "residence_set_at"])
 
         ResidenceHistory.objects.create(
             user=user,
@@ -107,7 +92,7 @@ def generate_student_login_id() -> str:
 def register_hosteler(data, request_meta=None):
     """
     Self-registration service for student hostelers.
-    Forces role to HOSTELER, sets is_verified=False.
+    Forces role to HOSTELER, sets is_verified=True.
     Roll number, email, and phone are optional.
     """
     validate_anti_bot(data, request_meta)
@@ -140,13 +125,8 @@ def register_hosteler(data, request_meta=None):
         raise ValidationError("A valid active hostel is required.")
 
     room = data.get("room")
-    if isinstance(room, (int, str)):
+    if room and isinstance(room, (int, str)):
         room = Room.objects.filter(pk=room, is_active=True).first()
-    if not room:
-        raise ValidationError("A valid active room is required.")
-
-    if room.hostel_id != hostel.id:
-        raise ValidationError(f"Room {room.room_number} does not belong to {hostel.name}.")
 
     with transaction.atomic():
         user = User.objects.create_user(
@@ -162,6 +142,11 @@ def register_hosteler(data, request_meta=None):
             hostel=hostel,
             room=room,
             residence_set_at=timezone.now(),
+        )
+
+        from apps.accounts.models import AllowedRollNumber
+        AllowedRollNumber.objects.filter(roll_no__iexact=login_id, used_by__isnull=True).update(
+            used_by=user, used_at=timezone.now()
         )
 
         ResidenceHistory.objects.create(
@@ -215,4 +200,3 @@ def bulk_verify_residents(resident_ids, verified_by: User, allowed_hostel_id=Non
         verified_at=timezone.now(),
         rejected_reason="",
     )
-

@@ -59,27 +59,16 @@ def test_manage_staff_and_responsibility_views(client):
 
 
 @pytest.mark.django_db
-def test_manage_routing_rules(client):
+def test_manage_settings_view(client):
     admin = UserFactory(role=Role.ADMIN, password="admin_password")
-    caretaker = UserFactory(role=Role.CARETAKER)
     client.login(username=admin.login_id, password="admin_password")
 
-    hostel = HostelFactory()
-    category = Category.objects.first()
+    response = client.get(reverse("tickets:manage_settings"))
+    assert response.status_code == 200
 
-    # Add routing rule
-    response = client.post(
-        reverse("tickets:manage_routing"),
-        {
-            "action": "add_rule",
-            "hostel": hostel.id,
-            "category": category.id if category else "",
-            "level": 1,
-            "assignee": caretaker.id,
-        },
-    )
-    assert response.status_code == 302
-    assert RoutingRule.objects.filter(hostel=hostel, assignee=caretaker).exists()
+    # Ensure /manage/routing/ is 404
+    routing_res = client.get("/manage/routing/")
+    assert routing_res.status_code == 404
 
 
 @pytest.mark.django_db
@@ -90,5 +79,6 @@ def test_unauthorized_hosteler_access_denied(client):
     res1 = client.get(reverse("hostels:manage_hostels"))
     assert res1.status_code == 403
 
-    res2 = client.get(reverse("tickets:manage_routing"))
+    res2 = client.get(reverse("tickets:manage_settings"))
     assert res2.status_code == 403
+

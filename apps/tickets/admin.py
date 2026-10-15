@@ -69,10 +69,7 @@ class TicketAttachmentAdmin(admin.ModelAdmin):
     list_display = ["ticket", "uploaded_by", "created_at"]
 
 
-@admin.register(TicketRepost)
-class TicketRepostAdmin(admin.ModelAdmin):
-    list_display = ["ticket", "user", "note", "created_at"]
-    search_fields = ["ticket__ticket_no", "user__login_id", "note"]
+# TicketRepost is not registered in Django Admin (Section 4.2: Community is hostelers only)
 
 
 @admin.register(TicketComment)
@@ -80,6 +77,10 @@ class TicketCommentAdmin(admin.ModelAdmin):
     list_display = ["ticket", "author", "scope", "is_official", "is_hidden", "created_at"]
     list_filter = ["scope", "is_official", "is_hidden"]
     search_fields = ["ticket__ticket_no", "author__login_id", "body"]
+
+    def get_queryset(self, request):
+        # Community comments are not listed in Django admin
+        return super().get_queryset(request).exclude(scope="COMMUNITY")
 
 
 @admin.register(CriticalityRule)

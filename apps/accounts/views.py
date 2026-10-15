@@ -109,13 +109,7 @@ def profile_view(request):
 
     residence_form = None
     if request.user.is_hosteler:
-        initial_data = {}
-        if request.user.hostel_id:
-            initial_data["hostel"] = request.user.hostel_id
-        if request.user.room_id and request.user.room:
-            initial_data["floor"] = request.user.room.floor
-            initial_data["room"] = request.user.room_id
-        residence_form = ResidenceForm(initial=initial_data)
+        residence_form = ResidenceForm(initial={"hostel": request.user.hostel_id})
 
     return render(
         request,
@@ -147,16 +141,14 @@ def onboarding_view(request):
                 set_residence(
                     user=request.user,
                     hostel=form.cleaned_data["hostel"],
-                    room=form.cleaned_data["room"],
                     changed_by=request.user,
-                    floor=form.cleaned_data.get("floor"),
                 )
                 messages.success(request, f"Welcome to {form.cleaned_data['hostel'].name}! Your residence has been saved.")
                 return redirect("dashboard:index")
             except ValidationError as e:
                 messages.error(request, str(e.message if hasattr(e, "message") else e))
         else:
-            messages.error(request, "Please select a valid Hostel, Floor, and Room.")
+            messages.error(request, "Please select a valid Hostel.")
 
     hostels = Hostel.objects.filter(is_active=True).order_by("code")
     return render(
@@ -185,16 +177,16 @@ def profile_residence_view(request):
                 set_residence(
                     user=request.user,
                     hostel=form.cleaned_data["hostel"],
-                    room=form.cleaned_data["room"],
                     changed_by=request.user,
-                    floor=form.cleaned_data.get("floor"),
                 )
                 messages.success(request, "Your residence was updated successfully.")
             except ValidationError as e:
                 messages.error(request, str(e.message if hasattr(e, "message") else e))
         else:
-            messages.error(request, "Invalid residence selection. Please ensure Room matches the selected Hostel.")
+            messages.error(request, "Invalid residence selection. Please select a valid Hostel.")
         return redirect("accounts:profile")
+
+    return redirect("accounts:profile")
 
     return redirect("accounts:profile")
 

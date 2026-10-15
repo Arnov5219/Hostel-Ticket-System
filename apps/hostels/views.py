@@ -34,7 +34,16 @@ def manage_hostels(request):
     if not can_manage_config(request.user):
         raise PermissionDenied("Only administrators can manage hostel configurations.")
 
-    hostels = Hostel.objects.select_related("responsible_staff").all()
+    hostels = (
+        Hostel.objects.select_related("responsible_staff")
+        .annotate(
+            hosteler_count=Count(
+                "users",
+                filter=Q(users__role=Role.HOSTELER, users__is_active=True),
+            )
+        )
+        .all()
+    )
     # Annotate or calculate active ticket counts
     active_statuses = [Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD]
     for h in hostels:

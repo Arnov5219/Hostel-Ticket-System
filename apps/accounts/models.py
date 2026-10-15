@@ -113,6 +113,18 @@ class User(AbstractUser):
     rejected_reason = models.CharField(max_length=200, blank=True, default="")
     must_change_password = models.BooleanField(default=False)
 
+    # Staff Lifecycle & Session Security (Addendum Section 7.1)
+    session_version = models.PositiveIntegerField(default=1)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    last_password_reset_at = models.DateTimeField(null=True, blank=True)
+    last_password_reset_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="resets_performed",
+    )
+
     USERNAME_FIELD = "login_id"
     REQUIRED_FIELDS = ["full_name"]
 
@@ -134,6 +146,11 @@ class User(AbstractUser):
         if not self.escalation_level and self.role in ROLE_TO_LEVEL:
             self.escalation_level = ROLE_TO_LEVEL[self.role]
         super().save(*args, **kwargs)
+
+    def can(self, capability):
+        """Capability-based permission check."""
+        from apps.core.permissions import has_capability
+        return has_capability(self, capability)
 
     @property
     def is_hosteler(self):
@@ -161,14 +178,46 @@ class User(AbstractUser):
 
     @property
     def has_residence(self):
+        """Residence is defined solely by hostel allocation."""
         if not self.is_hosteler:
             return True
-        return bool(
-            self.hostel_id
-            and self.room_id
-            and self.room
-            and self.room.hostel_id == self.hostel_id
-        )
+        return bool(self.hostel_id)
+
+
+class StaffAuditAction(models.TextChoices):
+    CREATED = "CREATED", "Created"
+    UPDATED = "UPDATED", "Updated"
+    LOGIN_ID_CHANGED = "LOGIN_ID_CHANGED", "Login ID Changed"
+    PASSWORD_RESET = "PASSWORD_RESET", "Password Reset"
+    ROLE_CHANGED = "ROLE_CHANGED", "Role Changed"
+    HOSTEL_CHANGED = "HOSTEL_CHANGED", "Hostel Changed"
+    DEACTIVATED = "DEACTIVATED", "Deactivated"
+    REACTIVATED = "REACTIVATED", "Reactivated"
+    ARCHIVED = "ARCHIVED", "Archived"
+    TICKETS_REASSIGNED = "TICKETS_REASSIGNED", "Tickets Reassigned"
+
+
+class StaffAuditLog(TimeStampedModel):
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="staff_audits_performed",
+    )
+    target = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="staff_audit_logs",
+    )
+    action = models.CharField(max_length=30, choices=StaffAuditAction.choices)
+    details = models.JSONField(default=dict, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.action} on {self.target.login_id} by {self.actor.login_id if self.actor else 'System'}"
 
 
 class ResidenceHistory(TimeStampedModel):
@@ -206,3 +255,29 @@ class ResidenceHistory(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user} -> {self.hostel} {self.room}"
+
+
+class AllowedRollNumber(TimeStampedModel):
+    roll_no = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=150, blank=True, default="")
+    hostel = models.ForeignKey(
+        "hostels.Hostel",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="allowed_roll_numbers",
+    )
+    used_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["roll_no"]
+
+    def __str__(self):
+        return self.roll_no

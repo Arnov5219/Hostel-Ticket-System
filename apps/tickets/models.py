@@ -309,6 +309,25 @@ class TicketComment(TimeStampedModel):
         self.scope = CommentScope.INTERNAL if val else CommentScope.PRIVATE
 
 
+class CommentReport(TimeStampedModel):
+    comment = models.ForeignKey(
+        TicketComment,
+        on_delete=models.CASCADE,
+        related_name="reports",
+    )
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comment_reports",
+    )
+
+    class Meta:
+        unique_together = [("comment", "reporter")]
+
+    def __str__(self):
+        return f"Report by {self.reporter.login_id} on Comment {self.comment_id}"
+
+
 class CriticalityRule(TimeStampedModel):
     min_reposts = models.PositiveIntegerField(unique=True)
     bump_levels = models.PositiveSmallIntegerField(default=1)

@@ -55,6 +55,42 @@ document.addEventListener('DOMContentLoaded', function() {
     window.lucide.createIcons();
   }
 
+  // Global modal helper functions
+  window.openModal = function(modalId) {
+    const el = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
+    if (!el) return;
+    el.style.display = 'flex';
+    el.classList.add('active');
+    document.body.classList.add('modal-open');
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+    const focusable = el.querySelector('input:not([type="hidden"]), select, textarea, button:not(.app-modal-close)');
+    if (focusable) {
+      setTimeout(() => focusable.focus(), 60);
+    }
+  };
+
+  window.closeModal = function(modalId) {
+    const el = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
+    if (!el) return;
+    el.style.display = 'none';
+    el.classList.remove('active');
+    const openModals = Array.from(document.querySelectorAll('.app-modal-backdrop, .command-palette-backdrop'))
+      .filter(m => m.classList.contains('active') || (m.style.display === 'flex' && window.getComputedStyle(m).display === 'flex'));
+    if (openModals.length === 0) {
+      document.body.classList.remove('modal-open');
+    }
+  };
+
+  window.closeAllModals = function() {
+    document.querySelectorAll('.app-modal-backdrop, .command-palette-backdrop').forEach(m => {
+      m.style.display = 'none';
+      m.classList.remove('active');
+    });
+    document.body.classList.remove('modal-open');
+  };
+
   // Global ⌘K / Ctrl+K search handler
   window.addEventListener('keydown', function(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -63,19 +99,41 @@ document.addEventListener('DOMContentLoaded', function() {
       if (palette) {
         const isHidden = palette.style.display === 'none' || palette.classList.contains('hidden');
         if (isHidden) {
-          palette.style.display = 'flex';
+          openModal('command-palette');
           const input = palette.querySelector('input');
           if (input) input.focus();
         } else {
-          palette.style.display = 'none';
+          closeModal('command-palette');
         }
       }
     }
     if (e.key === 'Escape') {
-      const palette = document.getElementById('command-palette');
-      if (palette) palette.style.display = 'none';
+      closeAllModals();
       // Close dropdowns
       document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+
+  // Backdrop click listener to close modals
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('app-modal-backdrop') || e.target.classList.contains('command-palette-backdrop')) {
+      closeModal(e.target);
+    }
+  });
+
+  // Guard against duplicate modal form submissions
+  document.addEventListener('submit', function(e) {
+    const form = e.target;
+    const modal = form.closest('.app-modal-backdrop, .command-palette-backdrop, .app-modal-dialog, .command-palette-modal');
+    if (modal && !form.hasAttribute('data-no-disable')) {
+      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn && !submitBtn.disabled) {
+        setTimeout(() => {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.7';
+          submitBtn.style.cursor = 'not-allowed';
+        }, 10);
+      }
     }
   });
 

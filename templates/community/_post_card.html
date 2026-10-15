@@ -17,9 +17,6 @@
         <div class="post-author-name">
           {% if request.user.is_staff_member or not request.user.is_hosteler %}
             {{ ticket.reporter.full_name|default:ticket.reporter.login_id }}
-            {% if ticket.reporter.room %}
-              <span style="font-weight: 400; color: var(--text-muted); font-size: var(--fs-xs);">· Room {{ ticket.reporter.room }}</span>
-            {% endif %}
           {% elif ticket.show_reporter_name %}
             {{ ticket.reporter.full_name|default:ticket.reporter.login_id }}
           {% else %}

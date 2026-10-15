@@ -13,28 +13,33 @@ from apps.tickets.models import (
 )
 
 
+from apps.tickets.services.sla import hours_for
+
+
 def find_escalation_assignee(ticket: Ticket, next_level: int) -> User | None:
-    """Finds next-level assignee in the hierarchy."""
+    """Finds next-level assignee in the hierarchy, skipping inactive or archived staff."""
+    active_staff_qs = User.objects.filter(is_active=True, archived_at__isnull=True)
+
     if next_level == 2:
         # Hostel Warden for the same hostel
-        warden = User.objects.filter(hostel=ticket.hostel, role=Role.WARDEN, is_active=True).first()
+        warden = active_staff_qs.filter(hostel=ticket.hostel, role=Role.WARDEN).first()
         if warden:
             return warden
     elif next_level == 3:
         # Chief Warden across all hostels
-        cw = User.objects.filter(role=Role.CHIEF_WARDEN, is_active=True).first()
+        cw = active_staff_qs.filter(role=Role.CHIEF_WARDEN).first()
         if cw:
             return cw
     elif next_level == 4:
         # Admin / Dean
-        admin_user = User.objects.filter(role=Role.ADMIN, is_active=True).first()
+        admin_user = active_staff_qs.filter(role=Role.ADMIN).first()
         if admin_user:
             return admin_user
 
     # Fallback to any user at that level or admin
     return (
-        User.objects.filter(escalation_level=next_level, is_active=True).first()
-        or User.objects.filter(role=Role.ADMIN, is_active=True).first()
+        active_staff_qs.filter(escalation_level=next_level).first()
+        or active_staff_qs.filter(role=Role.ADMIN).first()
     )
 
 
@@ -49,9 +54,8 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
     new_assignee = find_escalation_assignee(ticket, next_level)
     old_assignee = ticket.assigned_to
 
-    # Compute new due date from policy
-    policy = SLAPolicy.objects.filter(priority=ticket.priority, level=next_level).first()
-    hours = policy.hours if policy else 24
+    # Compute new due date from SLA policy or fallback
+    hours = hours_for(ticket.priority, next_level)
 
     now = timezone.now()
     ticket.current_level = next_level

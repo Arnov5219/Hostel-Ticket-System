@@ -65,21 +65,16 @@
              differentHostel: {% if form.different_hostel.value %}true{% else %}false{% endif %},
              hostelId: '{{ form.hostel.value|default:request.user.hostel_id|default:'' }}',
              userHostelId: '{{ request.user.hostel_id|default:'' }}',
-             floorVal: '{{ form.floor.value|default:request.user.room.floor|default:'' }}',
-             roomId: '{{ form.room.value|default:request.user.room_id|default:'' }}',
              toggleDifferentHostel() {
                if (!this.differentHostel) {
                  this.hostelId = this.userHostelId;
-               } else {
-                 this.floorVal = '';
-                 this.roomId = '';
                }
              }
            }">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
             <i data-lucide="map-pin" style="width: 16px; height: 16px; color: var(--accent);"></i>
-            <span>Location</span>
+            <span>Hostel</span>
           </div>
 
           <!-- Different hostel toggle -->
@@ -97,68 +92,21 @@
           ⓘ Staff in that hostel will receive this ticket.
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-          <!-- Hostel -->
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="id_hostel">Hostel *</label>
-            <select name="hostel" id="id_hostel" class="form-select" required
-                    :disabled="!differentHostel && userHostelId !== ''"
-                    x-model="hostelId"
-                    hx-get="{% url 'hostels:options_rooms' %}?format=options"
-                    hx-target="#id_room"
-                    hx-include="#id_floor"
-                    hx-trigger="change"
-                    @change="roomId = '';">
-              <option value="">Select hostel</option>
-              {% for h in form.fields.hostel.queryset %}
-                <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
-              {% endfor %}
-            </select>
-            <template x-if="!differentHostel && userHostelId !== ''">
-              <input type="hidden" name="hostel" :value="userHostelId">
-            </template>
-            {% if form.hostel.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.hostel.errors.0 }}</span>{% endif %}
-          </div>
-
-          <!-- Floor -->
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="id_floor">Floor</label>
-            <select name="floor" id="id_floor" class="form-select"
-                    x-model="floorVal"
-                    hx-get="{% url 'hostels:options_rooms' %}?format=options"
-                    hx-target="#id_room"
-                    hx-include="#id_hostel"
-                    hx-trigger="change"
-                    @change="roomId = ''">
-              <option value="">All floors</option>
-              <option value="1" {% if form.floor.value == 1 or form.floor.value == '1' %}selected{% endif %}>Floor 1</option>
-              <option value="2" {% if form.floor.value == 2 or form.floor.value == '2' %}selected{% endif %}>Floor 2</option>
-              <option value="3" {% if form.floor.value == 3 or form.floor.value == '3' %}selected{% endif %}>Floor 3</option>
-            </select>
-          </div>
-
-          <!-- Room -->
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="id_room">Room *</label>
-            <select name="room" id="id_room" class="form-select" required
-                    :disabled="!hostelId"
-                    x-model="roomId">
-              <option value="">Select room</option>
-              {% for r in form.fields.room.queryset %}
-                <option value="{{ r.id }}" {% if form.room.value == r.id or form.room.value == r.id|stringformat:'s' %}selected{% endif %}>
-                  Room {{ r.room_number }} · Floor {{ r.floor }}
-                </option>
-              {% endfor %}
-            </select>
-            {% if form.room.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.room.errors.0 }}</span>{% endif %}
-          </div>
-        </div>
-
-        <!-- Optional Location Detail -->
-        <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
-          <label class="form-label" for="id_location_detail">Location detail <span style="font-weight: 400; color: var(--text-muted);">(Optional - e.g. 2nd floor washroom, balcony)</span></label>
-          {{ form.location_detail }}
-          {% if form.location_detail.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.location_detail.errors.0 }}</span>{% endif %}
+        <!-- Hostel select -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="id_hostel">Hostel *</label>
+          <select name="hostel" id="id_hostel" class="form-select" required
+                  :disabled="!differentHostel && userHostelId !== ''"
+                  x-model="hostelId">
+            <option value="">Select hostel</option>
+            {% for h in form.fields.hostel.queryset %}
+              <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
+            {% endfor %}
+          </select>
+          <template x-if="!differentHostel && userHostelId !== ''">
+            <input type="hidden" name="hostel" :value="userHostelId">
+          </template>
+          {% if form.hostel.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.hostel.errors.0 }}</span>{% endif %}
         </div>
       </div>
 
@@ -174,6 +122,9 @@
       <div class="form-group" style="margin: 0;">
         <label class="form-label" for="{{ form.description.id_for_label }}">Detailed description *</label>
         {{ form.description }}
+        <span class="form-help" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
+          Say exactly where the problem is (for example washroom or corridor).
+        </span>
         {% if form.description.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.description.errors.0 }}</span>{% endif %}
       </div>
 
