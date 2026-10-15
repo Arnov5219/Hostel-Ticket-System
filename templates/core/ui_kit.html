@@ -18,7 +18,7 @@
   </button>
   <button type="button" class="btn btn-primary" onclick="document.getElementById('command-palette').style.display='flex';">
     <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-    <span>+ Action Button</span>
+    <span>Raise ticket</span>
   </button>
 {% endblock %}
 
@@ -28,13 +28,13 @@
   <!-- Section 1: Buttons & Actions -->
   <div class="card">
     <div class="card-header">
-      <h2 class="card-title">Buttons & Action Variants</h2>
-      <span style="font-size: var(--fs-xs); color: var(--text-muted);">ERPNext desk reference: black primary, subtle secondary</span>
+      <h2 class="card-title">Buttons & Actions</h2>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted);">Standardized primary blue (#1D5FB4), secondary, ghost, danger-ghost</span>
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
       <button type="button" class="btn btn-primary">
         <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-        <span>Primary (+ Raise Ticket)</span>
+        <span>Raise ticket</span>
       </button>
       <button type="button" class="btn btn-secondary">
         <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
@@ -42,23 +42,23 @@
       </button>
       <button type="button" class="btn btn-ghost">
         <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-        <span>Ghost Action</span>
+        <span>Ghost action</span>
       </button>
-      <button type="button" class="btn btn-danger">
-        <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i>
-        <span>Danger / Reject</span>
+      <button type="button" class="btn btn-danger-ghost">
+        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+        <span>Danger ghost</span>
       </button>
       <div style="border-left: 1px solid var(--border); height: 28px; margin: 0 4px;"></div>
-      <button type="button" class="btn btn-secondary btn-sm">Small Button</button>
-      <button type="button" class="btn btn-primary btn-sm">Small Primary</button>
+      <button type="button" class="btn btn-secondary btn-sm">Small button</button>
+      <button type="button" class="btn btn-primary btn-sm">Small primary</button>
     </div>
   </div>
 
-  <!-- Section 2: Status Pills & Priority Dots -->
+  <!-- Section 2: Badges, Pills & Indicators -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">Status Pills (Pastel Tones)</h2>
+        <h2 class="card-title">Status Pills (6px Dot, Pastel Tints)</h2>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         {% for status in demo_statuses %}
@@ -69,77 +69,133 @@
 
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">Priority Indicators & Escalation Levels</h2>
+        <h2 class="card-title">Priority Dots & Level Chips</h2>
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="display: flex; gap: 16px; align-items: center;">
+        <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
           {% for prio in demo_priorities %}
             {% priority_dot prio %}
           {% endfor %}
         </div>
-        <div style="display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
-          <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-right: 8px;">Levels:</span>
+        <div style="display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; flex-wrap: wrap;">
+          <span style="font-size: var(--fs-xs); color: var(--text-muted); margin-right: 8px;">Escalation levels:</span>
           {% level_badge 1 %}
           {% level_badge 2 %}
           {% level_badge 3 %}
           {% level_badge 4 %}
+          <span style="margin: 0 8px; color: var(--border-strong);">|</span>
+          <span style="font-size: var(--fs-xs); color: var(--text-muted);">Ticket ID:</span>
+          <span class="ticket-id">HTL-2026-00089</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Section 3: SLA Progress Bars & Avatars -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">SLA Timers & Progress Bars</h2>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: var(--fs-sm);">Healthy (22h left)</span>
-          <div class="sla-bar-container"><div class="sla-bar green" style="width: 25%;"></div></div>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: var(--fs-sm);">Warning (4h left)</span>
-          <div class="sla-bar-container"><div class="sla-bar amber" style="width: 70%;"></div></div>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: var(--fs-sm); color: var(--st-open-fg); font-weight: 500;">Breached (Overdue 2h)</span>
-          <div class="sla-bar-container"><div class="sla-bar red" style="width: 100%;"></div></div>
-        </div>
-      </div>
+  <!-- Section 3: KPI Cards & Notice Cards -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">KPI Cards (Sentence case, 28px numbers)</h2>
     </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Avatars & Segmented Controls</h2>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <span class="kpi-label">Active tickets</span>
+        <span class="kpi-value">24</span>
+        <span class="kpi-subtext">Across assigned hostels</span>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div class="avatar"><span>RK</span></div>
-          <div class="avatar" style="background: #E8F1FD; color: #1D5FB4;"><span>JD</span></div>
-          <div class="avatar avatar-sm"><span>AD</span></div>
-          <span style="font-size: var(--fs-xs); color: var(--text-muted);">Initials or uploaded photos</span>
-        </div>
-        <div class="segmented-control" style="width: fit-content;">
-          <button type="button" class="segmented-option">Low</button>
-          <button type="button" class="segmented-option active">Medium</button>
-          <button type="button" class="segmented-option">High</button>
-          <button type="button" class="segmented-option">Urgent</button>
-        </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Overdue</span>
+        <span class="kpi-value overdue">3</span>
+        <span class="kpi-subtext">Passed SLA threshold</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Resolved today</span>
+        <span class="kpi-value resolved">12</span>
+        <span class="kpi-subtext">Verified by hostelers</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Average turnaround</span>
+        <span class="kpi-value">3.4h</span>
+        <span class="kpi-subtext">Well within 8h SLA target</span>
       </div>
     </div>
   </div>
 
-  <!-- Section 4: ERPNext Style Dense Table -->
+  <!-- Notice Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+    <div class="notice-card notice-card--info">
+      <div class="notice-card-title">
+        <i data-lucide="info" style="width: 14px; height: 14px; color: var(--primary);"></i>
+        <span>Informational Notice</span>
+      </div>
+      <div class="notice-card-body">Scheduled water pump maintenance will occur on Saturday from 2 PM to 5 PM.</div>
+    </div>
+    <div class="notice-card notice-card--important">
+      <div class="notice-card-title">
+        <i data-lucide="alert-circle" style="width: 14px; height: 14px; color: var(--ann-imp-fg);"></i>
+        <span>Important Advisory</span>
+      </div>
+      <div class="notice-card-body">Internet fiber upgrade in progress across BH-1 through BH-6. Intermittent connectivity expected.</div>
+    </div>
+    <div class="notice-card notice-card--urgent">
+      <div class="notice-card-title">
+        <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--ann-urg-fg);"></i>
+        <span>Urgent Alert</span>
+      </div>
+      <div class="notice-card-body">Main power transformer tripping. Technicians are on-site in BH-3.</div>
+    </div>
+  </div>
+
+  <!-- Section 4: Form Controls & Category Radio Cards -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Custom Form Controls</h2>
+      <span style="font-size: var(--fs-xs); color: var(--text-muted);">8px radius, custom chevron select, radio cards</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      <div class="form-group">
+        <label class="form-label">Text input</label>
+        <input type="text" class="form-input" placeholder="e.g. Washroom tap leaking">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Custom select (No OS double arrow)</label>
+        <select class="form-select">
+          <option>BH-1 (Boys Hostel 1)</option>
+          <option>BH-2 (Boys Hostel 2)</option>
+          <option>BH-3 (Boys Hostel 3)</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top: 16px;">
+      <label class="form-label" style="margin-bottom: 8px; display: block;">Category selection radio cards</label>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+        <label class="form-radio-card active">
+          <input type="radio" name="ui_demo_cat" checked style="display: none;">
+          <i data-lucide="zap" style="width: 16px; height: 16px; color: var(--primary);"></i>
+          <span style="font-size: var(--fs-sm); font-weight: 500;">Electrical</span>
+        </label>
+        <label class="form-radio-card">
+          <input type="radio" name="ui_demo_cat" style="display: none;">
+          <i data-lucide="droplet" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+          <span style="font-size: var(--fs-sm); font-weight: 500;">Plumbing / Water</span>
+        </label>
+        <label class="form-radio-card">
+          <input type="radio" name="ui_demo_cat" style="display: none;">
+          <i data-lucide="wifi" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+          <span style="font-size: var(--fs-sm); font-weight: 500;">Internet / Wi-Fi</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: ERPNext Style Dense Table -->
   <div class="card" style="padding: 0; overflow: hidden;">
     <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);">
       <div style="display: flex; align-items: center; gap: 12px;">
         <h2 class="card-title" style="margin: 0;">Sample Ticket List View</h2>
-        <span style="font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle); padding: 2px 6px; border-radius: 4px;">20 of 37</span>
+        <span style="font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle); padding: 2px 6px; border-radius: 4px;">3 of 3</span>
       </div>
       <div style="display: flex; gap: 8px;">
-        <input type="text" class="form-control" placeholder="Filter Title..." style="width: 180px; padding: 4px 8px; font-size: var(--fs-xs);">
+        <input type="text" class="form-control" placeholder="Filter title..." style="width: 180px; padding: 4px 8px; font-size: var(--fs-xs);">
         <button class="btn btn-secondary btn-sm">Filter</button>
       </div>
     </div>
@@ -149,52 +205,52 @@
         <thead>
           <tr>
             <th style="width: 32px;"><input type="checkbox"></th>
+            <th>Ticket ID</th>
             <th>Title</th>
             <th>Status</th>
             <th>Category</th>
             <th>Priority</th>
-            <th>Hostel / Room</th>
+            <th>Hostel</th>
             <th>Level</th>
             <th>SLA</th>
-            <th>Ticket ID</th>
             <th>Updated</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td><input type="checkbox"></td>
-            <td style="font-weight: 600;">Water leakage in 2nd floor bathroom</td>
+            <td><span class="ticket-id">HTL-2026-00001</span></td>
+            <td style="font-weight: 500;">Water leakage in washroom corridor</td>
             <td>{% status_pill "OPEN" %}</td>
-            <td>Plumbing</td>
+            <td>Plumbing / Water</td>
             <td>{% priority_dot "HIGH" %}</td>
-            <td>Boys Hostel A / Room 204</td>
+            <td>BH-1</td>
             <td>{% level_badge 1 %}</td>
             <td><div class="sla-bar-container"><div class="sla-bar amber" style="width: 65%;"></div></div></td>
-            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00001</td>
             <td style="font-size: var(--fs-xs); color: var(--text-muted);">12m</td>
           </tr>
           <tr>
             <td><input type="checkbox"></td>
-            <td style="font-weight: 600;">Wi-Fi router down in corridor 3B</td>
+            <td><span class="ticket-id">HTL-2026-00002</span></td>
+            <td style="font-weight: 500;">Wi-Fi router down on 3rd floor corridor</td>
             <td>{% status_pill "IN_PROGRESS" %}</td>
             <td>Internet / Wi-Fi</td>
             <td>{% priority_dot "URGENT" %}</td>
-            <td>Girls Hostel B / Block B</td>
+            <td>BH-2</td>
             <td>{% level_badge 2 %}</td>
             <td><div class="sla-bar-container"><div class="sla-bar red" style="width: 90%;"></div></div></td>
-            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00002</td>
             <td style="font-size: var(--fs-xs); color: var(--text-muted);">2h</td>
           </tr>
           <tr>
             <td><input type="checkbox"></td>
-            <td style="font-weight: 600;">Ceiling fan capacitor replaced</td>
+            <td><span class="ticket-id">HTL-2026-00003</span></td>
+            <td style="font-weight: 500;">Ceiling fan capacitor replaced in study hall</td>
             <td>{% status_pill "RESOLVED" %}</td>
             <td>Electrical</td>
             <td>{% priority_dot "MEDIUM" %}</td>
-            <td>Boys Hostel A / Room 102</td>
+            <td>BH-1</td>
             <td>{% level_badge 1 %}</td>
             <td><div class="sla-bar-container"><div class="sla-bar green" style="width: 100%;"></div></div></td>
-            <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">HTL-2026-00003</td>
             <td style="font-size: var(--fs-xs); color: var(--text-muted);">1d</td>
           </tr>
         </tbody>
@@ -212,9 +268,9 @@
     </div>
   </div>
 
-  <!-- Section 5: Empty State Component -->
+  <!-- Section 6: Empty State Component -->
   <div class="card">
-    {% include 'components/_empty_state.html' with icon="ticket" title="No tickets in this view" message="Try adjusting your filters or raise a new ticket to get started." action_url="#" action_label="+ Raise Ticket" action_icon="plus" %}
+    {% include 'components/_empty_state.html' with icon="ticket" title="No tickets in this view" message="Try adjusting your filters or raise a new ticket to get started." action_url="#" action_label="Raise ticket" action_icon="plus" %}
   </div>
 
 </div>

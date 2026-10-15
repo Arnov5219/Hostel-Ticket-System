@@ -17,17 +17,27 @@
   --text-muted:        #8D96A0;   /* Muted captions */
   --text-inverse:      #FFFFFF;
 
-  /* Brand / Actions */
-  --primary:           #111827;   /* Black button identity */
-  --primary-hover:     #1F2937;
+  /* Brand / Actions (Standardized on #1D5FB4 - Decision D1) */
+  --primary:           #1D5FB4;   /* Enterprise blue */
+  --primary-hover:     #184E96;
+  --primary-active:    #143F7A;
+  --primary-soft:      #E8F1FD;
   --primary-text:      #FFFFFF;
-  --accent:            #2490EF;   /* Clean electric blue */
-  --accent-hover:      #1B7BD4;
-  --accent-light:      #EAF4FD;   /* Soft blue tint */
-  --accent-glow:       rgba(36, 144, 239, 0.12);
+  --accent:            #1D5FB4;   /* Clean primary brand */
+  --accent-hover:      #184E96;
+  --accent-light:      #E8F1FD;   /* Soft blue tint */
+  --accent-glow:       rgba(29, 95, 180, 0.12);
   --danger:            #DC2626;
   --danger-light:      #FEE2E2;
   --danger-hover-bg:   #FEF2F2;
+
+  /* Chart Palette Tokens */
+  --chart-1:           #5B6B84;
+  --chart-2:           #3B82C4;
+  --chart-3:           #2A9D8F;
+  --chart-4:           #E0A030;
+  --chart-5:           #8573C9;
+  --chart-6:           #CF6A87;
 
   /* Status Pills (ERPNext pastel palette) */
   --st-open-bg:        #FDE8E8;  --st-open-fg:        #C53030;  --st-open-dot: #E02424;
@@ -145,15 +155,25 @@
   --text-muted:        #7D8696;
   --text-inverse:      #11141A;
 
-  /* Brand / Actions (inverts for dark mode visibility) */
-  --primary:           #F2F4F7;
-  --primary-hover:     #E5E7EB;
-  --primary-text:      #11141A;
-  --accent:            #4DA3FF;
-  --accent-hover:      #3B8FE8;
-  --accent-light:      rgba(77, 163, 255, 0.14);
-  --accent-glow:       rgba(77, 163, 255, 0.15);
-  --ring:              0 0 0 3px rgba(77, 163, 255, 0.35);
+  /* Brand / Actions (Decision D1 Dark Mode) */
+  --primary:           #3B82C4;
+  --primary-hover:     #4DA3FF;
+  --primary-active:    #5EAAFF;
+  --primary-soft:      rgba(59, 130, 196, 0.16);
+  --primary-text:      #FFFFFF;
+  --accent:            #3B82C4;
+  --accent-hover:      #4DA3FF;
+  --accent-light:      rgba(59, 130, 196, 0.14);
+  --accent-glow:       rgba(59, 130, 196, 0.15);
+  --ring:              0 0 0 3px rgba(59, 130, 196, 0.35);
+
+  /* Chart Palette Tokens (Dark Mode) */
+  --chart-1:           #8A99AD;
+  --chart-2:           #5A9FE2;
+  --chart-3:           #40BFAF;
+  --chart-4:           #F0B348;
+  --chart-5:           #A292E0;
+  --chart-6:           #DE839C;
 
   --danger:            #FF6B6B;
   --danger-light:      rgba(224, 62, 62, 0.18);

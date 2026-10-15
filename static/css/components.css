@@ -170,6 +170,11 @@ td.text-center {
   text-decoration: none;
 }
 
+.btn-primary:active {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+}
+
 .btn-secondary {
   background-color: var(--bg-surface);
   color: var(--text-primary);
@@ -199,7 +204,7 @@ td.text-center {
 /* Danger Ghost Button (Fix U-11: quiet until hover) */
 .btn-danger-ghost {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--prio-urgent);
   border-color: transparent;
 }
 
@@ -208,6 +213,15 @@ td.text-center {
   color: var(--danger);
   border-color: var(--danger-light);
   text-decoration: none;
+}
+
+/* Ticket ID standard class (Decision D8) */
+.ticket-id {
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--primary);
 }
 
 /* Row Action Wrapper (Fix U-11) */
@@ -360,10 +374,11 @@ tr:hover .row-actions {
 
 .priority-dot,
 .prio-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  display: inline-block;
 }
 
 .priority-dot--urgent, .prio-dot.urgent { background-color: var(--prio-urgent); }
@@ -479,58 +494,138 @@ tr:hover .row-actions {
   letter-spacing: 0.01em;
 }
 
+.form-input,
 .form-control {
   width: 100%;
-  height: 34px;
-  padding: 6px 10px;
+  height: 36px;
+  padding: 6px 12px;
   font-size: var(--fs-base);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   color: var(--text-primary);
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
-.form-control:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+.form-input::placeholder,
+.form-control::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:hover,
+.form-control:hover,
+.form-select:hover,
+.form-textarea:hover {
+  border-color: var(--text-secondary);
+}
+
+.form-input:focus,
+.form-control:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
 }
 
 /* Custom styled select (Fix U-06) */
 .form-select {
   width: 100%;
-  height: 34px;
-  padding: 6px 28px 6px 10px;
+  height: 36px;
+  padding: 6px 30px 6px 12px;
   font-size: var(--fs-base);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   color: var(--text-primary);
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23525252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   cursor: pointer;
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
-.form-select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
 .form-textarea {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-size: var(--fs-base);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   color: var(--text-primary);
   resize: vertical;
   min-height: 80px;
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+/* Radio Card (Category selection) */
+.form-radio-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  user-select: none;
+}
+
+.form-radio-card:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
+.form-radio-card.active,
+.form-radio-card:has(input:checked) {
+  border-color: var(--primary);
+  background-color: var(--primary-soft);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* Notice Cards (Severity-keyed accent line) */
+.notice-card {
+  padding: 12px 16px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notice-card--info {
+  border-left-color: var(--primary);
+  background-color: var(--ann-info-bg);
+}
+
+.notice-card--important {
+  border-left-color: var(--ann-imp-fg);
+  background-color: var(--ann-imp-bg);
+}
+
+.notice-card--urgent {
+  border-left-color: var(--ann-urg-fg);
+  background-color: var(--ann-urg-bg);
+}
+
+.notice-card-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notice-card-body {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .form-textarea:focus {
