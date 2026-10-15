@@ -37,18 +37,25 @@ def nav_for(user) -> dict:
         }
 
     is_hosteler = getattr(user, "is_hosteler", False)
+    is_caretaker = getattr(user, "role", None) == Role.CARETAKER
     is_warden = getattr(user, "role", None) == Role.WARDEN
-    is_cw_or_admin = getattr(user, "role", None) in [Role.CHIEF_WARDEN, Role.ADMIN]
+    is_chief_warden = getattr(user, "role", None) == Role.CHIEF_WARDEN
+    is_dean = getattr(user, "role", None) == Role.DEAN
+    is_admin = getattr(user, "role", None) == Role.ADMIN
 
     sidebar_items = []
 
     # 1. Dashboard / Home
     if is_hosteler:
         home_label = "Home"
+    elif is_caretaker:
+        home_label = "Dashboard"
     elif is_warden:
         home_label = "Hostel dashboard"
-    elif is_cw_or_admin:
+    elif is_chief_warden or is_dean:
         home_label = "Campus dashboard"
+    elif is_admin:
+        home_label = "System dashboard"
     else:
         home_label = "Dashboard"
 
@@ -74,8 +81,8 @@ def nav_for(user) -> dict:
         )
     )
 
-    # 3. Kanban (Staff only)
-    if not is_hosteler:
+    # 3. Kanban (Staff operational workflow: Caretaker, Warden, Chief Warden, Dean; NOT Admin, NOT Hosteler)
+    if not is_hosteler and not is_admin:
         sidebar_items.append(
             NavItem(
                 key="kanban",
@@ -97,7 +104,7 @@ def nav_for(user) -> dict:
         )
     )
 
-    # 5. Admin / Chief Warden Management Items
+    # 5. Admin Management Items (Capability-driven, strictly Admin per Section 3.2)
     if user.can(Capability.MANAGE_HOSTELS):
         sidebar_items.append(
             NavItem(
@@ -139,8 +146,8 @@ def nav_for(user) -> dict:
             )
         )
 
-    # 6. Trash (Warden, Chief Warden, Admin)
-    if is_warden or is_cw_or_admin:
+    # 6. Trash (Admin only per Section 2 & 6)
+    if user.can(Capability.VIEW_TRASH_ALL):
         sidebar_items.append(
             NavItem(
                 key="trash",
@@ -180,8 +187,25 @@ def nav_for(user) -> dict:
             NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="profile", label="Profile & Residence", icon="user", url_name="accounts:profile", section="profile"),
         ]
+    elif is_admin:
+        # Admin = Dashboard · Tickets · Staff · Alerts · More
+        mobile_bar_items = [
+            NavItem(key="dashboard", label="Dashboard", icon="layout-dashboard", url_name="core:home", section="dashboard"),
+            NavItem(key="tickets", label="Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
+            NavItem(key="staff", label="Staff", icon="users", url_name="hostels:manage_staff", section="manage_staff"),
+            NavItem(key="alerts", label="Alerts", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
+            NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
+        ]
+        mobile_more_items = [
+            NavItem(key="announcements", label="Announcements", icon="megaphone", url_name="announcements:list", section="announcements"),
+            NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"),
+            NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"),
+            NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"),
+            NavItem(key="trash", label="Trash", icon="trash-2", url_name="tickets:trash", section="trash"),
+            NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
+        ]
     else:
-        # Staff = Dashboard · Tickets · Kanban · Alerts · More
+        # Operational Staff (Caretaker, Warden, Chief Warden, Dean) = Dashboard · Tickets · Kanban · Alerts · More
         mobile_bar_items = [
             NavItem(key="dashboard", label="Dashboard", icon="layout-dashboard", url_name="core:home", section="dashboard"),
             NavItem(key="tickets", label="Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
@@ -191,18 +215,8 @@ def nav_for(user) -> dict:
         ]
         mobile_more_items = [
             NavItem(key="announcements", label="Announcements", icon="megaphone", url_name="announcements:list", section="announcements"),
+            NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
         ]
-        if user.can(Capability.MANAGE_HOSTELS):
-            mobile_more_items.append(NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"))
-        if user.can(Capability.MANAGE_STAFF):
-            mobile_more_items.append(NavItem(key="manage_staff", label="Staff", icon="users", url_name="hostels:manage_staff", section="manage_staff"))
-        if user.can(Capability.MANAGE_RESPONSIBILITY):
-            mobile_more_items.append(NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"))
-        if user.can(Capability.MANAGE_TICKET_SETTINGS):
-            mobile_more_items.append(NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"))
-        if is_warden or is_cw_or_admin:
-            mobile_more_items.append(NavItem(key="trash", label="Trash", icon="trash-2", url_name="tickets:trash", section="trash"))
-        mobile_more_items.append(NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"))
 
     return {
         "sidebar_items": sidebar_items,

@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from apps.accounts.models import Role, User
 from apps.announcements.services import unread_urgent_announcements, visible_to
 from apps.core.permissions import Capability
 from apps.dashboard.selectors import (
@@ -58,6 +59,10 @@ def dashboard_index(request):
     latest_announcements = get_latest_announcements_staff(user)
 
     hostels_without_staff = []
+    no_dean_warning = False
+    if user.is_admin:
+        no_dean_warning = not User.objects.filter(role=Role.DEAN, is_active=True).exists()
+
     if user.can(Capability.MANAGE_HOSTELS):
         hostels_without_staff = Hostel.objects.filter(is_active=True, responsible_staff__isnull=True)
 
@@ -68,6 +73,7 @@ def dashboard_index(request):
         "overdue_tickets": overdue_tickets,
         "latest_announcements": latest_announcements,
         "hostels_without_staff": hostels_without_staff,
+        "no_dean_warning": no_dean_warning,
         "current_section": "dashboard",
     }
     return render(request, "dashboard/staff.html", context)

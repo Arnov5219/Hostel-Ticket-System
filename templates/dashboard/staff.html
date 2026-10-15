@@ -18,8 +18,28 @@
   <span class="current">Dashboard</span>
 {% endblock %}
 
-{% block page_title %}Operational Dashboard{% endblock %}
-{% block page_subtitle %}Live ticket health across your hostels{% endblock %}
+{% block page_title %}
+  {% if request.user.is_admin %}
+    System Health Dashboard
+  {% elif request.user.is_dean %}
+    Campus Authority Dashboard
+  {% elif request.user.is_chief_warden %}
+    Campus Dashboard
+  {% elif request.user.is_warden %}
+    Hostel Dashboard
+  {% else %}
+    Operational Dashboard
+  {% endif %}
+{% endblock %}
+{% block page_subtitle %}
+  {% if request.user.is_admin %}
+    System configuration, hygiene, and staff health
+  {% elif request.user.is_dean %}
+    Campus-wide SLA health and escalation compliance
+  {% else %}
+    Live ticket health across your hostels
+  {% endif %}
+{% endblock %}
 
 {% block page_actions %}
   <div style="display: flex; gap: 8px;">
@@ -27,15 +47,32 @@
       <i data-lucide="list" style="width: 14px; height: 14px;"></i>
       <span>Tickets</span>
     </a>
+    {% if not request.user.is_admin %}
     <a href="{% url 'tickets:kanban' %}" class="btn btn-secondary btn-sm">
       <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
       <span>Kanban</span>
     </a>
+    {% endif %}
   </div>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-grid">
+
+  <!-- No Active Dean Alert Banner (Admin only) -->
+  {% if no_dean_warning %}
+  <div style="background-color: var(--st-escalated-bg); border: 1px solid var(--st-escalated-dot); border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i data-lucide="alert-circle" style="width: 18px; height: 18px; color: var(--st-escalated-fg); flex-shrink: 0;"></i>
+      <span style="font-size: var(--fs-sm); font-weight: 500; color: var(--st-escalated-fg);">
+        <strong>No active Dean:</strong> Level 4 escalations will automatically fall back to Admin.
+      </span>
+    </div>
+    <a href="{% url 'hostels:create_staff' %}?role=DEAN" class="btn btn-sm btn-primary" style="white-space: nowrap;">
+      Create Dean &rarr;
+    </a>
+  </div>
+  {% endif %}
 
   <!-- Hostels without Staff Alert Banner -->
   {% if hostels_without_staff %}

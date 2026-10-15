@@ -116,9 +116,13 @@
                 <span class="role-badge" style="font-size: var(--fs-xs);">{{ member.get_role_display }}</span>
               </td>
               <td style="text-align: center;">
-                <span class="level-chip l{{ member.escalation_level|default:'1' }}">
-                  L{{ member.escalation_level|default:"1" }}
-                </span>
+                {% if member.escalation_level %}
+                  <span class="level-chip l{{ member.escalation_level }}">
+                    L{{ member.escalation_level }}
+                  </span>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: var(--fs-xs);">—</span>
+                {% endif %}
               </td>
               <td>
                 {% if member.hostel %}

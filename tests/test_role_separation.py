@@ -232,3 +232,78 @@ class TestStaffDeactivationProtection:
         deactivate_staff(actor=admin, target=dean, allow_admin_fallback=True)
         dean.refresh_from_db()
         assert dean.is_active is False
+
+
+@pytest.mark.django_db
+class TestNavigationMatrix:
+    def test_navigation_roles(self, role_users):
+        from apps.core.navigation import nav_for
+
+        admin_nav = nav_for(role_users["admin"])
+        dean_nav = nav_for(role_users["dean"])
+        cw_nav = nav_for(role_users["chief_warden"])
+        warden_nav = nav_for(role_users["warden"])
+
+        admin_keys = [item.key for item in admin_nav["sidebar_items"]]
+        dean_keys = [item.key for item in dean_nav["sidebar_items"]]
+        cw_keys = [item.key for item in cw_nav["sidebar_items"]]
+        warden_keys = [item.key for item in warden_nav["sidebar_items"]]
+
+        # Admin: has manage items and trash, but NO kanban
+        assert "manage_hostels" in admin_keys
+        assert "manage_staff" in admin_keys
+        assert "manage_responsibility" in admin_keys
+        assert "manage_settings" in admin_keys
+        assert "trash" in admin_keys
+        assert "kanban" not in admin_keys
+
+        # Dean & Chief Warden: operational workflow (kanban), NO manage items, NO trash
+        for keys in [dean_keys, cw_keys]:
+            assert "kanban" in keys
+            assert "manage_hostels" not in keys
+            assert "manage_staff" not in keys
+            assert "manage_responsibility" not in keys
+            assert "manage_settings" not in keys
+            assert "trash" not in keys
+
+        # Warden: has kanban, NO trash, NO manage items
+        assert "kanban" in warden_keys
+        assert "trash" not in warden_keys
+        assert "manage_hostels" not in warden_keys
+
+
+@pytest.mark.django_db
+class TestManageRouteSecurity:
+    def test_non_admin_cannot_access_manage_routes(self, client, role_users):
+        manage_routes = [
+            "/manage/hostels/",
+            "/manage/staff/",
+            "/manage/responsibility/",
+            "/manage/settings/",
+            "/manage/trash/",
+        ]
+
+        # Admin has 200 on all
+        client.force_login(role_users["admin"])
+        for route in manage_routes:
+            res = client.get(route)
+            assert res.status_code == 200, f"Admin must have 200 on {route}, got {res.status_code}"
+
+        # Dean gets 403 on all
+        client.force_login(role_users["dean"])
+        for route in manage_routes:
+            res = client.get(route)
+            assert res.status_code == 403, f"Dean must be blocked (403) from {route}, got {res.status_code}"
+
+        # Chief Warden gets 403 on all
+        client.force_login(role_users["chief_warden"])
+        for route in manage_routes:
+            res = client.get(route)
+            assert res.status_code == 403, f"Chief Warden must be blocked (403) from {route}, got {res.status_code}"
+
+        # Hosteler gets 403 on all
+        client.force_login(role_users["hosteler"])
+        for route in manage_routes:
+            res = client.get(route)
+            assert res.status_code == 403, f"Hosteler must be blocked (403) from {route}, got {res.status_code}"
+

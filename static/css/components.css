@@ -330,22 +330,22 @@ tr:hover .row-actions {
   letter-spacing: 0.02em;
 }
 
-.level-chip--l1, .level-badge.l1 {
+.level-chip--l1, .level-chip.l1, .level-badge.l1 {
   background-color: var(--lvl-1-bg);
   color: var(--lvl-1-fg);
 }
 
-.level-chip--l2, .level-badge.l2 {
+.level-chip--l2, .level-chip.l2, .level-badge.l2 {
   background-color: var(--lvl-2-bg);
   color: var(--lvl-2-fg);
 }
 
-.level-chip--l3, .level-badge.l3 {
+.level-chip--l3, .level-chip.l3, .level-badge.l3 {
   background-color: var(--lvl-3-bg);
   color: var(--lvl-3-fg);
 }
 
-.level-chip--l4, .level-badge.l4 {
+.level-chip--l4, .level-chip.l4, .level-badge.l4 {
   background-color: var(--lvl-4-bg);
   color: var(--lvl-4-fg);
 }
