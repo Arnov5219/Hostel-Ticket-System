@@ -75,28 +75,46 @@ class TestRemovedRoutesReturn404:
 
 
 # ==============================================================================
-# 3. Chief Warden Administrative Parity
+# 3. Chief Warden Admin Controls Stripped (Section 2 & 7.2)
 # ==============================================================================
 @pytest.mark.django_db
 class TestChiefWardenAdministrativeParity:
     def test_chief_warden_capabilities(self, hostel_environment):
         cw = hostel_environment["chief_warden"]
+        admin = hostel_environment["admin"]
 
-        assert has_capability(cw, Capability.MANAGE_HOSTELS)
-        assert has_capability(cw, Capability.MANAGE_STAFF)
-        assert has_capability(cw, Capability.MANAGE_RESPONSIBILITY)
-        assert has_capability(cw, Capability.MANAGE_TICKET_SETTINGS)
+        # Admin controls stripped from Chief Warden
+        assert not has_capability(cw, Capability.MANAGE_HOSTELS)
+        assert not has_capability(cw, Capability.MANAGE_STAFF)
+        assert not has_capability(cw, Capability.MANAGE_RESPONSIBILITY)
+        assert not has_capability(cw, Capability.MANAGE_TICKET_SETTINGS)
         assert has_capability(cw, Capability.VIEW_ALL_TICKETS)
+
+        # Admin holds the admin capabilities
+        assert has_capability(admin, Capability.MANAGE_HOSTELS)
+        assert has_capability(admin, Capability.MANAGE_STAFF)
+        assert has_capability(admin, Capability.MANAGE_RESPONSIBILITY)
+        assert has_capability(admin, Capability.MANAGE_TICKET_SETTINGS)
 
         # Role identity preserved
         assert cw.role == Role.CHIEF_WARDEN
         assert cw.role != Role.ADMIN
         assert cw.escalation_level == 3
+        assert admin.escalation_level is None
 
     def test_chief_warden_management_views_access(self, client, hostel_environment):
         cw = hostel_environment["chief_warden"]
-        client.force_login(cw)
+        admin = hostel_environment["admin"]
 
+        # Chief Warden is blocked (403) from /manage/*
+        client.force_login(cw)
+        assert client.get(reverse("hostels:manage_hostels")).status_code == 403
+        assert client.get(reverse("hostels:manage_staff")).status_code == 403
+        assert client.get(reverse("hostels:manage_responsibility")).status_code == 403
+        assert client.get(reverse("tickets:manage_settings")).status_code == 403
+
+        # Admin has 200 on /manage/*
+        client.force_login(admin)
         assert client.get(reverse("hostels:manage_hostels")).status_code == 200
         assert client.get(reverse("hostels:manage_staff")).status_code == 200
         assert client.get(reverse("hostels:manage_responsibility")).status_code == 200
