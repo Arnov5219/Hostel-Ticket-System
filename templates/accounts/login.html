@@ -165,7 +165,7 @@
 
         <!-- Remember this device (Unchecked by default - Plan Section 2) -->
         <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;">
-          <input type="checkbox" name="remember_me" id="id_remember_me" class="form-check-input" style="width: 16px; height: 16px; accent-color: var(--primary);">
+          <input type="checkbox" name="remember_me" id="id_remember_me" class="form-checkbox">
           <span>Remember this device</span>
         </label>
 
@@ -188,14 +188,14 @@
         </div>
       </form>
 
-      <!-- Collapsible Demo Accounts (L0..L5) -->
+      <!-- Collapsible Demo Accounts (L0..L5) (Plan Section 5.7: real button aria-expanded) -->
       {% if show_demo_accounts %}
-      <details style="border-top: 1px solid var(--border); padding-top: 14px; font-size: 12px;" open>
-        <summary style="cursor: pointer; color: var(--text-muted); font-weight: 600; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+      <div x-data="{ openDemo: true }" style="border-top: 1px solid var(--border); padding-top: 14px; font-size: 12px;">
+        <button type="button" @click="openDemo = !openDemo" :aria-expanded="openDemo" style="cursor: pointer; color: var(--text-muted); font-weight: 600; user-select: none; display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; padding: 0;">
           <span>Demo accounts (password: <code style="font-family: var(--font-mono); font-weight: 700; color: var(--primary);">me1234</code>)</span>
-          <span style="font-size: 11px; color: var(--text-muted);">Quick fill ▾</span>
-        </summary>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px;">
+          <span style="font-size: 11px; color: var(--text-muted);" x-text="openDemo ? 'Quick fill ▴' : 'Quick fill ▾'">Quick fill ▾</span>
+        </button>
+        <div x-show="openDemo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px;">
           <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px; border-radius: var(--r-control);" onclick="setCreds('L0', 'me1234')">
             <span>L0: Hosteler</span>
             <span class="role-badge" style="font-size: 10px; background: var(--primary-soft); color: var(--primary-ink); padding: 1px 5px; border-radius: var(--r-chip);">Student</span>
@@ -221,7 +221,7 @@
             <span class="role-badge" style="font-size: 10px; background: var(--bg-subtle); color: var(--text-2); padding: 1px 5px; border-radius: var(--r-chip);">System</span>
           </button>
         </div>
-      </details>
+      </div>
       {% endif %}
 
     </div>

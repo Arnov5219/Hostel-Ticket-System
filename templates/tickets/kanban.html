@@ -20,26 +20,19 @@
   <span class="current">Kanban</span>
 {% endblock %}
 
-{% block page_title %}Ticket Kanban Board{% endblock %}
-{% block page_subtitle %}Visual workflow pipeline and drag-to-update status{% endblock %}
+{% block page_title %}Kanban{% endblock %}
+{% block page_subtitle %}{% endblock %}
 
 {% block page_actions %}
   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
     <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" title="List View">
       <i data-lucide="list" style="width: 14px; height: 14px;"></i>
-      <span>List view</span>
+      <span>List</span>
     </a>
 
     <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" title="Refresh">
       <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
     </a>
-
-    {% if request.user.is_admin %}
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
-      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-      <span>Raise ticket</span>
-    </a>
-    {% endif %}
   </div>
 {% endblock %}
 
@@ -48,30 +41,30 @@
   
   <!-- Kanban Search Filter Bar -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 8px 14px; box-shadow: var(--shadow-card);">
-    <div style="position: relative; max-width: 300px; width: 100%;">
-      <i data-lucide="search" style="position: absolute; left: 10px; top: 8px; width: 13px; height: 13px; color: var(--text-muted);"></i>
+    <div style="position: relative; max-width: 320px; width: 100%;">
+      <i data-lucide="search" style="position: absolute; left: 14px; top: 10px; width: 15px; height: 15px; color: var(--text-muted); pointer-events: none;"></i>
       <input type="text" x-model="search" placeholder="Filter cards on board..."
-             class="form-control" style="padding-left: 28px; font-size: var(--fs-xs); height: 28px;">
+             class="form-control" style="padding-left: 44px; font-size: var(--fs-xs); height: 36px; border-radius: var(--radius-md);">
     </div>
-    <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-      <i data-lucide="move" style="width: 12px; height: 12px;"></i>
+    <div class="kanban-drag-hint" style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+      <i data-lucide="move" style="width: 13px; height: 13px;"></i>
       <span>Drag card between columns to update status</span>
     </div>
   </div>
 
-  <!-- Mobile Status Quick Jump Tab Strip (< 768px) -->
-  <div class="kanban-tab-strip" x-data="{ activeTab: '{{ columns.0.status }}' }">
+  <!-- Mobile Status Quick Jump Tab Strip (< 768px, Plan Section 5.4) -->
+  <div class="kanban-tab-strip" id="kanban-tab-strip">
     {% for col in columns %}
-      <button type="button" class="kanban-tab-btn" :class="{ 'active': activeTab === '{{ col.status }}' }"
-              @click="activeTab = '{{ col.status }}'; document.querySelector('.kanban-column[data-status=\'{{ col.status }}\']')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });">
+      <button type="button" class="kanban-tab-btn {% if forloop.first %}active{% endif %}"
+              data-status="{{ col.status }}" id="tab-btn-{{ col.status }}">
         <span>{{ col.title }}</span>
-        <span style="opacity: 0.85;">({{ col.tickets.count }})</span>
+        <span class="tab-count">({{ col.tickets.count }})</span>
       </button>
     {% endfor %}
   </div>
 
   <!-- Board Columns -->
-  <div class="kanban-board">
+  <div class="kanban-board" id="kanban-board">
     {% for col in columns %}
       <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
         
@@ -97,6 +90,11 @@
           {% for ticket in col.tickets %}
             <div x-show="!search || $el.innerText.toLowerCase().includes(search.toLowerCase())">
               {% include 'tickets/_kanban_card.html' with ticket=ticket %}
+            </div>
+          {% empty %}
+            <div class="kanban-empty-col">
+              <i data-lucide="inbox" style="width: 20px; height: 20px; opacity: 0.5; margin-bottom: 4px;"></i>
+              <span>No tickets in {{ col.title }}</span>
             </div>
           {% endfor %}
         </div>

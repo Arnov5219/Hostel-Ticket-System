@@ -1,7 +1,9 @@
 {% load ui static %}
 
 <!-- Mobile Bottom Navigation Bar (Phone only: < 768px) -->
-<nav class="mobile-bottom-nav" aria-label="Mobile Navigation" x-data="{ moreOpen: false }">
+<nav class="mobile-bottom-nav" aria-label="Mobile Navigation"
+     x-data="{ moreOpen: false }"
+     x-init="$watch('moreOpen', val => document.body.style.overflow = val ? 'hidden' : '')">
   <div class="bottom-nav-inner">
     {% if request.user.is_authenticated %}
       {% for item in navigation.mobile_bar_items %}
@@ -42,7 +44,7 @@
     {% endif %}
   </div>
 
-  <!-- Mobile "More" Bottom Sheet Overlay -->
+  <!-- Mobile "More" Bottom Sheet Overlay (Plan Section 5.8) -->
   <div class="bottom-sheet-backdrop" x-show="moreOpen" x-transition.opacity style="display: none;" @click="moreOpen = false">
     <div class="bottom-sheet-modal" @click.stop x-show="moreOpen" x-transition:enter="sheet-slide-up" x-transition:leave="sheet-slide-down">
       <div class="bottom-sheet-handle"></div>
@@ -59,8 +61,8 @@
               {{ request.user.get_role_display }} {% if request.user.hostel %}· {{ request.user.hostel.name }}{% endif %}
             </div>
           </div>
-          <button type="button" class="btn btn-ghost btn-sm" @click="moreOpen = false" style="padding: 4px;" aria-label="Close sheet">
-            ✕
+          <button type="button" class="btn btn-ghost btn-sm" @click="moreOpen = false" style="min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-full);" aria-label="Close sheet">
+            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
           </button>
         </div>
 
@@ -75,18 +77,19 @@
         <!-- Sheet Action Links -->
         <div class="bottom-sheet-list">
           {% for item in navigation.mobile_more_items %}
-            <a href="{{ item.url }}" class="sheet-action-row">
+            <a href="{{ item.url }}" class="sheet-action-row" style="min-height: 56px;">
               <i data-lucide="{{ item.icon }}" class="sheet-row-icon"></i>
-              <span>{{ item.label }}</span>
+              <span style="flex: 1;">{{ item.label }}</span>
               {% if item.badge_key and unread_notifications_count > 0 %}
-                <span class="badge" style="background: var(--st-open-bg); color: var(--st-open-fg); margin-left: auto;">{{ unread_notifications_count }}</span>
+                <span class="badge" style="background: var(--st-open-bg); color: var(--st-open-fg); margin-right: 6px;">{{ unread_notifications_count }}</span>
               {% endif %}
+              <i data-lucide="chevron-right" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
             </a>
           {% endfor %}
 
           <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0; width: 100%;">
             {% csrf_token %}
-            <button type="submit" class="sheet-action-row danger" style="width: 100%; border: none; background: transparent; text-align: left; cursor: pointer;">
+            <button type="submit" class="sheet-action-row danger" style="width: 100%; min-height: 56px; border: none; background: transparent; text-align: left; cursor: pointer; padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));">
               <i data-lucide="log-out" class="sheet-row-icon"></i>
               <span>Log Out</span>
             </button>

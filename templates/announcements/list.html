@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}Announcements | Hostel Ticket System{% endblock %}
+{% block title %}Notices | Hostel Ticket System{% endblock %}
 
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>
-  <span class="current">Announcements</span>
+  <span class="current">Notices</span>
 {% endblock %}
 
-{% block page_title %}Announcements & Notices{% endblock %}
-{% block page_subtitle %}Official updates from hostel wardens and authorities{% endblock %}
+{% block page_title %}Notices{% endblock %}
+{% block page_subtitle %}Updates from your wardens and the hostel office{% endblock %}
 
 {% block page_actions %}
   {% if can_manage %}
@@ -130,10 +130,10 @@
       <div class="card" style="text-align: center; padding: 48px 24px; background: var(--bg-surface-glass);">
         <i data-lucide="megaphone" style="width: 36px; height: 36px; color: var(--text-muted); margin-bottom: 12px;"></i>
         <h3 style="font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); margin: 0 0 6px;">
-          No announcements found
+          No notices yet
         </h3>
         <p style="font-size: var(--fs-base); color: var(--text-muted); margin: 0;">
-          There are currently no active announcements in this view.
+          There are currently no active notices in this view.
         </p>
       </div>
     {% endfor %}
