@@ -1192,4 +1192,110 @@ body.modal-open {
   background: var(--bg-surface);
 }
 
+/* --------------------------------------------------------------------------
+   14. Segmented Control & Theme Switcher (Plan Section 3.2, 5.3)
+   -------------------------------------------------------------------------- */
+.segmented-control {
+  display: flex;
+  background: var(--bg-subtle);
+  padding: 4px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  gap: 4px;
+}
+
+.segmented-segment {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--r-control) - 3px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  user-select: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.segmented-segment:hover:not(.active) {
+  background: var(--bg-subtle-hover);
+  color: var(--text-primary);
+}
+
+.segmented-segment.active,
+.segmented-segment[aria-checked="true"] {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Theme Switcher Component */
+.theme-switcher-control {
+  display: flex;
+  background: var(--bg-subtle);
+  padding: 4px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  gap: 6px;
+  width: 100%;
+}
+
+.theme-switcher-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1.5px solid transparent;
+  border-radius: calc(var(--r-control) - 3px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.theme-switcher-btn:hover:not(.active) {
+  background: var(--bg-subtle-hover);
+  color: var(--text-primary);
+}
+
+.theme-switcher-btn.active,
+.theme-switcher-btn[aria-checked="true"] {
+  background: var(--primary-soft);
+  color: var(--primary-ink);
+  border-color: var(--primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-switcher-btn .check-indicator {
+  display: none;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+}
+
+.theme-switcher-btn.active .check-indicator,
+.theme-switcher-btn[aria-checked="true"] .check-indicator {
+  display: inline-block;
+}
+
+
 

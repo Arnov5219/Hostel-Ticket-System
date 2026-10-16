@@ -1,46 +1,27 @@
 {% load static ui %}
 <!DOCTYPE html>
-<html lang="en" data-user-theme="{% if request.user.is_authenticated %}{{ request.user.theme }}{% endif %}">
+<html lang="en" data-theme-pref="{% if request.user.is_authenticated %}{{ request.user.theme|lower }}{% else %}system{% endif %}" data-user-theme="{% if request.user.is_authenticated %}{{ request.user.theme }}{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#F7F8FA" id="meta-theme-color">
+  <meta name="theme-color" content="#F6F8FC" id="meta-theme-color">
   <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
   <title>{% block title %}Hostel Ticket System{% endblock %}</title>
 
-  <!-- Immediate zero-flash theme application before CSS renders -->
+  <!-- Immediate zero-flash theme application before CSS renders (Plan Section 3.2) -->
   <script>
-    (function() {
-      var userTheme = document.documentElement.getAttribute('data-user-theme');
-      var storedTheme = localStorage.getItem('theme');
-      var pref = (userTheme || storedTheme || 'SYSTEM').toUpperCase();
-      var isDark = false;
-      if (pref === 'DARK') {
-        isDark = true;
-      } else if (pref === 'LIGHT') {
-        isDark = false;
-      } else {
-        isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      }
-      var themeVal = isDark ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', themeVal);
-      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-      var meta = document.getElementById('meta-theme-color');
-      if (meta) {
-        meta.setAttribute('content', isDark ? '#0F1115' : '#F7F8FA');
-      }
-      if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-          var cur = (localStorage.getItem('theme') || document.documentElement.getAttribute('data-user-theme') || 'SYSTEM').toUpperCase();
-          if (cur === 'SYSTEM') {
-            var d = e.matches;
-            document.documentElement.setAttribute('data-theme', d ? 'dark' : 'light');
-            document.documentElement.style.colorScheme = d ? 'dark' : 'light';
-            var m = document.getElementById('meta-theme-color');
-            if (m) m.setAttribute('content', d ? '#0F1115' : '#F7F8FA');
-            window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: d ? 'dark' : 'light' } }));
-          }
-        });
+    (function () {
+      try {
+        var pref = document.documentElement.getAttribute('data-theme-pref') || localStorage.getItem('theme') || 'system';
+        pref = pref.toLowerCase();
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        var meta = document.getElementById('meta-theme-color');
+        if (meta) meta.setAttribute('content', dark ? '#0B1220' : '#F6F8FC');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
       }
     })();
   </script>
@@ -51,18 +32,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 
   <!-- Core Design System CSS -->
-  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" href="{% static 'css/layout.css' %}">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=linear4">
+
   {% block extra_css %}{% endblock %}
 
-  <!-- Local Vendor Scripts -->
+  <!-- Local Vendor Scripts & Theme Controller -->
+  <script src="{% static 'js/theme.js' %}?v=linear4"></script>
   <script src="{% static 'vendor/htmx.min.js' %}"></script>
   <script defer src="{% static 'vendor/alpine.min.js' %}"></script>
   <script src="{% static 'vendor/lucide.min.js' %}"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/app.js' %}?v=linear4"></script>
   {% block extra_js %}{% endblock %}
+
 </head>
 <body>
   <!-- Fixed Layered Background (Off-white + dot mesh + subtle glows) -->
@@ -94,7 +78,7 @@
 
           {% if request.user.is_authenticated %}
             <!-- Theme Quick Toggle -->
-            <button type="button" class="top-bar-btn" id="theme-toggle-btn" title="Toggle theme" aria-label="Toggle theme" onclick="var c = getThemePreference(); setTheme(c === 'DARK' ? 'LIGHT' : 'DARK');">
+            <button type="button" class="top-bar-btn" id="theme-toggle-btn" title="Cycle theme (Light, Dark, System)" aria-label="Cycle theme" onclick="cycleTheme();">
               <i data-lucide="sun" class="icon-light" style="width: 17px; height: 17px;"></i>
               <i data-lucide="moon" class="icon-dark" style="width: 17px; height: 17px;"></i>
             </button>
@@ -115,7 +99,7 @@
                 {% user_avatar request.user size="sm" %}
                 <span class="user-role-hint">{{ request.user.get_role_display|slice:":15" }}</span>
               </button>
-              <div class="dropdown-menu" x-show="open" x-transition style="display: none;">
+              <div class="dropdown-menu" x-show="open" x-transition style="display: none; min-width: 240px;">
                 <div style="padding: 10px 14px; border-bottom: 1px solid var(--border);">
                   <div style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
                     {{ request.user.full_name|default:request.user.login_id }}
@@ -129,26 +113,10 @@
                   <span>Profile</span>
                 </a>
 
-                <!-- Theme Selector Segmented Control -->
-                <div style="padding: 8px 14px; border-bottom: 1px solid var(--border);" x-data="{ currentTheme: getThemePreference() }">
-                  <div style="font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Theme</div>
-                  <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                    <button type="button" style="flex: 1; border: none; padding: 4px 6px; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                            :style="currentTheme === 'LIGHT' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                            @click="setTheme('LIGHT'); currentTheme = 'LIGHT';">
-                      Light
-                    </button>
-                    <button type="button" style="flex: 1; border: none; padding: 4px 6px; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                            :style="currentTheme === 'DARK' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                            @click="setTheme('DARK'); currentTheme = 'DARK';">
-                      Dark
-                    </button>
-                    <button type="button" style="flex: 1; border: none; padding: 4px 6px; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                            :style="currentTheme === 'SYSTEM' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                            @click="setTheme('SYSTEM'); currentTheme = 'SYSTEM';">
-                      Auto
-                    </button>
-                  </div>
+                <!-- Standardized Theme Switcher Partial -->
+                <div style="padding: 8px 12px; border-bottom: 1px solid var(--border);">
+                  <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Theme</div>
+                  {% include 'components/theme_switcher.html' %}
                 </div>
 
                 <div class="dropdown-divider"></div>
@@ -162,7 +130,7 @@
               </div>
             </div>
           {% else %}
-            <button type="button" class="top-bar-btn" id="theme-toggle-btn" title="Toggle theme" aria-label="Toggle theme" onclick="var c = getThemePreference(); setTheme(c === 'DARK' ? 'LIGHT' : 'DARK');">
+            <button type="button" class="top-bar-btn" id="theme-toggle-btn" title="Cycle theme" aria-label="Cycle theme" onclick="cycleTheme();">
               <i data-lucide="sun" class="icon-light" style="width: 17px; height: 17px;"></i>
               <i data-lucide="moon" class="icon-dark" style="width: 17px; height: 17px;"></i>
             </button>
@@ -261,7 +229,15 @@
       document.querySelectorAll('#toast-container .toast').forEach((toast, idx) => {
         setTimeout(() => dismissToast(toast), 4000 + (idx * 500));
       });
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
     });
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
   </script>
 </body>
 </html>
+

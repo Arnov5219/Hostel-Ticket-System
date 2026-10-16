@@ -1,130 +1,148 @@
 {% extends 'base.html' %}
-{% load ui %}
+{% load ui static %}
 
-{% block title %}User Profile | Hostel Ticket System{% endblock %}
+{% block title %}User Profile | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
 {% block breadcrumbs %}
-  <a href="{% url 'core:home' %}">Home</a>
-  <span class="separator">/</span>
-  <span class="current">Profile</span>
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>
+    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary);">HOME / PROFILE</span>
+  </div>
 {% endblock %}
 
-{% block page_title %}User Profile{% endblock %}
+{% block page_title %}User profile{% endblock %}
+{% block page_subtitle %}Manage your account credentials, hostel residence, and theme preference{% endblock %}
 {% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; max-width: 900px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; max-width: 960px; margin: 0 auto;">
 
-  <!-- Profile Details Card -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">Profile Information</h2>
-      <span class="level-badge l{{ request.user.escalation_level|default:'1' }}">{{ request.user.get_role_display }}</span>
+  <!-- 1. Profile Information Card -->
+  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Profile information</h2>
+      <span class="role-badge" style="font-size: 11px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 3px 10px; border-radius: var(--r-chip);">
+        {{ request.user.get_role_display }}
+      </span>
     </div>
 
-    <form method="post" style="display: flex; flex-direction: column; gap: 14px;">
+    <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
       {% csrf_token %}
       <input type="hidden" name="action" value="update_profile">
 
-      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
-        {% user_avatar request.user size="lg" %}
-        <div>
-          <div style="font-weight: 600;">{{ request.user.full_name|default:request.user.login_id }}</div>
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ request.user.login_id }}</div>
+      <div style="display: flex; align-items: center; gap: 14px; background: var(--bg-subtle); padding: 12px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
+        {% user_avatar request.user size="lg" is_self=True %}
+        <div style="display: flex; flex-direction: column; min-width: 0;">
+          <div style="font-weight: 700; font-size: 16px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ request.user.full_name|default:request.user.login_id }}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
+            ID: {{ request.user.login_id }}
+          </div>
           {% if request.user.hostel %}
-            <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 2px;">{{ request.user.hostel.name }}</div>
+            <div style="font-size: 12px; font-weight: 500; color: var(--primary); margin-top: 2px;">
+              {{ request.user.hostel.name }} ({{ request.user.hostel.code }})
+            </div>
           {% endif %}
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Full Name</label>
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Full Name</label>
         {{ profile_form.full_name }}
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Email Address</label>
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Email Address</label>
         {{ profile_form.email }}
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Phone Number</label>
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Phone Number</label>
         {{ profile_form.phone }}
       </div>
 
-      <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
-        Save Profile
+      <button type="submit" class="btn btn-primary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--primary); color: var(--white); border: none; align-self: flex-start; cursor: pointer;">
+        Save profile
       </button>
     </form>
   </div>
 
-  <!-- Change Password Card -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">Change Password</h2>
+  <!-- 2. Change Password Card -->
+  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
+    <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Change password</h2>
+      <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Ensure password is at least 8 characters and not too common.</p>
     </div>
 
-    <form method="post" style="display: flex; flex-direction: column; gap: 14px;">
+    <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
       {% csrf_token %}
       <input type="hidden" name="action" value="change_password">
 
       {% for field in password_form %}
-        <div class="form-group">
-          <label class="form-label">{{ field.label }}</label>
-          <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" class="form-control" required>
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">{{ field.label }}</label>
+          <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" class="form-control" required
+                 style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 14px; font-size: 14px; color: var(--text-primary);">
           {% if field.errors %}
-            <span class="form-error">{{ field.errors.0 }}</span>
+            <span class="form-error" style="font-size: 12px; color: var(--st-open-fg);">{{ field.errors.0 }}</span>
           {% endif %}
         </div>
       {% endfor %}
 
-      <button type="submit" class="btn btn-secondary" style="align-self: flex-start;">
-        Update Password
+      <button type="submit" class="btn btn-secondary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-strong); align-self: flex-start; cursor: pointer;">
+        Update password
       </button>
     </form>
   </div>
 
-  {% if request.user.is_hosteler %}
-  <!-- Residence Details Card -->
-  <div class="card" x-data="{ editingResidence: false }">
-    <div class="card-header">
-      <h2 class="card-title">Residence Details</h2>
-      <button type="button" class="btn btn-secondary btn-xs" @click="editingResidence = !editingResidence">
-        <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i>
-        <span x-text="editingResidence ? 'Cancel' : 'Change'">Change</span>
-      </button>
+  <!-- 3. Residence Details Card -->
+  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;" x-data="{ editingResidence: false }">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Residence details</h2>
+      {% if request.user.is_hosteler %}
+        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = !editingResidence" style="border-radius: var(--r-control); font-size: 12px; font-weight: 600; padding: 4px 12px;">
+          <i data-lucide="edit-3" style="width: 13px; height: 13px; margin-right: 4px;"></i>
+          <span x-text="editingResidence ? 'Cancel' : 'Change'">Change</span>
+        </button>
+      {% endif %}
     </div>
 
-    <div x-show="!editingResidence" style="display: flex; flex-direction: column; gap: 12px;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+    <div x-show="!editingResidence" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-subtle); padding: 14px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
+        <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="home" style="width: 20px; height: 20px;"></i>
         </div>
-        <div>
-          <div style="font-weight: 600; font-size: var(--fs-base); color: var(--text-primary);">
-            {{ request.user.hostel.name|default:"No hostel assigned" }}
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">
+            {{ request.user.hostel.name|default:"Campus Scope (All Hostels)" }}
           </div>
           {% if request.user.hostel %}
-            <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
-              {{ request.user.hostel.code }}
+            <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
+              Code: {{ request.user.hostel.code }}
+            </div>
+          {% else %}
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Authority across all campus residential facilities
             </div>
           {% endif %}
         </div>
       </div>
       {% if request.user.residence_set_at %}
-        <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); padding-top: 4px;">
           Last updated: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
         </div>
       {% endif %}
     </div>
 
+    {% if request.user.is_hosteler %}
     <!-- Edit Residence Form -->
     <form x-show="editingResidence" method="post" action="{% url 'accounts:profile_residence' %}" style="display: flex; flex-direction: column; gap: 14px;">
       {% csrf_token %}
-
-      <div class="form-group">
-        <label class="form-label" for="profile-hostel-select">Hostel *</label>
-        <select name="hostel" id="profile-hostel-select" class="form-select" required>
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+        <label class="form-label" for="profile-hostel-select" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Hostel *</label>
+        <select name="hostel" id="profile-hostel-select" class="form-select" required
+                style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 14px; font-size: 14px; color: var(--text-primary);">
           <option value="">Select hostel</option>
           {% if residence_form %}
             {% for h in residence_form.fields.hostel.queryset %}
@@ -135,12 +153,33 @@
       </div>
 
       <div style="display: flex; gap: 8px;">
-        <button type="submit" class="btn btn-primary btn-sm">Save Residence</button>
-        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = false">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="height: 38px; border-radius: var(--r-control); padding: 0 16px; font-weight: 600;">Save residence</button>
+        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = false" style="height: 38px; border-radius: var(--r-control); padding: 0 16px;">Cancel</button>
       </div>
     </form>
+    {% endif %}
   </div>
-  {% endif %}
+
+  <!-- 4. Appearance & Theme Card -->
+  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+    <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Appearance</h2>
+      <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Select your visual interface theme</p>
+    </div>
+
+    {% include 'components/theme_switcher.html' %}
+  </div>
+
+  <!-- 5. Log Out Action (Plan Section 5.5) -->
+  <div style="grid-column: 1 / -1; margin-top: 8px; margin-bottom: 24px;">
+    <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost danger" style="width: 100%; height: 48px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--bg-surface); color: var(--danger); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+        <span>Log Out</span>
+      </button>
+    </form>
+  </div>
 
 </div>
 {% endblock %}

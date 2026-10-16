@@ -60,5 +60,21 @@ class TestThemeFeatures:
         res = client.get(reverse("accounts:onboarding"))
         content = res.content.decode()
         assert 'data-user-theme="DARK"' in content
+        assert 'data-theme-pref="dark"' in content
         assert "meta-theme-color" in content
         assert "data-theme" in content
+        assert "js/theme.js" in content
+
+    def test_profile_page_renders_theme_switcher(self, client, theme_user):
+        from apps.hostels.models import GenderType, Hostel
+        hostel = Hostel.objects.create(name="Test Hostel", code="TH1", gender_type=GenderType.BOYS, is_active=True)
+        theme_user.hostel = hostel
+        theme_user.save()
+        client.force_login(theme_user)
+        res = client.get(reverse("accounts:profile"))
+        content = res.content.decode()
+        assert res.status_code == 200
+        assert "data-theme-switcher" in content
+        assert 'data-theme-option="light"' in content
+        assert 'data-theme-option="dark"' in content
+        assert 'data-theme-option="system"' in content

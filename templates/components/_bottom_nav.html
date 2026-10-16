@@ -62,28 +62,12 @@
           </button>
         </div>
 
-        <!-- Theme Segmented Control in Sheet -->
-        <div style="padding: var(--sp-2) 0; border-bottom: 1px solid var(--border);" x-data="{ sheetTheme: getThemePreference() }">
+        <!-- Theme Switcher in Sheet -->
+        <div style="padding: var(--sp-2) 0; border-bottom: 1px solid var(--border);">
           <div style="font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary); margin-bottom: var(--sp-2);">
             Appearance
           </div>
-          <div style="display: flex; gap: var(--sp-2); background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border);">
-            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                    :style="sheetTheme === 'LIGHT' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                    @click="setTheme('LIGHT'); sheetTheme = 'LIGHT';">
-              <i data-lucide="sun" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Light
-            </button>
-            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                    :style="sheetTheme === 'DARK' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                    @click="setTheme('DARK'); sheetTheme = 'DARK';">
-              <i data-lucide="moon" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Dark
-            </button>
-            <button type="button" style="flex: 1; min-height: 40px; border: none; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); cursor: pointer;"
-                    :style="sheetTheme === 'SYSTEM' ? 'background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'"
-                    @click="setTheme('SYSTEM'); sheetTheme = 'SYSTEM';">
-              <i data-lucide="laptop" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Auto
-            </button>
-          </div>
+          {% include 'components/theme_switcher.html' %}
         </div>
 
         <!-- Sheet Action Links -->
