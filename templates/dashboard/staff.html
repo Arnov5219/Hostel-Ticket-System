@@ -59,35 +59,26 @@
 {% block content %}
 <div class="dashboard-grid">
 
-  <!-- No Active Dean Alert Banner (Admin only) -->
-  {% if no_dean_warning %}
-  <div style="background-color: var(--st-escalated-bg); border: 1px solid var(--st-escalated-dot); border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <i data-lucide="alert-circle" style="width: 18px; height: 18px; color: var(--st-escalated-fg); flex-shrink: 0;"></i>
-      <span style="font-size: var(--fs-sm); font-weight: 500; color: var(--st-escalated-fg);">
-        <strong>No active Dean:</strong> Level 4 escalations will automatically fall back to Admin.
-      </span>
+  <!-- Immediate Action Alert (Overdue tickets exist - Mockup 4) -->
+  {% if kpis.overdue_count > 0 %}
+  <div class="immediate-action-alert" style="background: var(--alert-strong-bg); border: 1px solid var(--border); border-radius: var(--r-card); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; box-shadow: var(--shadow-card);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--st-open-dot); color: var(--white); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--kpi-open);">IMMEDIATE ACTION REQUIRED</div>
+        <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
+          {{ kpis.overdue_count }} ticket{{ kpis.overdue_count|pluralize }} past turnaround deadline
+        </div>
+      </div>
     </div>
-    <a href="{% url 'hostels:create_staff' %}?role=DEAN" class="btn btn-sm btn-primary" style="white-space: nowrap;">
-      Create Dean &rarr;
+    <a href="{% url 'tickets:list' %}?status=OVERDUE" class="btn btn-sm" style="background: var(--st-open-dot); color: var(--white); border: none; border-radius: var(--r-control); font-weight: 600; padding: 6px 16px; white-space: nowrap;">
+      Review escalations &rarr;
     </a>
   </div>
   {% endif %}
 
-  <!-- Hostels without Staff Alert Banner -->
-  {% if hostels_without_staff %}
-  <div style="background-color: var(--st-open-bg); border: 1px solid var(--st-open-dot); border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--st-open-fg); flex-shrink: 0;"></i>
-      <span style="font-size: var(--fs-sm); font-weight: 500; color: var(--st-open-fg);">
-        <strong>{{ hostels_without_staff|length }} hostel{{ hostels_without_staff|length|pluralize }}</strong> currently without a Level 1 responsible staff member assigned.
-      </span>
-    </div>
-    <a href="{% url 'hostels:manage_responsibility' %}" class="btn btn-sm btn-primary" style="white-space: nowrap;">
-      Assign staff &rarr;
-    </a>
-  </div>
-  {% endif %}
 
   <!-- 1. Top 4 Stat Cards Row -->
   <div class="kpi-row">
@@ -251,10 +242,10 @@
     <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
         <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-          <i data-lucide="megaphone" style="width: 15px; height: 15px; color: var(--accent);"></i>
+          <i data-lucide="megaphone" style="width: 15px; height: 15px; color: var(--primary);"></i>
           <span>Latest notices & alerts</span>
         </h3>
-        <a href="{% url 'announcements:manage_list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 500;">Manage →</a>
+        <a href="{% url 'announcements:manage_list' %}" style="font-size: var(--fs-xs); color: var(--primary); text-decoration: none; font-weight: 500;">Manage →</a>
       </div>
       <div style="display: flex; flex-direction: column; gap: 10px;">
         {% for item in latest_announcements %}
@@ -264,11 +255,11 @@
                 {{ item.announcement.title }}
               </a>
               {% if item.announcement.severity == 'URGENT' %}
-                <span class="badge" style="background: var(--ann-urg-bg); color: var(--ann-urg-fg); font-size: 10px;">Urgent</span>
+                <span class="badge" style="background: var(--notice-urg-bg); color: var(--notice-urg-fg); font-size: 10px;">Urgent</span>
               {% elif item.announcement.severity == 'IMPORTANT' %}
-                <span class="badge" style="background: var(--ann-imp-bg); color: var(--ann-imp-fg); font-size: 10px;">Important</span>
+                <span class="badge" style="background: var(--notice-imp-bg); color: var(--notice-imp-fg); font-size: 10px;">Important</span>
               {% else %}
-                <span class="badge" style="background: var(--ann-info-bg); color: var(--ann-info-fg); font-size: 10px;">Info</span>
+                <span class="badge" style="background: var(--notice-info-bg); color: var(--notice-info-fg); font-size: 10px;">Info</span>
               {% endif %}
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-muted);">
@@ -276,7 +267,7 @@
               <span>{{ item.announcement.published_at|timesince|default:"Draft" }}{% if item.announcement.published_at %} ago{% endif %}</span>
             </div>
             <div style="width: 100%; height: 4px; background: var(--bg-subtle); border-radius: 2px; overflow: hidden; margin-top: 4px;">
-              <div style="width: {{ item.read_pct }}%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+              <div style="width: {{ item.read_pct }}%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
             </div>
           </div>
         {% empty %}

@@ -118,7 +118,7 @@
         <!-- Audience Settings -->
         <div class="card" style="padding: 18px; background: var(--bg-surface-glass);">
           <h4 style="font-size: var(--fs-base); font-weight: 700; margin: 0 0 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="users" style="width: 15px; height: 15px; color: var(--accent);"></i>
+            <i data-lucide="users" style="width: 15px; height: 15px; color: var(--primary);"></i>
             <span>Audience Scope</span>
           </h4>
 
@@ -156,7 +156,7 @@
         <!-- Schedule & Timing -->
         <div class="card" style="padding: 18px; background: var(--bg-surface-glass);">
           <h4 style="font-size: var(--fs-base); font-weight: 700; margin: 0 0 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="clock" style="width: 15px; height: 15px; color: var(--accent);"></i>
+            <i data-lucide="clock" style="width: 15px; height: 15px; color: var(--primary);"></i>
             <span>Publishing & Expiry</span>
           </h4>
 
@@ -179,7 +179,7 @@
           </div>
 
           <div class="card" style="padding: 14px; box-shadow: var(--shadow-sm);"
-               :style="severity === 'URGENT' ? 'border-left: 3px solid var(--danger); background-color: var(--ann-urg-bg);' : ''">
+               :style="severity === 'URGENT' ? 'border-left: 3px solid var(--danger); background-color: var(--notice-urg-bg);' : ''">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
               <div class="ann-icon-chip"
                    :class="{ 'urgent': severity === 'URGENT', 'important': severity === 'IMPORTANT', 'info': severity === 'INFO' }">

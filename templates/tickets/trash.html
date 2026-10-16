@@ -55,7 +55,7 @@
                 <td style="padding: var(--sp-3) var(--sp-4); text-align: right; white-space: nowrap;">
                   <form method="post" action="{% url 'tickets:restore' ticket_no=ticket.ticket_no %}" style="display: inline; margin: 0;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline" style="padding: 4px 10px; font-size: var(--fs-xs); font-weight: 500; color: var(--accent); border-color: var(--border-strong);">
+                    <button type="submit" class="btn btn-sm btn-outline" style="padding: 4px 10px; font-size: var(--fs-xs); font-weight: 500; color: var(--primary); border-color: var(--border-strong);">
                       <i data-lucide="rotate-ccw" style="width: 12px; height: 12px; vertical-align: middle;"></i>
                       <span>Restore</span>
                     </button>

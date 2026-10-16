@@ -112,3 +112,13 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 
 ENFORCE_ROOM_CAPACITY = env.bool("ENFORCE_ROOM_CAPACITY", default=False)
 CHIEF_WARDEN_CAN_MANAGE_ADMINS = env.bool("CHIEF_WARDEN_CAN_MANAGE_ADMINS", default=False)
+
+# HostelFlow Branding & Help Settings (Plan Section 2)
+SITE_NAME = env("SITE_NAME", default="HostelFlow")
+SITE_DESCRIPTOR = env("SITE_DESCRIPTOR", default="Hostel Ticket System")
+SITE_TAGLINE = env("SITE_TAGLINE", default="Report. Track. Resolve.")
+DEPARTMENT_NAME = env("DEPARTMENT_NAME", default="Department of Residential Infrastructure")
+HELP_HOTLINE_NUMBER = env("HELP_HOTLINE_NUMBER", default="+91-1800-419-4678")
+HELP_WARDEN_DESK_NUMBER = env("HELP_WARDEN_DESK_NUMBER", default="+91-1800-419-4679")
+HELP_GUIDE_URL = env("HELP_GUIDE_URL", default="#")
+

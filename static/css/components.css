@@ -600,17 +600,17 @@ tr:hover .row-actions {
 
 .notice-card--info {
   border-left-color: var(--primary);
-  background-color: var(--ann-info-bg);
+  background-color: var(--notice-info-bg);
 }
 
 .notice-card--important {
-  border-left-color: var(--ann-imp-fg);
-  background-color: var(--ann-imp-bg);
+  border-left-color: var(--notice-imp-fg);
+  background-color: var(--notice-imp-bg);
 }
 
 .notice-card--urgent {
-  border-left-color: var(--ann-urg-fg);
-  background-color: var(--ann-urg-bg);
+  border-left-color: var(--notice-urg-fg);
+  background-color: var(--notice-urg-bg);
 }
 
 .notice-card-title {
@@ -629,8 +629,8 @@ tr:hover .row-actions {
 }
 
 .form-textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  border-color: var(--primary);
+  box-shadow: var(--ring);
 }
 
 /* --------------------------------------------------------------------------
@@ -807,7 +807,7 @@ tr:hover .row-actions {
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  background-color: var(--accent-light);
+  background-color: var(--primary-soft);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--fs-base);
@@ -816,7 +816,7 @@ tr:hover .row-actions {
 }
 
 .info-callout svg {
-  color: var(--accent);
+  color: var(--primary);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -920,8 +920,8 @@ tr:hover .row-actions {
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 700;
-  background-color: var(--ann-urg-bg);
-  color: var(--ann-urg-fg);
+  background-color: var(--notice-urg-bg);
+  color: var(--notice-urg-fg);
   border: 1px solid var(--border);
 }
 
@@ -931,9 +931,9 @@ tr:hover .row-actions {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background-color: var(--ann-urg-bg);
+  background-color: var(--notice-urg-bg);
   border: 1px solid var(--border);
-  color: var(--ann-urg-fg);
+  color: var(--notice-urg-fg);
   border-radius: var(--radius-md);
   padding: 10px 16px;
   margin-bottom: 16px;
@@ -994,9 +994,9 @@ tr:hover .row-actions {
   justify-content: center;
   flex-shrink: 0;
 }
-.ann-icon-chip.info { background-color: var(--ann-info-bg); color: var(--ann-info-fg); }
-.ann-icon-chip.important { background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); }
-.ann-icon-chip.urgent { background-color: var(--ann-urg-bg); color: var(--ann-urg-fg); }
+.ann-icon-chip.info { background-color: var(--notice-info-bg); color: var(--notice-info-fg); }
+.ann-icon-chip.important { background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); }
+.ann-icon-chip.urgent { background-color: var(--notice-urg-bg); color: var(--notice-urg-fg); }
 
 /* ==========================================================================
    Global Modal System (.app-modal-backdrop, .command-palette-backdrop)

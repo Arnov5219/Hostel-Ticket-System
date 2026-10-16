@@ -7,7 +7,7 @@
     <form method="post" action="{% url 'tickets:undo_delete' ticket_no=ticket_no|default:ticket.ticket_no %}" style="margin: 0; display: inline;">
       {% csrf_token %}
       <input type="hidden" name="token" value="{{ undo_token|default:token }}">
-      <button type="submit" class="btn btn-sm btn-outline" style="padding: 2px 8px; font-size: var(--text-xs); font-weight: 600; color: var(--accent); border-color: var(--border-strong);">
+      <button type="submit" class="btn btn-sm btn-outline" style="padding: 2px 8px; font-size: var(--text-xs); font-weight: 600; color: var(--primary); border-color: var(--border-strong);">
         Undo
       </button>
     </form>

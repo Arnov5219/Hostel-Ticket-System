@@ -85,9 +85,9 @@
     transition: all 0.15s ease;
   }
   .kanban-tab-btn.active {
-    background: var(--accent);
-    color: var(--primary-text);
-    border-color: var(--accent);
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
   }
 }
 
@@ -152,7 +152,7 @@
 .kanban-add-btn:hover {
   background-color: var(--bg-surface);
   color: var(--text-primary);
-  border-color: var(--accent);
+  border-color: var(--primary);
   text-decoration: none;
 }
 
@@ -170,7 +170,7 @@
 /* Kanban Card */
 .kanban-card {
   background-color: var(--bg-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--r-card-sm);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
   padding: 12px;
@@ -191,8 +191,8 @@
 
 .kanban-card.sortable-ghost {
   opacity: 0.35;
-  border: 2px dashed var(--accent);
-  background: var(--accent-light);
+  border: 2px dashed var(--primary);
+  background: var(--primary-soft);
 }
 
 .kanban-card.sortable-chosen {
@@ -209,7 +209,7 @@
 .kanban-ticket-no {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--accent);
+  color: var(--primary);
   font-weight: 600;
 }
 

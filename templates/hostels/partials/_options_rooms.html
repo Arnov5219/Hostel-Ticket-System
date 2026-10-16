@@ -7,9 +7,9 @@
               data-room-number="{{ room.room_number }}"
               title="Room {{ room.room_number }} ({{ room.resident_count }}/{{ room.capacity }} beds)"
               onclick="selectRoomChip(this, '{{ room.id }}')"
-              style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 6px; border-radius: var(--radius-sm); border: 1px solid {% if selected_id == room.id|stringformat:'s' %}var(--accent){% else %}var(--border){% endif %}; background: {% if selected_id == room.id|stringformat:'s' %}var(--accent-glow){% else %}var(--bg-surface){% endif %}; cursor: pointer; transition: all var(--duration-fast) var(--ease-standard); font-family: var(--font-mono); font-size: var(--fs-xs); position: relative;">
+              style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 6px; border-radius: var(--radius-sm); border: 1px solid {% if selected_id == room.id|stringformat:'s' %}var(--primary){% else %}var(--border){% endif %}; background: {% if selected_id == room.id|stringformat:'s' %}var(--primary-soft){% else %}var(--bg-surface){% endif %}; cursor: pointer; transition: all var(--duration-fast) var(--ease-standard); font-family: var(--font-mono); font-size: var(--fs-xs); position: relative;">
         
-        <span style="font-weight: 600; color: {% if selected_id == room.id|stringformat:'s' %}var(--accent){% else %}var(--text-primary){% endif %};">
+        <span style="font-weight: 600; color: {% if selected_id == room.id|stringformat:'s' %}var(--primary){% else %}var(--text-primary){% endif %};">
           {{ room.room_number }}
         </span>
 
@@ -40,10 +40,10 @@ if (typeof selectRoomChip === 'undefined') {
       el.classList.remove('selected');
     });
     btn.classList.add('selected');
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.background = 'var(--accent-glow)';
+    btn.style.borderColor = 'var(--primary)';
+    btn.style.background = 'var(--primary-soft)';
     const span = btn.querySelector('span');
-    if (span) span.style.color = 'var(--accent)';
+    if (span) span.style.color = 'var(--primary)';
 
     const hiddenInput = document.getElementById('id_room');
     if (hiddenInput) {

@@ -17,12 +17,12 @@ HUMAN_STATUS_MAP = {
 }
 
 AVATAR_BG_PALETTE = [
-    ("#E8F1FD", "#1D5FB4"),  # blue
-    ("#E6F4EA", "#137333"),  # green
-    ("#FEF7E0", "#B06000"),  # amber
-    ("#F3E8FD", "#6B3FA0"),  # purple
-    ("#FCE8E6", "#C5221F"),  # red/pink
-    ("#E8EAED", "#3C4043"),  # gray
+    ("var(--primary-soft)", "var(--primary-ink)"),      # blue
+    ("var(--st-resolved-bg)", "var(--st-resolved-fg)"),  # green
+    ("var(--st-progress-bg)", "var(--st-progress-fg)"),  # amber
+    ("var(--st-hold-bg)", "var(--st-hold-fg)"),          # purple
+    ("var(--st-open-bg)", "var(--st-open-fg)"),          # red/pink
+    ("var(--bg-subtle)", "var(--text-2)"),               # slate
 ]
 
 
@@ -108,12 +108,14 @@ def time_ago(dt):
     return f"{years}y"
 
 
-@register.simple_tag
-def user_avatar(user, size="md"):
+@register.simple_tag(takes_context=True)
+def user_avatar(context, user, size="md", is_self=False):
     """
-    Renders a 28px circular avatar with soft deterministic background color,
-    preventing plain raw letters without circle styling.
+    Renders a circular avatar with clean initials,
+    using --ink for the signed-in user and soft tints for others.
     """
+    import re
+
     size_cls = f"avatar--{size}" if size != "md" else ""
     if user and getattr(user, "avatar", None) and user.avatar:
         return mark_safe(
@@ -128,18 +130,27 @@ def user_avatar(user, size="md"):
             f'</div>'
         )
 
+    req = context.get("request") if isinstance(context, dict) or hasattr(context, "get") else None
+    current_user = getattr(req, "user", None) if req else None
+    user_is_self = is_self or (current_user and current_user.is_authenticated and current_user == user)
+
     name = getattr(user, "full_name", "") or getattr(user, "login_id", "") or str(user)
     parts = name.split()
-    if len(parts) >= 2:
-        initials = (parts[0][0] + parts[1][0]).upper()
-    elif parts:
-        initials = parts[0][:2].upper()
+    clean_words = [re.sub(r"[^a-zA-Z]", "", p) for p in parts]
+    clean_words = [w for w in clean_words if w]
+    if len(clean_words) >= 2:
+        initials = (clean_words[0][0] + clean_words[1][0]).upper()
+    elif clean_words:
+        initials = clean_words[0][:2].upper()
     else:
         initials = "?"
 
-    # Hash name to choose deterministic tint from palette
-    hash_val = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
-    bg_color, fg_color = AVATAR_BG_PALETTE[hash_val % len(AVATAR_BG_PALETTE)]
+    if user_is_self:
+        bg_color = "var(--ink)"
+        fg_color = "var(--text-inverse)"
+    else:
+        hash_val = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
+        bg_color, fg_color = AVATAR_BG_PALETTE[hash_val % len(AVATAR_BG_PALETTE)]
 
     return mark_safe(
         f'<div class="avatar {size_cls}" style="background-color: {bg_color}; color: {fg_color};" title="{name}">'

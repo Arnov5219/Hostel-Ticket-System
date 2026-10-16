@@ -43,9 +43,9 @@
         {% if announcement.severity == "URGENT" %}
           <span class="ann-pill-urgent">Urgent Alert</span>
         {% elif announcement.severity == "IMPORTANT" %}
-          <span class="badge" style="background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); font-weight: 700;">Important</span>
+          <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700;">Important</span>
         {% else %}
-          <span class="badge" style="background-color: var(--ann-info-bg); color: var(--ann-info-fg);">Information</span>
+          <span class="badge" style="background-color: var(--notice-info-bg); color: var(--notice-info-fg);">Information</span>
         {% endif %}
         {% if announcement.is_pinned %}
           <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary);">
@@ -73,7 +73,7 @@
       <div class="card" style="margin-bottom: 20px; padding: 14px; background-color: var(--bg-subtle); border: 1px solid var(--border);">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <i data-lucide="file" style="width: 20px; height: 20px; color: var(--accent);"></i>
+            <i data-lucide="file" style="width: 20px; height: 20px; color: var(--primary);"></i>
             <div>
               <div style="font-weight: 600; font-size: var(--fs-base); color: var(--text-primary);">Attachment file</div>
               <div style="font-size: var(--fs-xs); color: var(--text-muted);">{{ announcement.attachment.name }}</div>
@@ -93,7 +93,7 @@
         <div style="font-size: var(--fs-xs); color: var(--text-muted);">
           Related maintenance ticket:
         </div>
-        <a href="{% url 'tickets:detail' announcement.related_ticket.ticket_no %}" class="btn btn-ghost btn-sm" style="color: var(--accent);">
+        <a href="{% url 'tickets:detail' announcement.related_ticket.ticket_no %}" class="btn btn-ghost btn-sm" style="color: var(--primary);">
           <span>{{ announcement.related_ticket.ticket_no }} - {{ announcement.related_ticket.title }}</span>
           <i data-lucide="arrow-right" style="width: 13px; height: 13px;"></i>
         </a>

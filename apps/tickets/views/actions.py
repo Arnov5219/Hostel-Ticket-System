@@ -5,7 +5,13 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.models import Role, User
-from apps.core.permissions import Capability, can_add_internal_note, can_reassign_or_escalate, can_view_ticket, has_capability
+from apps.core.permissions import (
+    Capability,
+    can_add_internal_note,
+    can_reassign_or_escalate,
+    can_view_ticket,
+    has_capability,
+)
 from apps.notifications.models import Notification
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (

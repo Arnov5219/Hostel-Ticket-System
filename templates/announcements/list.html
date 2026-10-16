@@ -30,23 +30,23 @@
 
   {# Segmented Tabs (All · Unread · Pinned) #}
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-    <div class="segmented-control" style="display: inline-flex; background-color: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm);">
-      <a href="{% url 'announcements:list' %}?tab=all" class="segmented-btn {% if current_tab == 'all' %}active{% endif %}">
+    <nav class="segmented-nav">
+      <a href="{% url 'announcements:list' %}?tab=all" class="segmented-nav__item {% if current_tab == 'all' %}active{% endif %}">
         All
       </a>
-      <a href="{% url 'announcements:list' %}?tab=unread" class="segmented-btn {% if current_tab == 'unread' %}active{% endif %}">
-        Unread {% if unread_total > 0 %}<span class="badge" style="background-color: var(--accent); color: var(--white); font-size: 10px; padding: 1px 5px; margin-left: 4px;">{{ unread_total }}</span>{% endif %}
+      <a href="{% url 'announcements:list' %}?tab=unread" class="segmented-nav__item {% if current_tab == 'unread' %}active{% endif %}">
+        Unread {% if unread_total > 0 %}<span class="badge" style="background-color: var(--primary); color: var(--white); font-size: 10px; padding: 1px 5px; margin-left: 4px;">{{ unread_total }}</span>{% endif %}
       </a>
-      <a href="{% url 'announcements:list' %}?tab=pinned" class="segmented-btn {% if current_tab == 'pinned' %}active{% endif %}">
+      <a href="{% url 'announcements:list' %}?tab=pinned" class="segmented-nav__item {% if current_tab == 'pinned' %}active{% endif %}">
         Pinned
       </a>
-    </div>
+    </nav>
   </div>
 
   {# Announcements List #}
   <div style="display: flex; flex-direction: column; gap: 14px;">
     {% for ann in announcements %}
-      <div class="card" style="padding: 18px 20px; background: var(--bg-surface-glass); {% if ann.severity == 'URGENT' %}border-left: 4px solid var(--danger); background-color: var(--ann-urg-bg);{% endif %}">
+      <div class="card" style="padding: 18px 20px; background: var(--bg-surface-glass); {% if ann.severity == 'URGENT' %}border-left: 4px solid var(--danger); background-color: var(--notice-urg-bg);{% endif %}">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">
@@ -69,7 +69,7 @@
                   {{ ann.title }}
                 </h3>
                 {% if ann.id not in read_ids %}
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent); display: inline-block;" title="Unread"></span>
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--primary); display: inline-block;" title="Unread"></span>
                 {% endif %}
               </div>
               <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -94,7 +94,7 @@
             {% if ann.severity == "URGENT" %}
               <span class="ann-pill-urgent">Urgent</span>
             {% elif ann.severity == "IMPORTANT" %}
-              <span class="badge" style="background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
+              <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
             {% endif %}
           </div>
         </div>
@@ -121,7 +121,7 @@
             {% endif %}
           </div>
 
-          <a href="{% url 'announcements:detail' ann.id %}" class="btn btn-ghost btn-sm" style="color: var(--accent); font-weight: 600;">
+          <a href="{% url 'announcements:detail' ann.id %}" class="btn btn-ghost btn-sm" style="color: var(--primary); font-weight: 600;">
             <span>Read full notice →</span>
           </a>
         </div>

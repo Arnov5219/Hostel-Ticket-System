@@ -1,225 +1,358 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}My Helpdesk | Hostel Ticket System{% endblock %}
+{% block title %}Home | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=hostelflow1">
 {% endblock %}
 
 {% block breadcrumbs %}
-  <a href="{% url 'core:home' %}">Home</a>
-  <span class="separator">/</span>
-  <span class="current">My Helpdesk</span>
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>
+    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary);">
+      {{ user.hostel.code|default:"HOME" }}
+    </span>
+    {% if user.hostel %}
+      <span style="color: var(--border-strong); font-size: 11px;">/</span>
+      <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">{{ user.hostel.name }}</span>
+    {% endif %}
+  </div>
 {% endblock %}
 
-{% block page_title %}My Helpdesk{% endblock %}
-{% block page_subtitle %}Track and submit hostel maintenance requests{% endblock %}
-{% block page_actions %}{% endblock %}
+{% block page_title %}Home{% endblock %}
+{% block page_subtitle %}Have an issue? We'll get it fixed promptly.{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="height: 44px; padding: 0 18px; font-weight: 600; border-radius: var(--r-control); display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-primary);">
+    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+    <span>Raise new ticket</span>
+  </a>
+{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 20px;">
+<div class="hosteler-home-container" style="display: flex; flex-direction: column; gap: 20px;">
 
-  {# 1. Urgent Announcement Banner #}
-  {% if urgent_banner %}
-    <div id="urgent-banner" class="urgent-banner">
-      <div class="urgent-banner-title">
-        <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--ann-urg-fg); flex-shrink: 0;"></i>
-        <span>{{ urgent_banner.title }}</span>
-        {% if urgent_more_count > 0 %}
-          <span class="badge" style="background-color: var(--st-open-bg); color: var(--ann-urg-fg); font-size: 11px;">
-            +{{ urgent_more_count }} more
-          </span>
-        {% endif %}
-      </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <a href="{% url 'announcements:detail' urgent_banner.id %}" class="btn btn-xs" style="background: var(--ann-urg-fg); color: var(--white); font-weight: 600; padding: 3px 10px; border-radius: var(--radius-xs);">
-          Read
-        </a>
-        <button type="button"
-                hx-post="{% url 'announcements:read' urgent_banner.id %}"
-                hx-target="#urgent-banner"
-                hx-swap="outerHTML"
-                title="Dismiss"
-                style="background: transparent; border: none; cursor: pointer; color: var(--ann-urg-fg); font-size: 16px; padding: 2px 6px;">
-          ✕
-        </button>
-      </div>
-    </div>
-  {% endif %}
-
-  {# 2. Welcome Panel #}
-  <div style="position: relative; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-card); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-    <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; border: 28px solid var(--accent-glow); pointer-events: none;"></div>
-    <div style="position: absolute; left: 20%; top: -60px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none;"></div>
-
-    <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
-      {% user_avatar user size="lg" %}
+  <!-- Mobile Hero Greeting & Big Primary Action Button (Mockup 1) -->
+  <div class="hosteler-mobile-hero" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
       <div>
-        <div style="font-weight: 700; font-size: var(--fs-md); color: var(--text-primary); letter-spacing: -0.01em;">
-          Welcome, {{ user.full_name|default:user.login_id }}
-        </div>
-        <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-          <span>{{ user.hostel.name|default:"Campus" }}</span>
-          <span style="opacity: 0.6;">·</span>
-          <span style="font-family: var(--font-mono); font-size: 11px;">{{ user.login_id }}</span>
-        </div>
+        <h1 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; letter-spacing: -0.015em;">
+          Hi, {{ user.first_name|default:user.full_name|default:user.login_id }} 👋
+        </h1>
+        <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+          Have an issue? We'll get it fixed promptly.
+        </p>
       </div>
-    </div>
-
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="padding: 8px 18px; height: 38px; font-weight: 600; position: relative; z-index: 1; box-shadow: var(--shadow-sm);">
-      <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
-      <span>Raise ticket</span>
-    </a>
-  </div>
-
-  {# 3. Status KPIs #}
-  <div class="kpi-row" style="grid-template-columns: repeat(3, 1fr);">
-    <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="kpi-card" style="cursor: pointer; text-decoration: none;">
-      <span class="kpi-label">Active &amp; in progress</span>
-      <span class="kpi-value" style="color: var(--primary);">{{ kpis.my_open }}</span>
-      <span class="kpi-subtext">Issues being addressed</span>
-    </a>
-
-    <a href="{% url 'tickets:list' %}?status=RESOLVED" class="kpi-card" style="cursor: pointer; text-decoration: none;">
-      <span class="kpi-label">Resolved</span>
-      <span class="kpi-value resolved">{{ kpis.my_resolved }}</span>
-      <span class="kpi-subtext">Awaiting your closure confirmation</span>
-    </a>
-
-    <a href="{% url 'tickets:list' %}?status=CLOSED" class="kpi-card" style="cursor: pointer; text-decoration: none;">
-      <span class="kpi-label">Closed history</span>
-      <span class="kpi-value">{{ kpis.my_closed }}</span>
-      <span class="kpi-subtext">Completed historical tickets</span>
-    </a>
-  </div>
-
-  {# 4. Main Grid: Recent Tickets Table + Announcements Rail #}
-  <div class="hosteler-home-grid" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start;">
-
-    {# Left Column: Recent Tickets Table #}
-    <div class="card" style="padding: 20px 24px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="ticket" style="width: 18px; height: 18px; color: var(--accent);"></i>
-          <h3 style="font-size: var(--fs-md); font-weight: 700; margin: 0; color: var(--text-primary);">
-            My Recent Tickets
-          </h3>
-        </div>
-        <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 600;">
-          View all tickets →
-        </a>
-      </div>
-
-      {% if recent_tickets %}
-        <div class="table-container" style="border: none; margin: 0;">
-          <table class="app-table">
-            <thead>
-              <tr>
-                <th>Ticket ID</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for ticket in recent_tickets %}
-                <tr onclick="window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';" style="cursor: pointer;">
-                  <td>
-                    <span class="ticket-id">{{ ticket.ticket_no }}</span>
-                  </td>
-                  <td style="font-weight: 500;">
-                    <span style="color: var(--text-primary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">
-                      {{ ticket.title }}
-                    </span>
-                  </td>
-                  <td style="white-space: nowrap; font-size: var(--fs-xs); color: var(--text-secondary);">
-                    {% if ticket.category.icon %}
-                      <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px; color: var(--text-muted); vertical-align: middle; margin-right: 4px;"></i>
-                    {% endif %}
-                    {{ ticket.category.name }}
-                  </td>
-                  <td style="white-space: nowrap;">
-                    {% status_pill ticket.status %}
-                  </td>
-                  <td style="white-space: nowrap;">
-                    {% priority_dot ticket.priority %}
-                  </td>
-                  <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
-                    {% time_ago ticket.updated_at %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div style="padding: 36px 16px; text-align: center; color: var(--text-muted);">
-          <div class="empty-state">
-            <div class="empty-state-icon">
-              <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
-            </div>
-            <h4 class="empty-state-title" style="margin-top: 8px; font-weight: 600;">No tickets raised yet</h4>
-            <p class="empty-state-text" style="font-size: var(--fs-xs); margin-top: 4px;">Submit a hostel maintenance issue whenever you need assistance.</p>
-            <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm" style="margin-top: 12px;">
-              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-              <span>Raise ticket</span>
-            </a>
-          </div>
-        </div>
+      {% if user.hostel %}
+        <span class="hostel-badge-pill" style="font-size: 12px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 4px 10px; border-radius: var(--r-chip); flex-shrink: 0;">
+          {{ user.hostel.code }}
+        </span>
       {% endif %}
     </div>
 
-    {# Right Column: Sticky Announcements Rail #}
-    <div style="position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px;">
-      <div class="right-rail-card">
-        <div class="rail-widget-title">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="megaphone" style="width: 15px; height: 15px; color: var(--accent);"></i>
-            <span>Announcements</span>
+    <!-- Raise New Ticket Primary Button (52px high, radius 16, glow) -->
+    <a href="{% url 'tickets:create' %}" class="btn-primary-large" style="width: 100%; height: 52px; border-radius: var(--r-card-sm); background: var(--primary); color: var(--white); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600; text-decoration: none; box-shadow: var(--shadow-primary); transition: all var(--t-fast) var(--ease);">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--overlay-light); display: flex; align-items: center; justify-content: center;">
+        <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+      </div>
+      <span>Raise new ticket</span>
+    </a>
+  </div>
+
+  <!-- Notice Banner (Urgent first, then newest) -->
+  {% if urgent_banner %}
+    <div class="notice-banner urgent" style="background: var(--notice-urg-bg); border: 1px solid var(--notice-urg-bd); border-radius: var(--r-card); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; box-shadow: var(--shadow-card);">
+      <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--st-open-dot); color: var(--white); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--notice-urg-fg);">
+            {{ urgent_banner.get_kind_display|default:"MAINTENANCE" }} NOTICE
+          </span>
+          <span style="font-size: 11.5px; color: var(--notice-urg-fg); opacity: 0.85;">
+            {{ urgent_banner.created_at|timesince }} ago
+          </span>
+        </div>
+        <a href="{% url 'announcements:detail' urgent_banner.id %}" style="font-size: 15px; font-weight: 700; color: var(--text-primary); text-decoration: none; display: block; margin-bottom: 2px;">
+          {{ urgent_banner.title }}
+        </a>
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+          {{ urgent_banner.body }}
+        </div>
+      </div>
+    </div>
+  {% elif announcements %}
+    {% with ann=announcements.0 %}
+    <div class="notice-banner" style="background: var(--notice-info-bg); border: 1px solid var(--notice-info-bd); border-radius: var(--r-card); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; box-shadow: var(--shadow-card);">
+      <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--primary); color: var(--white); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="megaphone" style="width: 20px; height: 20px;"></i>
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary);">
+            {{ ann.get_kind_display|default:"ANNOUNCEMENT" }}
+          </span>
+          <span style="font-size: 11.5px; color: var(--text-muted);">
+            {{ ann.created_at|timesince }} ago
+          </span>
+        </div>
+        <a href="{% url 'announcements:detail' ann.id %}" style="font-size: 15px; font-weight: 700; color: var(--text-primary); text-decoration: none; display: block;">
+          {{ ann.title }}
+        </a>
+      </div>
+    </div>
+    {% endwith %}
+  {% endif %}
+
+  <!-- 2-Column Responsive Layout for Desktop / Single Column for Mobile -->
+  <div class="hosteler-desktop-split" style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start;">
+    
+    <!-- Left Column: KPIs & Recent Tickets -->
+    <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+      
+      <!-- 2x2 KPI Grid (Mockup 1) -->
+      <div class="kpi-grid-hosteler" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        
+        <!-- Total Tickets -->
+        <a href="{% url 'tickets:list' %}" class="card kpi-card-box" style="padding: 16px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; min-height: 104px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kpi-total);">TOTAL TICKETS</span>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-subtle); color: var(--text-secondary); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="ticket" style="width: 16px; height: 16px;"></i>
+            </div>
           </div>
-          <a href="{% url 'announcements:list' %}" style="font-size: var(--fs-xs); color: var(--accent); text-decoration: none; font-weight: 500;">
-            View all →
+          <div>
+            <div style="font-size: 28px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.1;">{{ kpis.my_total|default:"0" }}</div>
+            <div style="font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-top: 4px;">+{{ kpis.this_month_count|default:"0" }} this month</div>
+          </div>
+        </a>
+
+        <!-- Open / Queued -->
+        <a href="{% url 'tickets:list' %}?status=OPEN" class="card kpi-card-box" style="padding: 16px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; min-height: 104px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kpi-open);">OPEN / QUEUED</span>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--st-open-bg); color: var(--kpi-open); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 28px; font-weight: 800; color: var(--kpi-open); font-variant-numeric: tabular-nums; line-height: 1.1;">{{ kpis.open_unassigned|default:kpis.my_open }}</div>
+            <div style="font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-top: 4px;">
+              {% if kpis.urgent_open_count %}<span style="color: var(--kpi-open); font-weight: 600;">{{ kpis.urgent_open_count }} marked urgent</span>{% else %}In dispatch queue{% endif %}
+            </div>
+          </div>
+        </a>
+
+        <!-- In Progress -->
+        <a href="{% url 'tickets:list' %}?status=IN_PROGRESS" class="card kpi-card-box" style="padding: 16px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; min-height: 104px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kpi-progress);">IN PROGRESS</span>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--st-progress-bg); color: var(--kpi-progress); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="wrench" style="width: 16px; height: 16px;"></i>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 28px; font-weight: 800; color: var(--kpi-progress); font-variant-numeric: tabular-nums; line-height: 1.1;">{{ kpis.my_in_progress|default:"0" }}</div>
+            <div style="font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-top: 4px;">{{ kpis.avg_days_str|default:"Under active repair" }}</div>
+          </div>
+        </a>
+
+        <!-- Resolved -->
+        <a href="{% url 'tickets:list' %}?status=RESOLVED" class="card kpi-card-box" style="padding: 16px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; min-height: 104px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kpi-resolved);">RESOLVED</span>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--st-resolved-bg); color: var(--kpi-resolved); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 28px; font-weight: 800; color: var(--kpi-resolved); font-variant-numeric: tabular-nums; line-height: 1.1;">{{ kpis.my_resolved|default:"0" }}</div>
+            <div style="font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-top: 4px;">{{ kpis.satisfaction_str|default:"Ready for verification" }}</div>
+          </div>
+        </a>
+
+      </div>
+
+      <!-- Recent Tickets Section -->
+      <div style="display: flex; flex-direction: column; gap: 12px;" x-data="{ currentTab: 'all' }">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">Recent tickets</h2>
+          <a href="{% url 'tickets:list' %}" style="font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            <span>View all</span>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
           </a>
         </div>
 
-        {% if announcements %}
-          <div style="display: flex; flex-direction: column;">
-            {% for ann in announcements %}
-              <a href="{% url 'announcements:detail' ann.id %}" class="announcement-item-row">
-                <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">
-                  {% if ann.kind == "MAINTENANCE" %}
-                    <i data-lucide="wrench" style="width: 13px; height: 13px;"></i>
-                  {% elif ann.kind == "EMERGENCY" %}
-                    <i data-lucide="alert-triangle" style="width: 13px; height: 13px;"></i>
-                  {% elif ann.kind == "EVENT" %}
-                    <i data-lucide="calendar" style="width: 13px; height: 13px;"></i>
-                  {% else %}
-                    <i data-lucide="bell" style="width: 13px; height: 13px;"></i>
+        <!-- Filter Chips Row (Mockup 1) -->
+        <div class="filter-chips-scroll" style="display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
+          <button type="button" @click="currentTab = 'all'"
+                  :style="currentTab === 'all' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
+                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
+            All ({{ chip_counts.all|default:recent_tickets|length }})
+          </button>
+          <button type="button" @click="currentTab = 'open'"
+                  :style="currentTab === 'open' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
+                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
+            Open ({{ chip_counts.open|default:0 }})
+          </button>
+          <button type="button" @click="currentTab = 'progress'"
+                  :style="currentTab === 'progress' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
+                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
+            In progress ({{ chip_counts.progress|default:0 }})
+          </button>
+          <button type="button" @click="currentTab = 'resolved'"
+                  :style="currentTab === 'resolved' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
+                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
+            Resolved ({{ chip_counts.resolved|default:0 }})
+          </button>
+        </div>
+
+        <!-- Ticket Cards List -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for t in recent_tickets %}
+            <div x-show="currentTab === 'all' || (currentTab === 'open' && ('{{ t.status }}' === 'OPEN' || '{{ t.status }}' === 'ASSIGNED')) || (currentTab === 'progress' && ('{{ t.status }}' === 'IN_PROGRESS' || '{{ t.status }}' === 'ON_HOLD')) || (currentTab === 'resolved' && ('{{ t.status }}' === 'RESOLVED' || '{{ t.status }}' === 'CLOSED'))">
+              <a href="{% url 'tickets:detail' t.ticket_no %}" class="card ticket-card-item" style="padding: 16px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); text-decoration: none; display: flex; flex-direction: column; gap: 8px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+                
+                <!-- Row 1: Ticket Number & Status Pill -->
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary-ink);">
+                    {{ t.ticket_no }}
+                  </span>
+                  {% status_pill t.status %}
+                </div>
+
+                <!-- Row 2: Title -->
+                <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                  {{ t.title }}
+                </h3>
+
+                <!-- Row 3: Category · Priority · Relative Time -->
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap;">
+                  {% if t.category %}
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); font-weight: 500;">
+                      <i data-lucide="{{ t.category.icon|default:'tag' }}" style="width: 13px; height: 13px;"></i>
+                      <span>{{ t.category.name }}</span>
+                    </span>
+                    <span style="opacity: 0.5;">•</span>
                   {% endif %}
+
+                  {% priority_dot t.priority %}
+
+                  <span style="opacity: 0.5;">•</span>
+                  <span>{{ t.created_at|timesince }} ago</span>
                 </div>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                    {{ ann.title }}
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                    {{ ann.author.get_role_display|default:"Staff" }} · {{ ann.published_at|timesince }} ago
-                  </div>
-                </div>
+
               </a>
-            {% endfor %}
+            </div>
+          {% empty %}
+            <div class="card" style="padding: 36px 20px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
+              </div>
+              <div style="font-weight: 700; font-size: 16px; color: var(--text-primary);">No tickets yet</div>
+              <p style="font-size: 13px; color: var(--text-muted); margin: 0; max-width: 320px;">
+                Have an issue in your room or hostel? Raise your first ticket and our staff will resolve it promptly.
+              </p>
+              <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm" style="margin-top: 4px; border-radius: var(--r-control); padding: 6px 18px; font-weight: 600;">
+                Raise your first ticket
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column (Desktop Rail): Caretaker Card & Announcements -->
+    <div class="hosteler-desktop-rail" style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Caretaker Card (Mockup 1) -->
+      <div class="card" style="padding: 20px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">HOSTEL CARETAKER</span>
+        
+        {% if caretaker %}
+          <div style="display: flex; align-items: center; gap: 12px;">
+            {% user_avatar caretaker size="lg" %}
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ caretaker.full_name|default:caretaker.login_id }}
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                Caretaker (L1) • {{ user.hostel.code|default:"Hostel" }}
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 2px;">
+            {% if caretaker.phone %}
+              <a href="tel:{{ caretaker.phone }}" class="btn btn-secondary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
+                <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--primary);"></i>
+                <span>Call office</span>
+              </a>
+            {% endif %}
+            <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
+              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+              <span>Report issue</span>
+            </a>
           </div>
         {% else %}
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); text-align: center; padding: 12px 0;">
-            No announcements published yet.
+          <div style="padding: 12px; background: var(--bg-subtle); border-radius: var(--r-card-sm); font-size: 13px; color: var(--text-muted);">
+            No caretaker assigned to {{ user.hostel.code|default:"this hostel" }} yet. Tickets will be monitored by the warden office.
           </div>
         {% endif %}
       </div>
+
+      <!-- Quick Notices List -->
+      <div class="card" style="padding: 20px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">NOTICES &amp; ALERTS</span>
+          <a href="{% url 'announcements:list' %}" style="font-size: 12px; font-weight: 600; color: var(--primary); text-decoration: none;">All notices ›</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {% for ann in announcements|slice:":3" %}
+            <a href="{% url 'announcements:detail' ann.id %}" style="padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--r-card-sm); text-decoration: none; display: flex; flex-direction: column; gap: 4px; transition: background var(--t-fast) var(--ease);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">{{ ann.get_kind_display }}</span>
+                <span style="font-size: 11px; color: var(--text-muted);">{{ ann.created_at|timesince }} ago</span>
+              </div>
+              <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">{{ ann.title }}</div>
+            </a>
+          {% empty %}
+            <div style="font-size: 13px; color: var(--text-muted); padding: 8px 0;">No active notices for your hostel.</div>
+          {% endfor %}
+        </div>
+      </div>
+
     </div>
 
   </div>
 
 </div>
+
+<style>
+@media (min-width: 900px) {
+  .hosteler-desktop-split {
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+  }
+  .hosteler-mobile-hero {
+    display: none !important;
+  }
+}
+@media (max-width: 899px) {
+  .hosteler-desktop-rail {
+    margin-top: 4px;
+  }
+}
+.kpi-card-box:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover) !important;
+}
+.ticket-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover) !important;
+}
+</style>
 {% endblock %}

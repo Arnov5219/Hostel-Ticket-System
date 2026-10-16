@@ -51,9 +51,19 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Initialize Lucide icons
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
+  window.initIcons = function() {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  };
+
+  initIcons();
+  setTimeout(initIcons, 50);
+  setTimeout(initIcons, 200);
+
+  document.addEventListener('alpine:initialized', initIcons);
+  window.addEventListener('load', initIcons);
+
 
   // Global modal helper functions
   window.openModal = function(modalId) {

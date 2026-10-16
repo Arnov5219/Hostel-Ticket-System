@@ -712,7 +712,7 @@
   gap: 10px;
   animation: toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--primary);
 }
 
 .toast.success {
@@ -832,6 +832,55 @@ input:-webkit-autofill:active {
   }
 }
 
+/* Desktop vs Mobile Ticket Filter Controls */
+.desktop-filter-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 16px;
+}
+
+.mobile-filter-btn {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .desktop-filter-sidebar {
+    display: none !important;
+  }
+  .mobile-filter-btn {
+    display: inline-flex !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-trigger {
+    width: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+  .search-trigger span {
+    display: none !important;
+  }
+  .top-bar {
+    padding: 0 12px !important;
+  }
+  .breadcrumbs {
+    max-width: 140px;
+    font-size: 11px;
+  }
+}
+
+
 /* ==========================================================================
    Mobile Bottom Navigation & Bottom Sheets (Phone only: < 768px)
    ========================================================================== */
@@ -925,7 +974,7 @@ input:-webkit-autofill:active {
   }
 
   .bottom-nav-item.active {
-    color: var(--accent);
+    color: var(--primary);
   }
 
   .bottom-nav-item.active::before {
@@ -934,7 +983,7 @@ input:-webkit-autofill:active {
     top: 0;
     width: 20px;
     height: 2px;
-    background: var(--accent);
+    background: var(--primary);
     border-radius: var(--radius-full);
   }
 
@@ -948,7 +997,7 @@ input:-webkit-autofill:active {
     width: 44px;
     height: 44px;
     border-radius: var(--radius-full);
-    background: var(--accent);
+    background: var(--primary);
     color: var(--primary-text);
     display: flex;
     align-items: center;
@@ -979,15 +1028,15 @@ input:-webkit-autofill:active {
     gap: 12px;
   }
 
+  /* Plan Decision D4: Submit button in normal flow at end of form with footnote, no sticky overlay */
   .raise-submit-bar {
-    position: sticky;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    background: var(--bg-surface);
-    padding: 12px 16px;
-    margin: 16px -16px -16px;
+    position: static;
+    background: transparent;
+    padding: 16px 0 0;
+    margin: 16px 0 0;
     border-top: 1px solid var(--border);
-    z-index: 20;
-    box-shadow: 0 -2px 10px var(--border-soft);
+    box-shadow: none;
+    z-index: 1;
   }
 }
 
@@ -1134,7 +1183,7 @@ input:-webkit-autofill:active {
 
 /* Accessibility Focus Visible */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 

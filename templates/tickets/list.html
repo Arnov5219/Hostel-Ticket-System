@@ -42,8 +42,9 @@
 {% block content %}
 <div x-data="{ mobileFilterOpen: false }" style="display: flex; gap: 16px; height: 100%; align-items: flex-start; flex-wrap: wrap; width: 100%;">
 
-  <!-- Left Filter Sidebar (~220px, sticky, styled selects U-06) -->
-  <aside class="desktop-filter-sidebar" style="width: 220px; flex-shrink: 0; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-card); position: sticky; top: 16px;">
+  <!-- Left Filter Sidebar (Sticky on desktop, hidden on tablet/mobile) -->
+  <aside class="desktop-filter-sidebar">
+
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
       <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">Filter by</span>
       <a href="{% url 'tickets:list' %}" style="font-size: var(--fs-xs); color: var(--text-muted); text-decoration: none;">Clear all</a>
@@ -182,7 +183,7 @@
           <i data-lucide="sliders-horizontal" style="width: 13px; height: 13px;"></i>
           <span>Filters</span>
           {% if curr_status or curr_priority or curr_category or curr_hostel %}
-            <span class="badge" style="background-color: var(--accent); color: var(--primary-text); font-size: 10px; padding: 1px 5px; border-radius: var(--radius-full); font-weight: 700;">Active</span>
+            <span class="badge" style="background-color: var(--primary); color: var(--primary-text); font-size: 10px; padding: 1px 5px; border-radius: var(--radius-full); font-weight: 700;">Active</span>
           {% endif %}
         </button>
 
@@ -210,17 +211,17 @@
       {% if curr_search %}
         <span class="status-pill on_hold" style="font-size: 11px; padding: 2px 8px; gap: 4px;">Search: "{{ curr_search }}"</span>
       {% endif %}
-      <a href="{% url 'tickets:list' %}" style="font-size: 11px; color: var(--accent); margin-left: 6px; text-decoration: underline;">Reset</a>
+      <a href="{% url 'tickets:list' %}" style="font-size: 11px; color: var(--primary); margin-left: 6px; text-decoration: underline;">Reset</a>
     </div>
     {% endif %}
 
     <!-- Staff Bulk Actions Bar (Shown when checkboxes selected) -->
     {% if not request.user.is_hosteler %}
     <form id="bulk-action-form" action="{% url 'tickets:bulk_action' %}" method="post"
-          style="display: none; background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius-md); padding: 8px 14px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          style="display: none; background: var(--primary-soft); border: 1px solid var(--primary); border-radius: var(--radius-md); padding: 8px 14px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
       {% csrf_token %}
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span id="bulk-count" style="font-weight: 600; font-size: var(--fs-sm); color: var(--accent);">0 tickets selected</span>
+        <span id="bulk-count" style="font-weight: 600; font-size: var(--fs-sm); color: var(--primary);">0 tickets selected</span>
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">

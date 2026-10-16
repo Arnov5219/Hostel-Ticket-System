@@ -17,7 +17,7 @@ from apps.dashboard.selectors import (
     get_trend_data,
 )
 from apps.hostels.models import Hostel
-from apps.tickets.models import Ticket
+from apps.tickets.models import Status, Ticket
 
 
 @login_required
@@ -38,6 +38,22 @@ def dashboard_index(request):
 
         announcements = visible_to(user)[:4]
 
+        # Assigned caretaker for user's hostel
+        caretaker = None
+        if user.hostel:
+            caretaker = getattr(user.hostel, "responsible_staff", None)
+            if not caretaker:
+                caretaker = User.objects.filter(hostel=user.hostel, role=Role.CARETAKER, is_active=True).first()
+
+        # Counts for recent tickets filter chips
+        user_tickets = Ticket.objects.filter(reporter=user)
+        chip_counts = {
+            "all": user_tickets.count(),
+            "open": user_tickets.filter(status__in=[Status.OPEN, Status.ASSIGNED]).count(),
+            "progress": user_tickets.filter(status__in=[Status.IN_PROGRESS, Status.ON_HOLD]).count(),
+            "resolved": user_tickets.filter(status__in=[Status.RESOLVED, Status.CLOSED]).count(),
+        }
+
         return render(
             request,
             "dashboard/hosteler.html",
@@ -47,9 +63,12 @@ def dashboard_index(request):
                 "urgent_banner": urgent_banner,
                 "urgent_more_count": urgent_more_count,
                 "announcements": announcements,
+                "caretaker": caretaker,
+                "chip_counts": chip_counts,
                 "current_section": "dashboard",
             },
         )
+
 
     # Staff Dashboard
     kpis = get_kpis(user)

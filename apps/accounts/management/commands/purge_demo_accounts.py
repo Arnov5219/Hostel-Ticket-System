@@ -4,7 +4,7 @@ from django.db import transaction
 from apps.accounts.models import User
 from apps.hostels.models import Hostel
 from apps.notifications.models import Notification
-from apps.tickets.models import Ticket, TicketActivity, TicketComment
+from apps.tickets.models import Ticket
 
 
 class Command(BaseCommand):

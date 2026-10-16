@@ -32,7 +32,7 @@
       <span style="font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary);">All activity</span>
       <span style="font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums;">
         {% if unread_count > 0 %}
-          <span style="color: var(--accent); font-weight: 600;">{{ unread_count }} unread</span>
+          <span style="color: var(--primary); font-weight: 600;">{{ unread_count }} unread</span>
         {% else %}
           0 unread
         {% endif %}
@@ -41,10 +41,10 @@
 
     <div style="display: flex; flex-direction: column;">
       {% for notif in notifications %}
-        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: flex-start; gap: 14px; background-color: {% if not notif.is_read %}var(--accent-light){% else %}var(--bg-surface){% endif %}; border-left: 3px solid {% if not notif.is_read %}var(--accent){% else %}transparent{% endif %}; transition: background var(--duration-fast);">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: flex-start; gap: 14px; background-color: {% if not notif.is_read %}var(--primary-soft){% else %}var(--bg-surface){% endif %}; border-left: 3px solid {% if not notif.is_read %}var(--primary){% else %}transparent{% endif %}; transition: background var(--duration-fast);">
           
           <!-- Event Icon -->
-          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; background: {% if not notif.is_read %}var(--accent-glow){% else %}var(--bg-subtle){% endif %}; color: {% if not notif.is_read %}var(--accent){% else %}var(--text-muted){% endif %};">
+          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; background: {% if not notif.is_read %}var(--primary-soft){% else %}var(--bg-subtle){% endif %}; color: {% if not notif.is_read %}var(--primary){% else %}var(--text-muted){% endif %};">
             {% if "status" in notif.verb|lower %}
               <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
             {% elif "assign" in notif.verb|lower %}

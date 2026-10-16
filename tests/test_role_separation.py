@@ -1,8 +1,8 @@
 import pytest
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
-from apps.accounts.models import Role, ROLE_TO_LEVEL, User
+from apps.accounts.models import ROLE_TO_LEVEL, Role, User
 from apps.accounts.services.staff import deactivate_staff
 from apps.core.permissions import ADMIN_ONLY_CAPABILITIES, Capability, has_capability
 from apps.hostels.models import Hostel
@@ -312,6 +312,7 @@ class TestManageRouteSecurity:
 class TestDemoAccountsManagement:
     def test_seed_demo_accounts_creates_l0_to_l5(self, settings):
         from django.core.management import call_command
+
         from apps.accounts.models import Role, User
 
         settings.DEBUG = True
@@ -335,6 +336,7 @@ class TestDemoAccountsManagement:
 
     def test_seed_demo_accounts_guard_in_production(self, settings):
         import os
+
         from django.core.management import call_command
         from django.core.management.base import CommandError
 
@@ -351,6 +353,7 @@ class TestDemoAccountsManagement:
 
     def test_purge_demo_accounts_dry_run_and_confirm(self, settings):
         from django.core.management import call_command
+
         from apps.accounts.models import User
 
         settings.DEBUG = True

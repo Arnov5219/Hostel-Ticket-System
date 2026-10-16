@@ -75,7 +75,7 @@
                 <td>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     {% if ann.is_pinned %}
-                      <i data-lucide="pin" style="width: 12px; height: 12px; color: var(--accent); flex-shrink: 0;" title="Pinned"></i>
+                      <i data-lucide="pin" style="width: 12px; height: 12px; color: var(--primary); flex-shrink: 0;" title="Pinned"></i>
                     {% endif %}
                     <a href="{% url 'announcements:detail' ann.id %}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
                       {{ ann.title }}
@@ -91,9 +91,9 @@
                   {% if ann.severity == "URGENT" %}
                     <span class="ann-pill-urgent">Urgent</span>
                   {% elif ann.severity == "IMPORTANT" %}
-                    <span class="badge" style="background-color: var(--ann-imp-bg); color: var(--ann-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
+                    <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
                   {% else %}
-                    <span class="badge" style="background-color: var(--ann-info-bg); color: var(--ann-info-fg); font-size: 11px;">Info</span>
+                    <span class="badge" style="background-color: var(--notice-info-bg); color: var(--notice-info-fg); font-size: 11px;">Info</span>
                   {% endif %}
                 </td>
                 <td style="font-size: var(--fs-xs); color: var(--text-secondary);">

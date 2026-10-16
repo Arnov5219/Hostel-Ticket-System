@@ -5,7 +5,7 @@ from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.models import Role, User
-from apps.core.permissions import can_manage_config
+from apps.core.permissions import Capability, can_manage_config
 from apps.hostels.forms import HostelForm
 from apps.hostels.models import Hostel, Room
 from apps.hostels.services import (

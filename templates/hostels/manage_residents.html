@@ -95,7 +95,7 @@
   </div>
 
   <!-- Bulk Action Bar (Hidden by default, shown when items checked) -->
-  <form id="bulk-verify-form" method="post" action="{% url 'hostels:bulk_verify_residents' %}" style="display: none; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius-md);">
+  <form id="bulk-verify-form" method="post" action="{% url 'hostels:bulk_verify_residents' %}" style="display: none; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--primary-soft); border: 1px solid var(--primary); border-radius: var(--radius-md);">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
     <div style="font-size: var(--fs-sm); font-weight: 500; color: var(--text-primary);">

@@ -8,10 +8,6 @@
   --primary-ink:       #1D4ED8;   /* blue text on soft backgrounds (AA) */
   --primary-text:      #FFFFFF;
   --ink:               #0F172A;   /* headings, active chips, avatars, ink buttons */
-  --accent:            #2563EB;
-  --accent-hover:      #1D4ED8;
-  --accent-light:      #EAF1FF;
-  --accent-glow:       rgba(37, 99, 235, 0.14);
 
   /* Text & Typography */
   --text:              #0F172A;
@@ -23,7 +19,6 @@
 
   /* Surfaces & Backgrounds */
   --bg-app:            #F6F8FC;   /* Friendly soft blue-gray page */
-  --bg-base:           #F6F8FC;
   --bg-surface:        #FFFFFF;   /* Clean white cards */
   --bg-surface-glass:  rgba(255, 255, 255, 0.94);
   --bg-subtle:         #EEF2F8;   /* Soft filled surfaces */
@@ -61,11 +56,6 @@
   --notice-imp-bg:     #FFF7DB;  --notice-imp-bd:     #F6DE8A;  --notice-imp-fg:  #92400E;
   --notice-urg-bg:     #FFE9EC;  --notice-urg-bd:     #FBC2CB;  --notice-urg-fg:  #9F1239;
   --alert-strong-bg:   #FEE2E2;  /* Immediate action card */
-
-  /* Legacy/alias notice tokens */
-  --ann-info-bg:       #EAF1FF;  --ann-info-fg:       #1D4ED8;
-  --ann-imp-bg:        #FFF7DB;  --ann-imp-fg:        #92400E;
-  --ann-urg-bg:        #FFE9EC;  --ann-urg-fg:        #9F1239;
 
   /* KPI Label Colors (contrast-checked AA) */
   --kpi-open:          #BE123C;
@@ -176,10 +166,6 @@
   --primary-ink:       #93C5FD;
   --primary-text:      #FFFFFF;
   --ink:               #E6EAF2;
-  --accent:            #2F6FEB;
-  --accent-hover:      #4A85F5;
-  --accent-light:      rgba(47, 111, 235, 0.18);
-  --accent-glow:       rgba(47, 111, 235, 0.25);
 
   /* Text */
   --text:              #E6EAF2;
@@ -191,7 +177,6 @@
 
   /* Surfaces */
   --bg-app:            #0B1220;
-  --bg-base:           #0B1220;
   --bg-surface:        #111A2E;
   --bg-surface-glass:  rgba(17, 26, 46, 0.92);
   --bg-subtle:         #18233A;
@@ -230,9 +215,6 @@
   --notice-urg-bg:     rgba(244, 63, 94, 0.16);   --notice-urg-bd:     rgba(244, 63, 94, 0.30);   --notice-urg-fg:  #FDA4AF;
   --alert-strong-bg:   rgba(244, 63, 94, 0.20);
 
-  --ann-info-bg:       rgba(59, 130, 246, 0.16);  --ann-info-fg:       #93C5FD;
-  --ann-imp-bg:        rgba(245, 158, 11, 0.16);  --ann-imp-fg:        #FCD34D;
-  --ann-urg-bg:        rgba(244, 63, 94, 0.16);   --ann-urg-fg:        #FDA4AF;
 
   /* KPI Label Colors */
   --kpi-open:          #FDA4AF;

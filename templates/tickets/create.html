@@ -1,46 +1,98 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}Raise Ticket | Hostel Ticket System{% endblock %}
+{% block title %}Raise Ticket | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
 {% block breadcrumbs %}
-  <a href="{% url 'core:home' %}">Home</a>
-  <span class="separator">/</span>
-  <a href="{% url 'tickets:list' %}">Tickets</a>
-  <span class="separator">/</span>
-  <span class="current">Raise ticket</span>
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>
+    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary);">
+      {{ request.user.hostel.code|default:"CAMPUS" }}
+    </span>
+    <span style="color: var(--border-strong); font-size: 11px;">/</span>
+    <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">RAISE TICKET</span>
+  </div>
 {% endblock %}
 
 {% block page_title %}Raise ticket{% endblock %}
 {% block page_subtitle %}Submit a hostel maintenance request or report an issue{% endblock %}
-{% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: center; padding: 8px 0 40px 0;">
-  <div class="card" style="width: 100%; max-width: 640px; padding: 28px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
-    
-    <div style="margin-bottom: 22px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0 0 4px; color: var(--text-primary);">Report an issue or request</h2>
-      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 0;">
-        Your ticket will be automatically routed to the responsible caretaker or technician.
-      </p>
-    </div>
+<div class="raise-ticket-layout" style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; max-width: 1040px; margin: 0 auto; align-items: start;">
+
+  <!-- Form Column (Max 720px) -->
+  <div class="card" style="padding: 28px 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 22px;">
 
     {% if form.non_field_errors %}
-      <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-xs); margin-bottom: 18px;">
+      <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--border); padding: 12px 14px; border-radius: var(--r-card-sm); font-size: 13px;">
         {% for error in form.non_field_errors %}
           <div>{{ error }}</div>
         {% endfor %}
       </div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 18px;">
+    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 20px;"
+          x-data="{
+            title: '{{ form.title.value|default:''|escapejs }}',
+            desc: '{{ form.description.value|default:''|escapejs }}',
+            selectedPriority: '{{ form.priority.value|default:'MEDIUM' }}',
+            selectedCategory: '{{ form.category.value|default:'' }}',
+            differentHostel: {% if form.different_hostel.value %}true{% else %}false{% endif %},
+            hostelId: '{{ form.hostel.value|default:request.user.hostel_id|default:'' }}',
+            userHostelId: '{{ request.user.hostel_id|default:'' }}',
+            filesCount: 0
+          }">
       {% csrf_token %}
-      {{ form.priority }}
+      <input type="hidden" name="priority" id="id_priority" :value="selectedPriority">
 
-      <!-- Category Selection: 3-column radio-cards on desktop, 2-column on mobile -->
-      <div class="form-group" style="margin: 0;" x-data="{ selectedCategory: '{{ form.category.value|default:'' }}' }">
-        <label class="form-label">Category *</label>
+      <!-- 1. Your Hostel Card (Mockup 5) -->
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--r-card-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: var(--r-tile); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="building" style="width: 18px; height: 18px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">YOUR HOSTEL</div>
+              <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary);">
+                {{ request.user.hostel.name|default:"Campus Residence" }} ({{ request.user.hostel.code|default:"CAMPUS" }})
+              </div>
+            </div>
+          </div>
+          {% if request.user.is_hosteler %}
+            <button type="button" class="btn btn-secondary btn-sm" @click="differentHostel = !differentHostel" style="border-radius: var(--r-control); font-size: 12px; font-weight: 600; padding: 4px 12px;">
+              <span x-text="differentHostel ? 'Keep My Hostel' : 'Change ›'">Change ›</span>
+            </button>
+          {% endif %}
+        </div>
+
+        <div x-show="differentHostel" style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px;">
+          <label class="form-label" for="id_hostel" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Select different hostel facility:</label>
+          <select name="hostel" id="id_hostel" class="form-select" required
+                  x-model="hostelId"
+                  style="height: 44px; border-radius: var(--r-control); background: var(--bg-surface); border: 1px solid var(--border); padding: 0 12px; font-size: 13.5px;">
+            <option value="">Select hostel</option>
+            {% for h in form.fields.hostel.queryset %}
+              <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
+            {% endfor %}
+          </select>
+          <div style="font-size: 12px; color: var(--primary);">
+            ⓘ This ticket will route to the caretaker of that selected hostel.
+          </div>
+        </div>
+
+        <template x-if="!differentHostel && userHostelId !== ''">
+          <input type="hidden" name="hostel" :value="userHostelId">
+        </template>
+      </div>
+
+      <!-- 2. Category Selection: Horizontally Scrolling Chips (Mockup 5) -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Category *</label>
+          <span style="font-size: 12px; color: var(--text-muted);">Tap to select</span>
+        </div>
+        
         <select name="category" id="id_category" style="display: none;" required x-model="selectedCategory">
           <option value="">Select category</option>
           {% for cat in form.fields.category.queryset %}
@@ -48,156 +100,245 @@
           {% endfor %}
         </select>
 
-        <div class="category-radio-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+        <div class="category-chips-scroller" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch;">
           {% for cat in form.fields.category.queryset %}
-            <div class="form-radio-card"
-                 :class="{ 'active': selectedCategory == '{{ cat.id }}' }"
-                 @click="selectedCategory = '{{ cat.id }}'; document.getElementById('id_category').value = '{{ cat.id }}';">
-              <i data-lucide="{{ cat.icon|default:'tag' }}" style="width: 18px; height: 18px; color: var(--primary); flex-shrink: 0;"></i>
-              <span style="font-size: var(--fs-xs); font-weight: 500; line-height: 1.3;">{{ cat.name }}</span>
-            </div>
+            <button type="button"
+                    class="category-chip-btn"
+                    :style="selectedCategory == '{{ cat.id }}' ? 'background: var(--primary); color: var(--white); border-color: var(--primary); box-shadow: var(--shadow-sm);' : 'background: var(--bg-surface); color: var(--text-primary); border-color: var(--border);'"
+                    @click="selectedCategory = '{{ cat.id }}'; document.getElementById('id_category').value = '{{ cat.id }}';"
+                    style="border: 1px solid; height: 44px; padding: 0 14px; border-radius: var(--r-chip); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all var(--t-fast) var(--ease);">
+              <div style="width: 28px; height: 28px; border-radius: var(--r-tile); display: flex; align-items: center; justify-content: center;"
+                   :style="selectedCategory == '{{ cat.id }}' ? 'background: var(--overlay-light); color: var(--white);' : 'background: var(--primary-soft); color: var(--primary);'">
+                <i data-lucide="{{ cat.icon|default:'wrench' }}" style="width: 15px; height: 15px;"></i>
+              </div>
+              <span style="font-size: 13px; font-weight: 600;">{{ cat.name }}</span>
+            </button>
           {% endfor %}
         </div>
-        {% if form.category.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.category.errors.0 }}</span>{% endif %}
+        {% if form.category.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: 12px;">{{ form.category.errors.0 }}</span>{% endif %}
       </div>
 
-      <!-- Priority Segmented Control -->
-      <div class="form-group" style="margin: 0;">
-        <label class="form-label">Priority</label>
-        <div class="segmented-control" id="priority-segmented">
-          <button type="button" class="segmented-option" data-priority="LOW" onclick="setPriority('LOW', this)">Low (48h)</button>
-          <button type="button" class="segmented-option active" data-priority="MEDIUM" onclick="setPriority('MEDIUM', this)">Medium (24h)</button>
-          <button type="button" class="segmented-option" data-priority="HIGH" onclick="setPriority('HIGH', this)">High (8h)</button>
-          <button type="button" class="segmented-option" data-priority="URGENT" onclick="setPriority('URGENT', this)">Urgent (2h)</button>
+      <!-- 3. Summary / Title Input (Mockup 5) -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" for="{{ form.title.id_for_label }}" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Summary *</label>
+          <span style="font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums;" x-text="title.length + '/100'">0/100</span>
         </div>
-        <span class="form-help" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
-          Urgent (2h SLA) is for active safety hazards, major water leaks, or electrical hazards.
-        </span>
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="text" name="title" id="{{ form.title.id_for_label }}" maxlength="100" required
+                 x-model="title"
+                 class="form-control"
+                 placeholder="e.g. Broken study lamp switch or leaking bathroom tap"
+                 style="width: 100%; height: 50px; padding: 0 36px 0 14px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); font-size: 15px; color: var(--text-primary); outline: none; transition: all var(--t-fast) var(--ease);"
+                 onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='var(--ring)';"
+                 onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+          <button type="button" x-show="title.length > 0" @click="title = ''" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 14px;" aria-label="Clear title">✕</button>
+        </div>
+        {% if form.title.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: 12px;">{{ form.title.errors.0 }}</span>{% endif %}
       </div>
 
-      <!-- Location Section -->
-      <div class="card" style="padding: 16px; background-color: var(--bg-subtle); border: 1px solid var(--border);"
-           x-data="{
-             differentHostel: {% if form.different_hostel.value %}true{% else %}false{% endif %},
-             hostelId: '{{ form.hostel.value|default:request.user.hostel_id|default:'' }}',
-             userHostelId: '{{ request.user.hostel_id|default:'' }}',
-             toggleDifferentHostel() {
-               if (!this.differentHostel) {
-                 this.hostelId = this.userHostelId;
-               }
-             }
-           }">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
-            <i data-lucide="map-pin" style="width: 16px; height: 16px; color: var(--primary);"></i>
-            <span>Hostel</span>
-          </div>
-
-          <!-- Different hostel toggle -->
-          {% if request.user.is_hosteler %}
-          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-secondary); cursor: pointer;">
-            <input type="checkbox" name="different_hostel" id="id_different_hostel" class="form-check-input"
-                   x-model="differentHostel" @change="toggleDifferentHostel()">
-            <span>This issue is in a different hostel</span>
-          </label>
-          {% endif %}
+      <!-- 4. Urgency Level: 2x2 Radio Cards (Mockup 5) -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Urgency level</label>
+          <span style="font-size: 12px; color: var(--text-muted);">Target SLA</span>
         </div>
 
-        <!-- Helper message when different hostel is checked -->
-        <div x-show="differentHostel" style="font-size: var(--fs-xs); color: var(--primary); background-color: var(--primary-soft); padding: 6px 10px; border-radius: var(--radius-xs); margin-bottom: 12px;">
-          ⓘ Staff in that hostel will receive and resolve this ticket.
-        </div>
-
-        <!-- Hostel select -->
-        <div class="form-group" style="margin: 0;">
-          <label class="form-label" for="id_hostel">Hostel *</label>
-          <select name="hostel" id="id_hostel" class="form-select" required
-                  :disabled="!differentHostel && userHostelId !== ''"
-                  x-model="hostelId">
-            <option value="">Select hostel</option>
-            {% for h in form.fields.hostel.queryset %}
-              <option value="{{ h.id }}" {% if form.hostel.value == h.id or form.hostel.value == h.id|stringformat:'s' or not form.hostel.value and request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
-            {% endfor %}
-          </select>
-          <template x-if="!differentHostel && userHostelId !== ''">
-            <input type="hidden" name="hostel" :value="userHostelId">
-          </template>
-          {% if form.hostel.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.hostel.errors.0 }}</span>{% endif %}
-        </div>
-      </div>
-
-      <!-- Title / Summary -->
-      <div class="form-group" style="margin: 0;">
-        <label class="form-label" for="{{ form.title.id_for_label }}">Title / Summary *</label>
-        {{ form.title }}
-        {% if form.title.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.title.errors.0 }}</span>{% endif %}
-      </div>
-
-      <!-- Description -->
-      <div class="form-group" style="margin: 0;">
-        <label class="form-label" for="{{ form.description.id_for_label }}">Detailed description *</label>
-        {{ form.description }}
-        <span class="form-help" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 4px; display: block;">
-          Say exactly where the problem is (for example washroom or corridor).
-        </span>
-        {% if form.description.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: var(--fs-xs); margin-top: 4px; display: block;">{{ form.description.errors.0 }}</span>{% endif %}
-      </div>
-
-      <!-- Image Attachments (up to 3 images, 5 MB each) -->
-      <div class="form-group" style="margin: 0;" x-data="{ files: [] }">
-        <label class="form-label">Image attachments <span style="font-weight: 400; color: var(--text-muted);">(Up to 3 photos, max 5 MB each)</span></label>
-        <div style="border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 18px; text-align: center; background-color: var(--bg-subtle); transition: border-color var(--duration-fast);"
-             :style="files.length > 0 ? 'border-color: var(--primary); background-color: var(--primary-soft);' : ''">
-          <i data-lucide="image-plus" style="width: 24px; height: 24px; color: var(--text-muted); margin-bottom: 6px;"></i>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
           
-          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 6px;">
-            <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              <i data-lucide="camera" style="width: 14px; height: 14px;"></i>
-              <span>Take photo</span>
-              <input type="file" name="images" accept="image/*" capture="environment" style="display: none;"
-                     @change="files.push(...Array.from($event.target.files).map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(1) + ' MB' })))">
-            </label>
-            <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              <i data-lucide="image" style="width: 14px; height: 14px;"></i>
-              <span>Choose from gallery</span>
-              <input type="file" name="images" multiple accept="image/*" style="display: none;"
-                     @change="files.push(...Array.from($event.target.files).map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(1) + ' MB' })))">
-            </label>
+          <!-- Low -->
+          <div class="urgency-card"
+               :style="selectedPriority === 'LOW' ? 'border: 2px solid var(--primary); background: var(--primary-soft);' : 'border: 1px solid var(--border); background: var(--bg-surface);'"
+               @click="selectedPriority = 'LOW'"
+               style="padding: 14px; border-radius: var(--r-card-sm); cursor: pointer; display: flex; flex-direction: column; gap: 4px; position: relative; transition: all var(--t-fast) var(--ease);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="priority-marker" style="font-size: 12px; font-weight: 700; color: var(--prio-low);">
+                <span class="priority-marker__dot" style="background: var(--prio-low);"></span> Low
+              </span>
+              <i data-lucide="check" x-show="selectedPriority === 'LOW'" style="width: 16px; height: 16px; color: var(--primary);"></i>
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted);">Standard 48h turnaround</span>
           </div>
 
-          <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px;">PNG, JPG, WEBP supported</div>
-          <template x-if="files.length > 0">
-            <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px;">
-              <template x-for="(file, index) in files" :key="index">
-                <span class="badge" style="background: var(--bg-surface); border: 1px solid var(--border); padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
-                  <span x-text="file.name"></span>
-                  <button type="button" @click="files.splice(index, 1)" style="border: none; background: transparent; cursor: pointer; color: var(--prio-urgent); font-size: 12px; padding: 0;">✕</button>
-                </span>
-              </template>
+          <!-- Medium -->
+          <div class="urgency-card"
+               :style="selectedPriority === 'MEDIUM' ? 'border: 2px solid var(--primary); background: var(--primary-soft);' : 'border: 1px solid var(--border); background: var(--bg-surface);'"
+               @click="selectedPriority = 'MEDIUM'"
+               style="padding: 14px; border-radius: var(--r-card-sm); cursor: pointer; display: flex; flex-direction: column; gap: 4px; position: relative; transition: all var(--t-fast) var(--ease);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="priority-marker" style="font-size: 12px; font-weight: 700; color: var(--prio-medium);">
+                <span class="priority-marker__dot" style="background: var(--prio-medium);"></span> Medium
+              </span>
+              <i data-lucide="check" x-show="selectedPriority === 'MEDIUM'" style="width: 16px; height: 16px; color: var(--primary);"></i>
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted);">Standard 24h turnaround</span>
+          </div>
+
+          <!-- High -->
+          <div class="urgency-card"
+               :style="selectedPriority === 'HIGH' ? 'border: 2px solid var(--primary); background: var(--primary-soft);' : 'border: 1px solid var(--border); background: var(--bg-surface);'"
+               @click="selectedPriority = 'HIGH'"
+               style="padding: 14px; border-radius: var(--r-card-sm); cursor: pointer; display: flex; flex-direction: column; gap: 4px; position: relative; transition: all var(--t-fast) var(--ease);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="priority-marker" style="font-size: 12px; font-weight: 700; color: var(--prio-high);">
+                <span class="priority-marker__dot" style="background: var(--prio-high);"></span> High
+              </span>
+              <i data-lucide="check" x-show="selectedPriority === 'HIGH'" style="width: 16px; height: 16px; color: var(--primary);"></i>
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted);">Urgent 8h turnaround</span>
+          </div>
+
+          <!-- Urgent -->
+          <div class="urgency-card"
+               :style="selectedPriority === 'URGENT' ? 'border: 2px solid var(--st-open-dot); background: var(--st-open-bg);' : 'border: 1px solid var(--border); background: var(--bg-surface);'"
+               @click="selectedPriority = 'URGENT'"
+               style="padding: 14px; border-radius: var(--r-card-sm); cursor: pointer; display: flex; flex-direction: column; gap: 4px; position: relative; transition: all var(--t-fast) var(--ease);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="priority-marker" style="font-size: 12px; font-weight: 700; color: var(--st-open-fg);">
+                <span class="priority-marker__dot" style="background: var(--st-open-dot);"></span> Urgent
+              </span>
+              <i data-lucide="check" x-show="selectedPriority === 'URGENT'" style="width: 16px; height: 16px; color: var(--st-open-fg);"></i>
+            </div>
+            <span style="font-size: 12px; color: var(--st-open-fg);">Fast-track 2h resolution</span>
+          </div>
+
+        </div>
+
+        <div x-show="selectedPriority === 'URGENT'" style="font-size: 12px; color: var(--st-open-fg); background: var(--st-open-bg); padding: 8px 12px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
+          ⚠️ For sparking wires, gas leak, or personal danger, contact the emergency hotline immediately.
+        </div>
+      </div>
+
+      <!-- 5. Detailed Description & Tip Callout (Mockup 5) -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" for="{{ form.description.id_for_label }}" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Detailed description *</label>
+          <span style="font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums;" x-text="desc.length + '/500'">0/500</span>
+        </div>
+        
+        <textarea name="description" id="{{ form.description.id_for_label }}" rows="4" required
+                  x-model="desc" maxlength="500"
+                  class="form-textarea"
+                  placeholder="Describe the issue in detail..."
+                  style="width: 100%; padding: 12px 14px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); font-size: 14px; color: var(--text-primary); outline: none; line-height: 1.5; resize: vertical; transition: all var(--t-fast) var(--ease);"
+                  onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='var(--ring)';"
+                  onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';"></textarea>
+        
+        <!-- Tip Callout Inside Description Section -->
+        <div style="background: var(--primary-soft); border-radius: var(--r-control); padding: 10px 14px; display: flex; align-items: flex-start; gap: 8px; margin-top: 4px;">
+          <i data-lucide="lightbulb" style="width: 16px; height: 16px; color: var(--primary); flex-shrink: 0; margin-top: 2px;"></i>
+          <span style="font-size: 12.5px; color: var(--primary-ink); line-height: 1.4;">
+            <strong>Helpful tip:</strong> Say exactly where the problem is (e.g. 2nd floor east washroom), any safety concerns, and when a technician may inspect.
+          </span>
+        </div>
+        {% if form.description.errors %}<span class="form-error" style="color: var(--st-open-fg); font-size: 12px;">{{ form.description.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- 6. Visual Proof & Attachments (Mockup 5 Tiles) -->
+      <div style="display: flex; flex-direction: column; gap: 8px;" x-data="{ files: [] }">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Visual proof &amp; photos</label>
+          <span style="font-size: 12px; color: var(--text-muted);" x-text="files.length + ' of 3 added'">0 of 3 added</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <!-- Existing Selected Thumbnails -->
+          <template x-for="(file, index) in files" :key="index">
+            <div style="width: 104px; height: 104px; border-radius: var(--r-card-sm); background: var(--bg-subtle); border: 1px solid var(--border); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px;">
+              <div style="font-size: 10px; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; background: var(--bg-surface); padding: 2px 4px; border-radius: 4px;" x-text="file.name"></div>
+              <button type="button" @click="files.splice(index, 1)" style="position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--overlay-dark); color: var(--white); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;">✕</button>
             </div>
           </template>
+
+          <!-- Add Photo Tile -->
+          <div style="width: 104px; height: 104px; border-radius: var(--r-card-sm); border: 2px dashed var(--border-strong); background: var(--bg-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;"
+               x-show="files.length < 3">
+            <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="camera" style="width: 16px; height: 16px;"></i>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: var(--primary); margin-top: 4px;">Add photo</span>
+              <input type="file" name="images" multiple accept="image/*" capture="environment" style="display: none;"
+                     @change="files.push(...Array.from($event.target.files).slice(0, 3 - files.length).map(f => ({ name: f.name })))">
+            </label>
+          </div>
         </div>
       </div>
 
-      <!-- Sticky Submit Bar on Mobile -->
-      <div class="raise-submit-bar" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border);">
-        <a href="{% url 'tickets:list' %}" class="btn btn-secondary">Cancel</a>
-        <button type="submit" class="btn btn-primary" style="padding: 8px 24px;">
-          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-          <span>Raise ticket</span>
+      <!-- Submit Button & Footnote -->
+      <div class="raise-submit-bar" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; height: 50px; font-weight: 600; font-size: 15px; border-radius: var(--r-control); background: var(--primary); color: var(--white); border: none; box-shadow: var(--shadow-primary); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+          <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+          <span>Submit ticket</span>
         </button>
+        <span style="font-size: 12px; color: var(--text-muted); text-align: center;">
+          It will go to your hostel's caretaker for triage and resolution.
+        </span>
       </div>
+
     </form>
 
   </div>
+
+  <!-- Right Rail: What Happens Next (Desktop) -->
+  <div class="raise-ticket-rail" style="display: flex; flex-direction: column; gap: 20px;">
+    
+    <div class="card" style="padding: 22px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+      <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">WHAT HAPPENS NEXT</span>
+      
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">1</div>
+          <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+            <strong style="color: var(--text-primary); display: block;">Assigned to Caretaker</strong>
+            Your hostel's caretaker receives the ticket immediately in their dispatch queue.
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">2</div>
+          <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+            <strong style="color: var(--text-primary); display: block;">Automated SLA Tracking</strong>
+            If unresolved within the priority turnaround window, the ticket automatically escalates to Warden.
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">3</div>
+          <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+            <strong style="color: var(--text-primary); display: block;">You Confirm Closure</strong>
+            Once marked resolved, you verify the fix and confirm closure or reopen if needed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emergency Contacts Card -->
+    <div class="card" style="padding: 22px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 12px;">
+      <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">CAMPUS HOTLINES</span>
+      {% if help_hotline %}
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+          <span style="color: var(--text-secondary);">Maintenance Helpline</span>
+          <a href="tel:{{ help_hotline }}" style="font-weight: 700; color: var(--primary); text-decoration: none;">{{ help_hotline }}</a>
+        </div>
+      {% endif %}
+      {% if help_warden_desk %}
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+          <span style="color: var(--text-secondary);">Warden Office</span>
+          <a href="tel:{{ help_warden_desk }}" style="font-weight: 700; color: var(--primary); text-decoration: none;">{{ help_warden_desk }}</a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
 </div>
 
-<script>
-function setPriority(val, btn) {
-  const input = document.getElementById('id_priority');
-  if (input) input.value = val;
-  document.querySelectorAll('#priority-segmented .segmented-option').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+<style>
+@media (min-width: 900px) {
+  .raise-ticket-layout {
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+  }
 }
-</script>
+</style>
 {% endblock %}

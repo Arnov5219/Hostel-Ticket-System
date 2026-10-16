@@ -43,7 +43,7 @@
     <div style="display: flex; flex-direction: column; gap: 12px; border-left: 2px solid var(--border); margin-left: 12px; padding-left: 18px; padding-top: 4px; padding-bottom: 4px;">
       {% for act in activities %}
         <div style="position: relative;">
-          <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: var(--accent); border: 2px solid var(--bg-surface);"></div>
+          <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: var(--primary); border: 2px solid var(--bg-surface);"></div>
           <div style="display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); flex-wrap: wrap;">
             <span style="font-weight: 600; color: var(--text-primary);">{{ act.actor.full_name|default:act.actor.login_id|default:"System" }}</span>
             <span style="color: var(--text-secondary);">{{ act.get_action_display }}</span>

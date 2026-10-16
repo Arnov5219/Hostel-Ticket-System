@@ -15,7 +15,7 @@ html, body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -47,7 +47,7 @@ input, button, select, textarea {
 
 input:focus, select:focus, textarea:focus, button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent);
+  box-shadow: var(--ring);
 }
 
 /* Custom scrollbars */
