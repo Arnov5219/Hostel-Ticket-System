@@ -26,7 +26,7 @@ def test_manifest_file_exists_and_valid():
 
 @pytest.mark.django_db
 def test_mobile_bottom_nav_renders_for_hosteler(client):
-    """Hosteler bottom nav must contain Home, My tickets, Raise, News, and More."""
+    """Hosteler bottom nav must contain Home, Tickets, Raise, Notices, and Profile (Decision D1)."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     room = Room.objects.create(hostel=hostel, room_number="101", floor=1)
     hosteler = UserFactory(
@@ -43,15 +43,15 @@ def test_mobile_bottom_nav_renders_for_hosteler(client):
 
     assert "mobile-bottom-nav" in content
     assert "raise-center-btn" in content
-    assert "My Tickets" in content
+    assert "Tickets" in content
     assert "Community" not in content
-    assert "News" in content
-    assert "moreOpen" in content
+    assert "Notices" in content
+    assert "Profile" in content
 
 
 @pytest.mark.django_db
 def test_mobile_bottom_nav_renders_for_staff(client):
-    """Staff bottom nav must contain Dashboard, Tickets, Kanban, Alerts, and More."""
+    """Staff bottom nav must contain Dashboard, Tickets, Kanban, Notices, and More (Decision D2)."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     caretaker = UserFactory(role=Role.CARETAKER, hostel=hostel, password="password123")
     client.login(username=caretaker.login_id, password="password123")
@@ -63,7 +63,7 @@ def test_mobile_bottom_nav_renders_for_staff(client):
     assert "mobile-bottom-nav" in content
     assert "Dashboard" in content
     assert "Kanban" in content
-    assert "Alerts" in content
+    assert "Notices" in content
     assert "moreOpen" in content
 
 

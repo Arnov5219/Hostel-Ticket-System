@@ -315,3 +315,18 @@ function setTheme(theme) {
 
 window.setTheme = setTheme;
 window.getThemePreference = getThemePreference;
+
+// Hide bottom navigation on mobile when form inputs are focused to prevent keyboard overlap (Section 5.2)
+document.addEventListener('focusin', function(e) {
+  if (window.innerWidth < 768 && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+    const nav = document.querySelector('.mobile-bottom-nav');
+    if (nav) nav.style.display = 'none';
+  }
+});
+
+document.addEventListener('focusout', function(e) {
+  if (window.innerWidth < 768 && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+    const nav = document.querySelector('.mobile-bottom-nav');
+    if (nav) nav.style.display = '';
+  }
+});

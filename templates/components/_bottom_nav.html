@@ -11,16 +11,18 @@
             <span class="nav-label">{{ item.label }}</span>
           </button>
         {% elif item.is_action %}
-          <a href="{{ item.url }}" class="bottom-nav-item raise-center-btn" aria-label="{{ item.label }}">
+          <a href="{{ item.url }}" class="bottom-nav-item raise-center-btn {% if current_section == item.section %}active{% endif %}" aria-label="{{ item.label }}">
             <div class="raise-btn-circle">
               <i data-lucide="{{ item.icon }}" style="width: 22px; height: 22px;"></i>
             </div>
             <span class="nav-label" style="font-weight: 600;">{{ item.label }}</span>
           </a>
         {% else %}
-          <a href="{{ item.url }}" class="bottom-nav-item {% if current_section == item.section or is_kanban and item.key == 'kanban' or not is_kanban and item.key == 'tickets' and current_section == 'tickets' %}active{% endif %}" style="position: relative;">
+          <a href="{{ item.url }}" class="bottom-nav-item {% if current_section == item.section and not is_kanban or is_kanban and item.key == 'kanban' %}active{% endif %}" style="position: relative;">
             <i data-lucide="{{ item.icon }}" class="nav-icon"></i>
-            {% if item.badge_key and unread_notifications_count > 0 %}
+            {% if item.key == 'tickets' and active_tickets_count > 0 %}
+              <span class="badge" style="position: absolute; top: 3px; right: 16px; font-size: 10px; font-weight: 700; padding: 1px 5px; background: var(--primary); color: var(--white); border-radius: var(--radius-full);">{{ active_tickets_count }}</span>
+            {% elif item.badge_key and unread_notifications_count > 0 %}
               <span class="notification-badge" style="position: absolute; top: 4px; right: 18px; width: 7px; height: 7px;"></span>
             {% endif %}
             <span class="nav-label">{{ item.label }}</span>

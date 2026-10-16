@@ -525,7 +525,8 @@
   color: var(--text-muted);
   font-size: var(--fs-sm);
   cursor: pointer;
-  width: 220px;
+  min-width: 260px;
+  white-space: nowrap;
   transition: border-color var(--duration-fast) var(--ease-standard),
               background-color var(--duration-fast) var(--ease-standard);
 }
@@ -884,13 +885,83 @@ input:-webkit-autofill:active {
 /* ==========================================================================
    Mobile Bottom Navigation & Bottom Sheets (Phone only: < 768px)
    ========================================================================== */
-.mobile-bottom-nav {
+.mobile-bottom-nav,
+.mobile-brand-title,
+.mobile-detail-nav,
+.mobile-header-actions {
   display: none;
 }
 
 @media (max-width: 767px) {
   .app-rail,
   .app-sidebar {
+    display: none !important;
+  }
+
+  /* Section 5.1: Phone Single Unified Header Block (56-64px) */
+  .top-bar {
+    display: none !important;
+  }
+
+  .page-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 16px !important;
+    background: var(--bg-surface-glass) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-bottom: 1px solid var(--border) !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+  }
+
+  .page-header-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex-direction: row !important;
+  }
+
+  .page-title {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-brand-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .mobile-brand-name {
+    font-weight: 700 !important;
+    font-size: 17px !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text-primary) !important;
+  }
+
+  .mobile-detail-nav {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .mobile-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .desktop-page-actions,
+  .hide-on-mobile {
     display: none !important;
   }
 
@@ -1008,6 +1079,10 @@ input:-webkit-autofill:active {
 
   .raise-btn-circle:active {
     transform: scale(0.94);
+  }
+
+  .bottom-nav-item.raise-center-btn.active .raise-btn-circle {
+    box-shadow: var(--shadow-md), var(--ring);
   }
 
   /* Toasts above bottom navigation bar */

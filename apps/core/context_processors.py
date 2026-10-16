@@ -27,6 +27,13 @@ def global_ui_context(request):
         ).count()
         context["unread_notifications_count"] = unread_count
         context["navigation"] = nav_for(request.user)
+        if getattr(request.user, "is_hosteler", False):
+            from apps.tickets.models import Status, Ticket
+
+            context["active_tickets_count"] = Ticket.objects.filter(
+                reporter=request.user,
+                status__in=[Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD],
+            ).count()
         if hasattr(request, "session"):
             context["undo_delete"] = request.session.pop("undo_delete", None)
     return context

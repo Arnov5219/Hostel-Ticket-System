@@ -93,11 +93,11 @@ def nav_for(user) -> dict:
             )
         )
 
-    # 4. Announcements
+    # 4. Notices (Announcements, Decision D3)
     sidebar_items.append(
         NavItem(
             key="announcements",
-            label="Announcements",
+            label="Notices",
             icon="megaphone",
             url_name="announcements:list",
             section="announcements",
@@ -170,34 +170,31 @@ def nav_for(user) -> dict:
         )
     )
 
-    # Mobile Bottom Bar Items
+    # Mobile Bottom Bar Items (Decisions D1 & D2)
     mobile_bar_items = []
     mobile_more_items = []
 
     if is_hosteler:
-        # Hosteler = Home · My tickets · ＋ Raise · News · More
+        # Decision D1: Home · Tickets · ＋ Raise · Notices · Profile
         mobile_bar_items = [
             NavItem(key="home", label="Home", icon="home", url_name="core:home", section="dashboard"),
-            NavItem(key="tickets", label="My Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
+            NavItem(key="tickets", label="Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
             NavItem(key="raise", label="Raise", icon="plus", url_name="tickets:create", section="tickets_create", is_action=True),
-            NavItem(key="news", label="News", icon="megaphone", url_name="announcements:list", section="announcements"),
-            NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
+            NavItem(key="notices", label="Notices", icon="megaphone", url_name="announcements:list", section="announcements"),
+            NavItem(key="profile", label="Profile", icon="user", url_name="accounts:profile", section="profile"),
         ]
-        mobile_more_items = [
-            NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
-            NavItem(key="profile", label="Profile & Residence", icon="user", url_name="accounts:profile", section="profile"),
-        ]
+        mobile_more_items = []
     elif is_admin:
-        # Admin = Dashboard · Tickets · Staff · Alerts · More
+        # Decision D2: Dashboard · Tickets · Staff · Notices · More
         mobile_bar_items = [
             NavItem(key="dashboard", label="Dashboard", icon="layout-dashboard", url_name="core:home", section="dashboard"),
             NavItem(key="tickets", label="Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
             NavItem(key="staff", label="Staff", icon="users", url_name="hostels:manage_staff", section="manage_staff"),
-            NavItem(key="alerts", label="Alerts", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
+            NavItem(key="notices", label="Notices", icon="megaphone", url_name="announcements:list", section="announcements"),
             NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
         ]
         mobile_more_items = [
-            NavItem(key="announcements", label="Announcements", icon="megaphone", url_name="announcements:list", section="announcements"),
+            NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"),
             NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"),
             NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"),
@@ -205,16 +202,16 @@ def nav_for(user) -> dict:
             NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
         ]
     else:
-        # Operational Staff (Caretaker, Warden, Chief Warden, Dean) = Dashboard · Tickets · Kanban · Alerts · More
+        # Decision D2: Dashboard · Tickets · Kanban · Notices · More
         mobile_bar_items = [
             NavItem(key="dashboard", label="Dashboard", icon="layout-dashboard", url_name="core:home", section="dashboard"),
             NavItem(key="tickets", label="Tickets", icon="ticket", url_name="tickets:list", section="tickets"),
             NavItem(key="kanban", label="Kanban", icon="kanban", url_name="tickets:kanban", section="kanban"),
-            NavItem(key="alerts", label="Alerts", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
+            NavItem(key="notices", label="Notices", icon="megaphone", url_name="announcements:list", section="announcements"),
             NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
         ]
         mobile_more_items = [
-            NavItem(key="announcements", label="Announcements", icon="megaphone", url_name="announcements:list", section="announcements"),
+            NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
         ]
 
