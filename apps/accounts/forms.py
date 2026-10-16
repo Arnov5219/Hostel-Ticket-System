@@ -64,6 +64,51 @@ class ProfileUpdateForm(forms.ModelForm):
         }
 
 
+class StyledPasswordChangeForm(forms.Form):
+    old_password = forms.CharField(
+        label="Current password",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+    )
+    new_password1 = forms.CharField(
+        label="New password",
+        help_text="At least 8 characters, not too common",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+    )
+    new_password2 = forms.CharField(
+        label="Confirm new password",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get("old_password")
+        if not self.user.check_password(old_password):
+            raise forms.ValidationError("Your old password was entered incorrectly. Please enter it again.")
+        return old_password
+
+    def clean(self):
+        from django.contrib.auth.password_validation import validate_password
+
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get("new_password1")
+        p2 = cleaned_data.get("new_password2")
+        if p1 and p2:
+            if p1 != p2:
+                self.add_error("new_password2", "The two password fields didn't match.")
+            else:
+                validate_password(p1, self.user)
+        return cleaned_data
+
+    def save(self, commit=True):
+        self.user.set_password(self.cleaned_data["new_password1"])
+        if commit:
+            self.user.save()
+        return self.user
+
+
 class ResidenceForm(forms.Form):
     hostel = forms.ModelChoiceField(
         queryset=Hostel.objects.filter(is_active=True),

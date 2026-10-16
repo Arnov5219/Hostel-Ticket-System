@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
@@ -14,6 +13,7 @@ from apps.accounts.forms import (
     LoginForm,
     ProfileUpdateForm,
     ResidenceForm,
+    StyledPasswordChangeForm,
 )
 from apps.accounts.services import (
     generate_registration_token,
@@ -101,7 +101,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     profile_form = ProfileUpdateForm(instance=request.user)
-    password_form = PasswordChangeForm(request.user)
+    password_form = StyledPasswordChangeForm(request.user)
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -112,7 +112,7 @@ def profile_view(request):
                 messages.success(request, "Profile updated successfully.")
                 return redirect("accounts:profile")
         elif action == "change_password":
-            password_form = PasswordChangeForm(request.user, request.POST)
+            password_form = StyledPasswordChangeForm(request.user, request.POST)
             if password_form.is_valid():
                 user = password_form.save()
                 update_session_auth_hash(request, user)

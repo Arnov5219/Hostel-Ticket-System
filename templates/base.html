@@ -148,7 +148,7 @@
 
         <div class="page-header-actions">
           {% block page_actions %}
-            {% if request.user.is_authenticated and not request.user.is_staff_member %}
+            {% if request.user.is_authenticated and not request.user.is_staff_member and request.resolver_match.url_name != 'create' %}
               <a href="{% url 'tickets:create' %}" class="btn btn-primary">
                 <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
                 <span>Raise Ticket</span>

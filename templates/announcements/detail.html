@@ -41,7 +41,7 @@
           {{ announcement.get_kind_display }}
         </span>
         {% if announcement.severity == "URGENT" %}
-          <span class="ann-pill-urgent">Urgent Alert</span>
+          <span class="badge" style="background-color: var(--notice-urg-bg); color: var(--notice-urg-fg); font-weight: 700;">Urgent Alert</span>
         {% elif announcement.severity == "IMPORTANT" %}
           <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700;">Important</span>
         {% else %}

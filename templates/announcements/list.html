@@ -92,7 +92,7 @@
               </span>
             {% endif %}
             {% if ann.severity == "URGENT" %}
-              <span class="ann-pill-urgent">Urgent</span>
+              <span class="badge" style="background-color: var(--notice-urg-bg); color: var(--notice-urg-fg); font-weight: 700; font-size: 11px;">Urgent</span>
             {% elif ann.severity == "IMPORTANT" %}
               <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
             {% endif %}
