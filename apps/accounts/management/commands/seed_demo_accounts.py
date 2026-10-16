@@ -21,16 +21,18 @@ class Command(BaseCommand):
 
         self.stdout.write("Seeding standardized L0..L5 demo accounts...")
 
-        # 2. Ensure base hostel and room exist for demo assignment
-        hostel, _ = Hostel.objects.get_or_create(
-            code="MH",
-            defaults={
-                "name": "Mandakini Hostel",
-                "gender_type": GenderType.BOYS,
-                "address": "Campus Hall of Residence, North Wing",
-                "is_active": True,
-            },
-        )
+        # 2. Ensure base hostel and room exist for demo assignment (BH-1 consistent with Section 6)
+        hostel = Hostel.objects.filter(code="BH-1").first()
+        if not hostel:
+            hostel, _ = Hostel.objects.get_or_create(
+                code="BH-1",
+                defaults={
+                    "name": "Bhabha Bhavan",
+                    "gender_type": GenderType.BOYS,
+                    "address": "Campus Hall of Residence, North Wing",
+                    "is_active": True,
+                },
+            )
         if not hostel.is_active:
             hostel.is_active = True
             hostel.save(update_fields=["is_active"])
@@ -48,12 +50,13 @@ class Command(BaseCommand):
             room_101.is_active = True
             room_101.save(update_fields=["is_active"])
 
-        # 3. L0..L5 Specification Matrix (Section 4.1)
+        # 3. L0..L5 Specification Matrix (Section 6 & 4.1)
         demo_accounts = [
             {
                 "login_id": "L0",
-                "full_name": "Aarav Sharma (Demo)",
-                "email": "l0.hosteler@demo.local",
+                "full_name": "Demo Hosteler",
+                "email": "l0@demo.local",
+                "phone": "9876543210",
                 "role": Role.HOSTELER,
                 "escalation_level": None,
                 "hostel": hostel,
@@ -64,8 +67,9 @@ class Command(BaseCommand):
             },
             {
                 "login_id": "L1",
-                "full_name": "Mukesh Caretaker (Demo)",
-                "email": "l1.caretaker@demo.local",
+                "full_name": "Demo Caretaker",
+                "email": "l1@demo.local",
+                "phone": "9876543211",
                 "role": Role.CARETAKER,
                 "escalation_level": 1,
                 "hostel": hostel,
@@ -76,8 +80,9 @@ class Command(BaseCommand):
             },
             {
                 "login_id": "L2",
-                "full_name": "Dr. Ramesh Warden (Demo)",
-                "email": "l2.warden@demo.local",
+                "full_name": "Demo Warden",
+                "email": "l2@demo.local",
+                "phone": "9876543212",
                 "role": Role.WARDEN,
                 "escalation_level": 2,
                 "hostel": hostel,
@@ -88,8 +93,9 @@ class Command(BaseCommand):
             },
             {
                 "login_id": "L3",
-                "full_name": "Prof. Sunita Chief Warden (Demo)",
-                "email": "l3.chiefwarden@demo.local",
+                "full_name": "Demo Chief Warden",
+                "email": "l3@demo.local",
+                "phone": "9876543213",
                 "role": Role.CHIEF_WARDEN,
                 "escalation_level": 3,
                 "hostel": None,
@@ -100,8 +106,9 @@ class Command(BaseCommand):
             },
             {
                 "login_id": "L4",
-                "full_name": "Dr. K. V. Dean (Demo)",
-                "email": "l4.dean@demo.local",
+                "full_name": "Demo Dean",
+                "email": "l4@demo.local",
+                "phone": "9876543214",
                 "role": Role.DEAN,
                 "escalation_level": 4,
                 "hostel": None,
@@ -112,8 +119,9 @@ class Command(BaseCommand):
             },
             {
                 "login_id": "L5",
-                "full_name": "System Administrator (Demo)",
-                "email": "l5.admin@demo.local",
+                "full_name": "Demo Admin",
+                "email": "l5@demo.local",
+                "phone": "9876543215",
                 "role": Role.ADMIN,
                 "escalation_level": None,
                 "hostel": None,
@@ -132,6 +140,7 @@ class Command(BaseCommand):
                 defaults={
                     "full_name": account["full_name"],
                     "email": account["email"],
+                    "phone": account.get("phone", ""),
                     "role": account["role"],
                     "escalation_level": account["escalation_level"],
                     "hostel": account["hostel"],
@@ -149,6 +158,7 @@ class Command(BaseCommand):
             if not created:
                 user.full_name = account["full_name"]
                 user.email = account["email"]
+                user.phone = account.get("phone", "")
                 user.role = account["role"]
                 user.escalation_level = account["escalation_level"]
                 user.hostel = account["hostel"]
