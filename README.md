@@ -73,26 +73,37 @@ A production-grade, enterprise-dense web application for campus hostel ticket, m
 
 ---
 
-## 👥 Demo User Credentials
+## 👥 Standardized Demo User Credentials (L0 to L5)
 
-The seed command creates sample users across all system roles. All passwords for demo accounts are set to `pass1234` (except admin: `admin123`):
+The application features standardized **L0 to L5** demo accounts, accessible with one-click quick-fill on the login page or seeded via `python manage.py seed_demo_data`. All demo accounts share the universal password: **`me1234`**
 
-| Role | Login ID | Password | Scope | Escalation Level |
-|---|---|---|---|---|
-| **Admin** | `admin` | `admin123` | Campus-wide & Config | Level 4 |
-| **Chief Warden** | `chief_warden` | `pass1234` | All Hostels Oversight | Level 3 |
-| **Warden (BH-A)** | `warden_bha` | `pass1234` | Boys Hostel A | Level 2 |
-| **Warden (GH-B)** | `warden_ghb` | `pass1234` | Girls Hostel B | Level 2 |
-| **Caretaker (BH-A)** | `caretaker_bha1` | `pass1234` | Boys Hostel A Maintenance | Level 1 |
-| **Caretaker (BH-A)** | `caretaker_bha2` | `pass1234` | Boys Hostel A Maintenance | Level 1 |
-| **Caretaker (GH-B)** | `caretaker_ghb1` | `pass1234` | Girls Hostel B Maintenance | Level 1 |
-| **Caretaker (GH-B)** | `caretaker_ghb2` | `pass1234` | Girls Hostel B Maintenance | Level 1 |
-| **Hosteler (Boys)** | `student_01` | `pass1234` | Room 1101, BH-A | N/A |
-| **Hosteler (Girls)** | `student_09` | `pass1234` | Room 1101, GH-B | N/A |
+| Level | Role | Login ID | Name | Password | Scope / Hostel | Escalation Tier |
+|:---|:---|:---|:---|:---|:---|:---|
+| **L0** | Hosteler | `L0` | Demo Hosteler | `me1234` | Boys Hostel 1 (BH-1) | Hosteler Desk |
+| **L1** | Caretaker | `L1` | Demo Caretaker | `me1234` | Boys Hostel 1 (BH-1) | Level 1 Dispatch |
+| **L2** | Warden | `L2` | Demo Warden | `me1234` | Boys Hostel 1 (BH-1) | Level 2 Escalation |
+| **L3** | Chief Warden | `L3` | Demo Chief Warden | `me1234` | All Campus Hostels | Level 3 Administrative |
+| **L4** | Dean | `L4` | Demo Dean | `me1234` | Academic & Residential Dean | Level 4 Executive |
+| **L5** | Administrator | `L5` | Demo Admin | `me1234` | Full System Configuration | Superuser Tier |
 
-> **Quick Login Tip**: The login page at `/accounts/login/` features **Quick Demo Login buttons** for one-click access as any role!
+> **Quick Login Tip**: The login screen at `/accounts/login/` features an interactive **Quick fill ▾** disclosure with direct buttons for L0 through L5 accounts.
 
 ---
+
+## 🎨 Theme Architecture & Design System
+
+- **Zero-Flash Theme Bootstrapping**: An inline controller executes immediately in `<head>` to detect the saved preference (`localStorage` and user database profile) or OS preference (`prefers-color-scheme`), applying the `data-theme` attribute and `<meta name="theme-color">` before any CSS renders.
+- **Unified Switcher Component (`components/theme_switcher.html`)**: A shared 3-option segmented control (Light, Dark, System) embedded consistently across Profile, More bottom sheet, Login, and Desktop Header.
+- **Strict Token Design System (`static/css/tokens.css`)**:
+  - Light and Dark modes both achieve WCAG AA / AAA contrast across all surface and text pairs (documented in `docs/theme-contrast.md`).
+  - Dark mode brand blue is adjusted to `#2F6FEB` (4.6:1 against white) for high legibility without neon glare.
+  - Automated tests (`tests/test_no_hardcoded_colors.py`, `tests/test_no_legacy_tokens.py`, `tests/test_no_legacy_classes.py`) continuously guard against rogue hex codes, legacy tokens, or non-standard styles.
+- **Component System (`static/css/components.css`)**:
+  - Buttons (`.btn-lg`, `.btn-soft`, `.btn-ink`, `.btn-icon`)
+  - Form Controls (`.form-checkbox`, `.form-radio`, `.form-error`)
+  - Chips & Option Cards (`.filter-chip`, `.filter-chips-row`, `.choice-chip`, `.urgency-card`, `.urgency-grid`)
+  - Sheets & Overlays (`.bottom-sheet-modal`, `.bottom-sheet-backdrop`)
+  - Sticky mobile Kanban board with bidirectional `IntersectionObserver` tab strip synchronization.
 
 ## 🚀 Quickstart & Local Setup
 
