@@ -1548,5 +1548,110 @@ body.modal-open {
   margin-bottom: 14px;
 }
 
+/* --------------------------------------------------------------------------
+   Category Selector Grid (.category-selector-grid, .category-card)
+   -------------------------------------------------------------------------- */
+.category-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 600px) {
+  .category-selector-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (min-width: 900px) {
+  .category-selector-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+}
+
+.category-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--t-fast) var(--ease),
+              background-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.category-card:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+.category-card:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid var(--primary-soft);
+  outline-offset: 2px;
+}
+
+.category-card.is-selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-ink);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.category-card__icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--t-fast) var(--ease);
+}
+
+.category-card.is-selected .category-card__icon-wrap {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.category-card__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.3;
+  word-break: break-word;
+  color: inherit;
+}
+
+.category-card__check {
+  display: none;
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.category-card.is-selected .category-card__check {
+  display: inline-block;
+}
+
 
 

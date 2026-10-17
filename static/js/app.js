@@ -101,21 +101,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.remove('modal-open');
   };
 
-  // Global ⌘K / Ctrl+K search handler
+  // Global keyboard shortcuts
   window.addEventListener('keydown', function(e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      const palette = document.getElementById('command-palette');
-      if (palette) {
-        const isHidden = palette.style.display === 'none' || palette.classList.contains('hidden');
-        if (isHidden) {
-          openModal('command-palette');
-          const input = palette.querySelector('input');
-          if (input) input.focus();
-        } else {
-          closeModal('command-palette');
-        }
-      }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
       const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {

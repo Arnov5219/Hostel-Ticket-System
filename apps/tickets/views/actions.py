@@ -2,21 +2,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 
 from apps.accounts.models import Role, User
 from apps.core.permissions import (
     Capability,
-    can_add_internal_note,
     can_reassign_or_escalate,
     can_view_ticket,
     has_capability,
 )
 from apps.notifications.models import Notification
-from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
     ActivityAction,
-    CommentScope,
     Ticket,
     TicketActivity,
 )
@@ -26,68 +23,11 @@ from apps.tickets.services.status import change_status as service_change_status
 
 @login_required
 def add_comment(request, ticket_no):
-    ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if getattr(request.user, "role", None) == Role.ADMIN:
-        raise PermissionDenied("Admin cannot reply or comment on tickets.")
-    if not can_view_ticket(request.user, ticket):
-        raise PermissionDenied("You cannot comment on this ticket.")
-
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.ticket = ticket
-            comment.author = request.user
-
-            if comment.is_internal and not can_add_internal_note(request.user):
-                comment.is_internal = False
-
-            comment.save()
-
-            note_type = "Internal Note" if comment.is_internal else "Public Comment"
-            act_note = (
-                "Added an internal staff note"
-                if comment.is_internal
-                else f"Added a comment: {comment.body[:60]}..."
-            )
-            TicketActivity.objects.create(
-                ticket=ticket,
-                actor=request.user,
-                action=ActivityAction.COMMENTED,
-                note=act_note,
-            )
-
-            recipient = ticket.assigned_to if request.user == ticket.reporter else ticket.reporter
-            if recipient and not comment.is_internal:
-                Notification.objects.create(
-                    recipient=recipient,
-                    ticket=ticket,
-                    verb="New Comment",
-                    message=f"{request.user.full_name or request.user.login_id} commented on {ticket.ticket_no}.",
-                )
-
-            if request.headers.get("HX-Request") == "true":
-                comments = ticket.comments.all()
-                if request.user.is_hosteler:
-                    comments = comments.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
-                activities = ticket.activities.all()
-                if request.user.is_hosteler:
-                    activities = activities.exclude(note__icontains="internal")
-                return render(
-                    request,
-                    "tickets/_activity.html",
-                    {
-                        "ticket": ticket,
-                        "comments": comments,
-                        "activities": activities,
-                        "can_add_note": can_add_internal_note(request.user),
-                    },
-                )
-
-            messages.success(request, f"{note_type} posted successfully.")
-            return redirect("tickets:detail", ticket_no=ticket.ticket_no)
-
-    return redirect("tickets:detail", ticket_no=ticket.ticket_no)
+    """
+    Comment submission endpoint - disabled per cleanup plan.
+    Ticket comments/discussions have been permanently removed in favor of the activity timeline.
+    """
+    raise PermissionDenied("Ticket comments have been disabled.")
 
 
 @login_required

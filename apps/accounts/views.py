@@ -176,10 +176,21 @@ def onboarding_view(request):
 @login_required
 def profile_residence_view(request):
     """
-    Allows hostelers to update their residence from the profile page.
+    Residence management view.
+    Hostelers are strictly prevented from self-assigning or changing their hostel.
+    Only authorized administrators may update hostel assignments.
     """
-    if not request.user.is_hosteler and not request.user.is_admin:
-        messages.error(request, "Only hostelers have assigned residences.")
+    if request.user.is_hosteler:
+        messages.error(
+            request,
+            "Hostel assignments are managed by administration and cannot be changed by residents.",
+        )
+        return redirect("accounts:profile")
+
+    if not request.user.is_admin:
+        messages.error(
+            request, "Only administrators have permission to manage hostel assignments."
+        )
         return redirect("accounts:profile")
 
     if request.method == "POST":
@@ -191,14 +202,12 @@ def profile_residence_view(request):
                     hostel=form.cleaned_data["hostel"],
                     changed_by=request.user,
                 )
-                messages.success(request, "Your residence was updated successfully.")
+                messages.success(request, "Residence was updated successfully.")
             except ValidationError as e:
                 messages.error(request, str(e.message if hasattr(e, "message") else e))
         else:
             messages.error(request, "Invalid residence selection. Please select a valid Hostel.")
         return redirect("accounts:profile")
-
-    return redirect("accounts:profile")
 
     return redirect("accounts:profile")
 

@@ -216,8 +216,9 @@ class TestLegacyDataRendering:
         assert "Community Impact" not in content_detail
         assert "Legacy community comment text" not in content_detail
         assert "Legacy repost note" not in content_detail
-        assert "Legitimate reporter message" in content_detail
+        assert "Legitimate reporter message" not in content_detail
         assert "Legitimate activity note" in content_detail
+        assert ticket.description in content_detail
 
         # Test Staff Kanban
         client.force_login(warden)

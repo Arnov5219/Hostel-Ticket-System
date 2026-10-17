@@ -120,6 +120,11 @@ class TicketCreateForm(forms.ModelForm):
             self.initial["priority"] = Priority.MEDIUM
 
     def clean_hostel(self):
+        # Server-side enforcement: If the user is an authenticated hosteler with an assigned hostel,
+        # always enforce their assigned hostel and ignore any forged or manipulated client value.
+        if self.user and self.user.is_authenticated and self.user.is_hosteler and self.user.hostel:
+            return self.user.hostel
+
         hostel = self.cleaned_data.get("hostel")
         if hostel and not hostel.is_active:
             raise ValidationError("Cannot create tickets for an inactive hostel.")
@@ -127,6 +132,13 @@ class TicketCreateForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+
+        # Enforce server-side rule for hostelers
+        if self.user and self.user.is_authenticated and self.user.is_hosteler and self.user.hostel:
+            cleaned_data["hostel"] = self.user.hostel
+            cleaned_data["outside_own_hostel"] = False
+            return cleaned_data
+
         hostel = cleaned_data.get("hostel")
 
         if not hostel:

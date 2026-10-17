@@ -116,26 +116,29 @@ def test_raise_ticket_and_comment_flow(client):
     assert ticket.assigned_to == caretaker
     assert ticket.status == Status.ASSIGNED
 
-    # Student posts public comment
-    client.post(
+    # Direct attempt to post comment is blocked with 403 Forbidden
+    res = client.post(
         reverse("tickets:comment", kwargs={"ticket_no": ticket.ticket_no}),
         {"body": "Any update on when this will be checked?"},
     )
-    assert ticket.comments.count() == 1
+    assert res.status_code == 403
+    assert ticket.comments.count() == 0
 
-    # Caretaker logs in and adds internal note
+    # Caretaker attempt to post comment is also blocked
     client.logout()
     client.login(username=caretaker.login_id, password="caretaker_pwd")
-    client.post(
+    res = client.post(
         reverse("tickets:comment", kwargs={"ticket_no": ticket.ticket_no}),
         {"body": "Vendor called, heating element out of stock.", "is_internal": True},
     )
-    assert ticket.comments.count() == 2
+    assert res.status_code == 403
+    assert ticket.comments.count() == 0
 
-    # Student logs back in and checks detail page - internal note must not leak!
+    # Student logs back in and checks detail page - comment form and comment tabs must be absent
     client.logout()
     client.login(username=student.login_id, password="student_pwd")
     detail_res = client.get(reverse("tickets:detail", kwargs={"ticket_no": ticket.ticket_no}))
     assert detail_res.status_code == 200
-    assert "Any update on when this will be checked?" in detail_res.content.decode()
-    assert "heating element out of stock" not in detail_res.content.decode()
+    assert "Activity Timeline" in detail_res.content.decode()
+    assert "Send reply" not in detail_res.content.decode()
+    assert "Add a response" not in detail_res.content.decode()

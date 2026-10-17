@@ -292,33 +292,11 @@
 
     </div>
 
-    <!-- 3. Activity & Discussion Stream -->
+    <!-- 3. Ticket Timeline & Audit History -->
     <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
-      <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Activity &amp; discussion</h3>
+      <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Activity Timeline</h3>
 
       {% include 'tickets/_activity.html' %}
-
-      <!-- Post Comment Form -->
-      <form method="post" action="{% url 'tickets:comment' ticket.ticket_no %}" hx-post="{% url 'tickets:comment' ticket.ticket_no %}" hx-target="#activity-container" hx-swap="outerHTML" style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px;">
-        {% csrf_token %}
-        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0;">Add a response</label>
-        {{ comment_form.body }}
-
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-          {% if can_add_note %}
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;">
-              {{ comment_form.is_internal }}
-              <span>Internal staff note (hidden from hosteler)</span>
-            </label>
-          {% else %}
-            <div></div>
-          {% endif %}
-
-          <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 18px; border-radius: var(--r-control); font-weight: 600;">
-            <span>Send reply</span>
-          </button>
-        </div>
-      </form>
     </div>
 
   </div>

@@ -106,18 +106,15 @@
   </div>
 
   <!-- 3. Residence Details Card -->
-  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;" x-data="{ editingResidence: false }">
+  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
       <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Residence details</h2>
-      {% if request.user.is_hosteler %}
-        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = !editingResidence" style="border-radius: var(--r-control); font-size: 12px; font-weight: 600; padding: 4px 12px;">
-          <i data-lucide="edit-3" style="width: 13px; height: 13px; margin-right: 4px;"></i>
-          <span x-text="editingResidence ? 'Cancel' : 'Change'">Change</span>
-        </button>
-      {% endif %}
+      <span class="badge" style="background: var(--bg-subtle); color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--r-chip); border: 1px solid var(--border);">
+        Managed by Admin
+      </span>
     </div>
 
-    <div x-show="!editingResidence" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
       <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-subtle); padding: 14px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
         <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <i data-lucide="home" style="width: 20px; height: 20px;"></i>
@@ -137,36 +134,18 @@
           {% endif %}
         </div>
       </div>
+      {% if request.user.is_hosteler %}
+        <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <span>Hostel assignment is managed by the hostel office and warden administration.</span>
+        </div>
+      {% endif %}
       {% if request.user.residence_set_at %}
-        <div style="font-size: 11px; color: var(--text-muted); padding-top: 4px;">
-          Last updated: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
+        <div style="font-size: 11px; color: var(--text-muted); padding-top: 2px;">
+          Assigned on: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
         </div>
       {% endif %}
     </div>
-
-    {% if request.user.is_hosteler %}
-    <!-- Edit Residence Form -->
-    <form x-show="editingResidence" method="post" action="{% url 'accounts:profile_residence' %}" style="display: flex; flex-direction: column; gap: 14px;">
-      {% csrf_token %}
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-        <label class="form-label" for="profile-hostel-select" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Hostel *</label>
-        <select name="hostel" id="profile-hostel-select" class="form-select" required
-                style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 14px; font-size: 14px; color: var(--text-primary);">
-          <option value="">Select hostel</option>
-          {% if residence_form %}
-            {% for h in residence_form.fields.hostel.queryset %}
-              <option value="{{ h.id }}" {% if request.user.hostel_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.code }})</option>
-            {% endfor %}
-          {% endif %}
-        </select>
-      </div>
-
-      <div style="display: flex; gap: 8px;">
-        <button type="submit" class="btn btn-primary btn-sm" style="height: 38px; border-radius: var(--r-control); padding: 0 16px; font-weight: 600;">Save residence</button>
-        <button type="button" class="btn btn-secondary btn-sm" @click="editingResidence = false" style="height: 38px; border-radius: var(--r-control); padding: 0 16px;">Cancel</button>
-      </div>
-    </form>
-    {% endif %}
   </div>
 
   <!-- 4. Appearance & Theme Card -->

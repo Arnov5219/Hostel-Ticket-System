@@ -166,6 +166,7 @@ class TestLocationValidationAndTicketForm:
         resp = client.post(reverse("tickets:create"), post_data)
         assert resp.status_code == 302
 
+        # Per UI Cleanup: Hostelers cannot change their assigned hostel;
+        # new tickets are strictly routed to the hosteler's assigned hostel (hostel1).
         ticket = Ticket.objects.get(title="Broken desk in other hostel")
-        assert ticket.hostel == h2
-        assert ticket.outside_own_hostel is True
+        assert ticket.hostel == residence_hierarchy["hostel1"]
