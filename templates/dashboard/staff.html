@@ -123,97 +123,22 @@
     </div>
   </div>
 
-  <!-- 3. Two Charts Side by Side -->
-  <div class="charts-grid-two">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title-wrap">
-          <h3 class="chart-title">Tickets by category</h3>
-          <span class="chart-subtitle">Distribution across maintenance domains</span>
-        </div>
-        <div class="chart-controls"></div>
+  <!-- 3. Category Distribution Chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title-wrap">
+        <h3 class="chart-title">Tickets by category</h3>
+        <span class="chart-subtitle">Distribution across maintenance domains</span>
       </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-category"></canvas>
-      </div>
+      <div class="chart-controls"></div>
     </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title-wrap">
-          <h3 class="chart-title">Average resolution time (hours)</h3>
-          <span class="chart-subtitle">Turnaround duration grouped by hostel</span>
-        </div>
-        <div class="chart-controls"></div>
-      </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-resolution"></canvas>
-      </div>
+    <div class="chart-canvas-wrap" style="height: 240px;">
+      <canvas id="chart-category"></canvas>
     </div>
   </div>
 
-  <!-- 4. Extra Widgets Row: Escalation breakdown, Top staff, Overdue tickets -->
+  <!-- 4. Extra Widgets Row: Overdue tickets and announcements -->
   <div class="widgets-grid">
-    
-    <!-- Widget 1: Escalations by Tier -->
-    <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
-      <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
-        <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary);">Active tickets by escalation tier</h3>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="level-chip l1">L1</span>
-            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Caretakers</span>
-          </div>
-          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L1 }}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="level-chip l2">L2</span>
-            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Hostel Wardens</span>
-          </div>
-          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L2 }}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="level-chip l3">L3</span>
-            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Chief Warden</span>
-          </div>
-          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;">{{ escalations.L3 }}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-top: 1px solid var(--border-subtle);">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="level-chip l4">L4</span>
-            <span style="font-size: var(--fs-xs); color: var(--text-secondary);">Dean / Admin</span>
-          </div>
-          <span style="font-weight: 600; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: {% if escalations.L4 > 0 %}var(--st-open-fg){% else %}inherit{% endif %};">{{ escalations.L4 }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Widget 2: Top Staff Resolvers -->
-    <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
-      <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
-        <h3 style="font-size: var(--fs-sm); font-weight: 600; margin: 0; color: var(--text-primary);">Top staff resolvers</h3>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        {% for staff in top_staff %}
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; {% if not forloop.last %}border-bottom: 1px solid var(--border-subtle);{% endif %}">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              {% user_avatar staff size="sm" %}
-              <div>
-                <div style="font-weight: 600; font-size: var(--fs-xs); color: var(--text-primary);">{{ staff.full_name|default:staff.login_id }}</div>
-                <div style="font-size: 11px; color: var(--text-muted);">{{ staff.get_role_display }}</div>
-              </div>
-            </div>
-            <span style="font-weight: 600; color: var(--st-resolved-fg); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;">{{ staff.resolved_count }} resolved</span>
-          </div>
-        {% empty %}
-          <span style="color: var(--text-muted); font-size: var(--fs-xs);">No resolution records yet.</span>
-        {% endfor %}
-      </div>
-    </div>
 
     <!-- Widget 3: Critical Overdue Tickets (Fix: white card with 3px red left edge) -->
     <div class="card" style="padding: 18px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">

@@ -26,7 +26,6 @@ function getChartThemeTokens() {
     resolvedBar: rootStyle.getPropertyValue('--st-resolved-dot').trim() || (isDark ? '#34D399' : '#10B981'),
     overdueBar: rootStyle.getPropertyValue('--prio-urgent').trim() || (isDark ? '#FF6B6B' : '#E03E3E'),
     categoryBar: rootStyle.getPropertyValue('--chart-2').trim() || (isDark ? '#5A9FE2' : '#3B82C4'),
-    resolutionBar: rootStyle.getPropertyValue('--chart-5').trim() || (isDark ? '#A292E0' : '#8573C9'),
     charts: [
       rootStyle.getPropertyValue('--chart-1').trim() || '#5B6B84',
       rootStyle.getPropertyValue('--chart-2').trim() || '#3B82C4',
@@ -41,9 +40,8 @@ function getChartThemeTokens() {
 function initDashboardCharts() {
   const trendCanvas = document.getElementById('chart-trend');
   const categoryCanvas = document.getElementById('chart-category');
-  const resolutionCanvas = document.getElementById('chart-resolution');
 
-  if (!trendCanvas && !categoryCanvas && !resolutionCanvas) {
+  if (!trendCanvas && !categoryCanvas) {
     return;
   }
 
@@ -211,70 +209,5 @@ function initDashboardCharts() {
       })
       .catch(() => {});
   }
-
-  if (resolutionCanvas) {
-    const existing = Chart.getChart(resolutionCanvas);
-    if (existing) existing.destroy();
-
-    fetch('/dashboard/api/resolution-time/')
-      .then(res => res.json())
-      .then(data => {
-        new Chart(resolutionCanvas, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                label: 'Avg Hours',
-                data: data.data,
-                backgroundColor: tokens.resolutionBar,
-                borderRadius: 4,
-                maxBarThickness: 36,
-                categoryPercentage: 0.7,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: tokens.bgSurface,
-                titleColor: tokens.textPrimary,
-                bodyColor: tokens.textSecondary,
-                borderColor: tokens.border,
-                borderWidth: 1,
-                padding: 10,
-                callbacks: {
-                  label: function (context) {
-                    return `Avg time: ${context.parsed.y}h`;
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                grid: { display: false },
-                ticks: { font: fontConfig, color: tokens.textMuted },
-              },
-              y: {
-                beginAtZero: true,
-                grid: { color: tokens.gridColor, borderDash: [4, 4] },
-                ticks: {
-                  font: fontConfig,
-                  color: tokens.textMuted,
-                  precision: 0,
-                  stepSize: 1,
-                  callback: function (val) {
-                    return Number.isInteger(val) ? val + 'h' : '';
-                  },
-                },
-              },
-            },
-          },
-        });
-      })
-      .catch(() => {});
-  }
 }
+
