@@ -194,7 +194,6 @@ def nav_for(user) -> dict:
             NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
         ]
         mobile_more_items = [
-            NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"),
             NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"),
             NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"),
@@ -211,7 +210,6 @@ def nav_for(user) -> dict:
             NavItem(key="more", label="More", icon="menu", url_name="", section="more"),
         ]
         mobile_more_items = [
-            NavItem(key="notifications", label="Notifications", icon="bell", url_name="notifications:list", section="notifications", badge_key="unread_notifications_count"),
             NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
         ]
 
