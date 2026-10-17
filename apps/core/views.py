@@ -1,4 +1,10 @@
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+
+
+def health_check(request):
+    """Lightweight health check endpoint for Android app and load balancers."""
+    return JsonResponse({"status": "ok", "app": "Hostel Ticket System"})
 
 
 def home(request):

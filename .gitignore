@@ -48,3 +48,17 @@ htmlcov/
 .ruff_cache/
 
 plan/
+
+# Node / Capacitor
+node_modules/
+package-lock.json
+
+# Android
+.gradle/
+local.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+*.apk
+*.aab

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Hostel Ticket System</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      user-select: none;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo-badge {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.35);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-top: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn {
+      display: none;
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--primary);
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      margin-top: 12px;
+    }
+    .btn:active {
+      background-color: var(--primary-hover);
+    }
+    .status-msg {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-badge">🏢</div>
+    <h1>Hostel Ticket System</h1>
+    <p id="desc">Connecting to hostel facilities desk...</p>
+    <div class="spinner" id="spinner"></div>
+    <div class="status-msg" id="status-msg"></div>
+    <button class="btn" id="retry-btn" onclick="retryConnection()">Retry Connection</button>
+  </div>
+
+  <script>
+    const serverUrl = window.__SERVER_URL__ || window.location.origin;
+    const descEl = document.getElementById('desc');
+    const spinnerEl = document.getElementById('spinner');
+    const retryBtn = document.getElementById('retry-btn');
+    const statusMsg = document.getElementById('status-msg');
+
+    function checkOnline() {
+      if (!navigator.onLine) {
+        showOfflineState('No internet connection. Please check your Wi-Fi or mobile data.');
+      } else {
+        attemptConnect();
+      }
+    }
+
+    function showOfflineState(message) {
+      spinnerEl.style.display = 'none';
+      retryBtn.style.display = 'block';
+      descEl.textContent = message;
+      statusMsg.textContent = 'Offline';
+      statusMsg.style.color = '#f87171';
+    }
+
+    function attemptConnect() {
+      spinnerEl.style.display = 'block';
+      retryBtn.style.display = 'none';
+      descEl.textContent = 'Connecting to server...';
+      statusMsg.textContent = '';
+
+      fetch(serverUrl + '/health/', { method: 'GET', cache: 'no-store' })
+        .then(res => {
+          if (res.ok || res.status < 500) {
+            window.location.href = serverUrl;
+          } else {
+            showOfflineState('Server temporarily unavailable (Status ' + res.status + ').');
+          }
+        })
+        .catch(err => {
+          // If health endpoint fails, check root
+          fetch(serverUrl, { method: 'HEAD', mode: 'no-cors' })
+            .then(() => {
+              window.location.href = serverUrl;
+            })
+            .catch(() => {
+              showOfflineState('Unable to reach Hostel Ticket server. Tap retry when connected.');
+            });
+        });
+    }
+
+    function retryConnection() {
+      checkOnline();
+    }
+
+    window.addEventListener('online', attemptConnect);
+    window.addEventListener('offline', () => showOfflineState('Connection lost. Please check your network.'));
+
+    // Initial check after brief timeout to avoid flicker if loaded locally
+    setTimeout(checkOnline, 400);
+  </script>
+</body>
+</html>

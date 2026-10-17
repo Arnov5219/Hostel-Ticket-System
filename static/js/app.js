@@ -317,3 +317,86 @@ document.addEventListener('focusout', function(e) {
     if (nav) nav.style.display = '';
   }
 });
+
+// Android Native / Capacitor Integration (Phases 3, 4, 7, 8)
+(function() {
+  function initCapacitorBridge() {
+    if (!window.Capacitor || !window.Capacitor.Plugins) return;
+
+    const { App, SplashScreen, StatusBar, Network } = window.Capacitor.Plugins;
+
+    // 1. Hide splash screen once page is ready
+    if (SplashScreen) {
+      setTimeout(function() {
+        SplashScreen.hide().catch(function() {});
+      }, 350);
+    }
+
+    // 2. Hardware Back Button Handling
+    let lastBackPressTime = 0;
+    if (App) {
+      App.addListener('backButton', function(state) {
+        // A. Priority 1: Close open modals
+        const activeModal = document.querySelector('.modal.active, .app-modal-backdrop.active, [x-show="open"]:not([style*="display: none"])');
+        if (activeModal) {
+          const closeBtn = activeModal.querySelector('.app-modal-close, [data-modal-close], button[aria-label="Close"]');
+          if (closeBtn) {
+            closeBtn.click();
+            return;
+          }
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+          return;
+        }
+
+        // B. Priority 2: Close active dropdowns / popovers
+        const activeDropdown = document.querySelector('[x-show="dropdownOpen"]:not([style*="display: none"])');
+        if (activeDropdown) {
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+          return;
+        }
+
+        // C. Priority 3: Navigate back in history if not at root
+        const pathname = window.location.pathname;
+        const isRoot = pathname === '/' || pathname === '/dashboard/' || pathname === '/accounts/login/';
+
+        if (state && state.canGoBack && !isRoot && window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+
+        // D. Priority 4: Double-tap to exit on root or no history
+        const now = Date.now();
+        if (now - lastBackPressTime < 2000) {
+          App.exitApp();
+        } else {
+          lastBackPressTime = now;
+          if (window.showToast) {
+            window.showToast('Press back again to exit', 'info');
+          }
+        }
+      });
+    }
+
+    // 3. Network Offline / Online Listener
+    if (Network) {
+      Network.addListener('networkStatusChange', function(status) {
+        if (!status.connected) {
+          if (window.showToast) {
+            window.showToast('No internet connection. Please check Wi-Fi or mobile data.', 'error');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('Back online.', 'success');
+          }
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCapacitorBridge);
+  } else {
+    initCapacitorBridge();
+  }
+})();
+
