@@ -28,7 +28,7 @@ function initKanbanTabSync() {
       const status = btn.getAttribute('data-status');
       const targetCol = document.querySelector(`.kanban-column[data-status="${status}"]`);
       if (targetCol) {
-        targetCol.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        targetCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setActiveTab(status);
       }
     });
@@ -80,7 +80,8 @@ function updateColumnCounts() {
       if (!emptyEl) {
         emptyEl = document.createElement('div');
         emptyEl.className = 'kanban-empty-col';
-        emptyEl.innerHTML = `<i data-lucide="inbox" style="width: 20px; height: 20px; opacity: 0.5; margin-bottom: 4px;"></i><span>No tickets in ${col.querySelector('.kanban-col-title')?.textContent || status}</span>`;
+        emptyEl.style.gridColumn = '1 / -1';
+        emptyEl.innerHTML = `<i data-lucide="inbox" style="width: 22px; height: 22px; opacity: 0.5; margin-bottom: 6px;"></i><div style="font-size: 13px;">No tickets currently in ${col.querySelector('.kanban-col-title')?.textContent || status}</div>`;
         container.appendChild(emptyEl);
         if (typeof lucide !== 'undefined') lucide.createIcons();
       }

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}Kanban Board | Hostel Ticket System{% endblock %}
+{% block title %}Kanban | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
@@ -25,34 +25,54 @@
 
 {% block page_actions %}
   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-    <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" title="List View">
+    <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 13px; font-weight: 500; border-radius: 8px;" title="List View">
       <i data-lucide="list" style="width: 14px; height: 14px;"></i>
       <span>List</span>
     </a>
 
-    <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" title="Refresh">
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);" title="Vertical Kanban">
+      <i data-lucide="kanban" style="width: 14px; height: 14px;"></i>
+      <span>Vertical Kanban</span>
+    </a>
+
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border);" title="Refresh board">
       <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
     </a>
   </div>
 {% endblock %}
 
 {% block content %}
-<div x-data="{ search: '' }" style="display: flex; flex-direction: column; gap: 14px; height: 100%;">
+<div x-data="{ search: '', allOpen: true }" style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
   
-  <!-- Kanban Search Filter Bar -->
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 8px 14px; box-shadow: var(--shadow-card);">
-    <div style="position: relative; max-width: 320px; width: 100%;">
-      <i data-lucide="search" style="position: absolute; left: 14px; top: 10px; width: 15px; height: 15px; color: var(--text-muted); pointer-events: none;"></i>
+  <!-- Kanban Search & Flow Header Bar matching reference image -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(13, 21, 39, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 10px 16px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); flex-wrap: wrap;">
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h2 style="font-size: 18px; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: -0.01em;">Kanban</h2>
+      <span style="display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 600; background: rgba(37, 99, 235, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+        Vertical Stack Flow
+      </span>
+    </div>
+
+    <!-- Filter Cards on board -->
+    <div style="position: relative; max-width: 360px; width: 100%; min-width: 240px;">
+      <i data-lucide="search" style="position: absolute; left: 14px; top: 10px; width: 15px; height: 15px; color: #64748b; pointer-events: none;"></i>
       <input type="text" x-model="search" placeholder="Filter cards on board..."
-             class="form-control" style="padding-left: 44px; font-size: var(--fs-xs); height: 36px; border-radius: var(--radius-md);">
+             class="form-control" style="width: 100%; height: 36px; padding: 0 14px 0 40px; font-size: 13px; border-radius: 9px; background: #070c17; border: 1px solid rgba(255, 255, 255, 0.1); color: #ffffff; outline: none;"
+             onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 2px rgba(59, 130, 246, 0.25)';"
+             onblur="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.boxShadow='none';">
     </div>
-    <div class="kanban-drag-hint" style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-      <i data-lucide="move" style="width: 13px; height: 13px;"></i>
-      <span>Drag card between columns to update status</span>
-    </div>
+
+    <!-- Right overview button -->
+    <button type="button" @click="allOpen = !allOpen; $dispatch('toggle-all-stages', allOpen);"
+            class="btn btn-ghost btn-sm"
+            style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 8px; background: transparent;">
+      <i data-lucide="layers" style="width: 14px; height: 14px; color: #60a5fa;"></i>
+      <span x-text="allOpen ? 'Collapse all stages' : '+ Vertical stage overview'">+ Vertical stage overview</span>
+    </button>
   </div>
 
-  <!-- Mobile Status Quick Jump Tab Strip (< 768px, Plan Section 5.4) -->
+  <!-- Mobile Status Quick Jump Tab Strip (< 768px) -->
   <div class="kanban-tab-strip" id="kanban-tab-strip">
     {% for col in columns %}
       <button type="button" class="kanban-tab-btn {% if forloop.first %}active{% endif %}"
@@ -63,38 +83,90 @@
     {% endfor %}
   </div>
 
-  <!-- Board Columns -->
-  <div class="kanban-board" id="kanban-board">
+  <!-- Vertically Stacked Stage Rows -->
+  <div class="kanban-board vertical-kanban-board" id="kanban-board" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
     {% for col in columns %}
-      <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
+      <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}"
+           x-data="{ isOpen: true, sortPrio: false }"
+           x-on:toggle-all-stages.window="isOpen = $event.detail">
         
-        <!-- Column Header -->
-        <div class="kanban-col-header">
-          <div class="kanban-col-title-wrap">
-            <span class="prio-dot {{ col.status|lower }}"></span>
-            <span class="kanban-col-title">{{ col.title }}</span>
-            <span class="kanban-col-count">{{ col.tickets.count }}</span>
+        <!-- Stage Header Row Bar -->
+        <div class="kanban-stage-header" style="background: rgba(13, 21, 39, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; user-select: none;">
+          
+          <!-- Left: Glowing dot, Stage Title, Count, Description -->
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            {% if col.status == 'OPEN' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 10px #3b82f6;"></span>
+            {% elif col.status == 'ASSIGNED' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #06b6d4; box-shadow: 0 0 10px #06b6d4;"></span>
+            {% elif col.status == 'IN_PROGRESS' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px #f59e0b;"></span>
+            {% elif col.status == 'ON_HOLD' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 10px #8b5cf6;"></span>
+            {% elif col.status == 'RESOLVED' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+            {% else %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: #64748b; box-shadow: 0 0 10px #64748b;"></span>
+            {% endif %}
+
+            <span style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.03em; text-transform: uppercase;">
+              {{ col.title }}
+            </span>
+
+            <span class="kanban-col-count" style="font-size: 11.5px; font-weight: 700; color: #93c5fd; background: rgba(30, 58, 138, 0.4); border: 1px solid rgba(59, 130, 246, 0.25); padding: 2px 8px; border-radius: 9999px;">
+              {{ col.tickets.count }}
+            </span>
+
+            {% if col.desc %}
+              <span style="font-size: 13px; color: #94a3b8; font-weight: 400;">
+                &bull; {{ col.desc }}
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Right: Action & Collapse Chevron -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            {% if col.status == 'OPEN' and request.user.is_admin %}
+              <a href="{% url 'tickets:create' %}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #60a5fa; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(59, 130, 246, 0.25); padding: 4px 10px; border-radius: 6px; text-decoration: none;">
+                <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+                <span>Add Ticket</span>
+              </a>
+            {% elif col.status == 'ASSIGNED' %}
+              <button type="button" @click="sortPrio = !sortPrio"
+                      style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #94a3b8; background: #070c17; border: 1px solid rgba(255, 255, 255, 0.08); padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                <i data-lucide="arrow-up-down" style="width: 12px; height: 12px; color: #60a5fa;"></i>
+                <span>Priority</span>
+              </button>
+            {% elif col.status == 'IN_PROGRESS' %}
+              <button type="button" @click="sortPrio = !sortPrio"
+                      style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #94a3b8; background: #070c17; border: 1px solid rgba(255, 255, 255, 0.08); padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                <i data-lucide="arrow-up-down" style="width: 12px; height: 12px; color: #f59e0b;"></i>
+                <span>Urgency</span>
+              </button>
+            {% endif %}
+
+            <!-- Expand / Collapse chevron -->
+            <button type="button" @click="isOpen = !isOpen"
+                    style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center;"
+                    :title="isOpen ? 'Collapse stage' : 'Expand stage'"
+                    :aria-expanded="isOpen">
+              <i data-lucide="chevron-up" x-show="isOpen" style="width: 16px; height: 16px;"></i>
+              <i data-lucide="chevron-down" x-show="!isOpen" style="width: 16px; height: 16px; display: none;"></i>
+            </button>
           </div>
         </div>
 
-        <!-- Add Ticket ghost button for Open column -->
-        {% if col.status == 'OPEN' and request.user.is_admin %}
-          <a href="{% url 'tickets:create' %}" class="kanban-add-btn">
-            <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
-            <span>Add ticket</span>
-          </a>
-        {% endif %}
-
-        <!-- Cards Container (SortableJS Target) -->
-        <div class="kanban-cards-container" data-status="{{ col.status }}">
+        <!-- Cards Container (Horizontal Grid for this Stage) -->
+        <div class="kanban-cards-container" data-status="{{ col.status }}" x-show="isOpen" style="margin-top: 10px;">
           {% for ticket in col.tickets %}
-            <div x-show="!search || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+            <div x-show="!search || $el.innerText.toLowerCase().includes(search.toLowerCase())"
+                 class="kanban-card-wrapper" data-priority="{{ ticket.priority }}">
               {% include 'tickets/_kanban_card.html' with ticket=ticket %}
             </div>
           {% empty %}
-            <div class="kanban-empty-col">
-              <i data-lucide="inbox" style="width: 20px; height: 20px; opacity: 0.5; margin-bottom: 4px;"></i>
-              <span>No tickets in {{ col.title }}</span>
+            <div class="kanban-empty-col" style="grid-column: 1 / -1; background: rgba(13, 21, 39, 0.4); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 24px; text-align: center; color: #64748b;">
+              <i data-lucide="inbox" style="width: 22px; height: 22px; opacity: 0.5; margin-bottom: 6px;"></i>
+              <div style="font-size: 13px;">No tickets currently in {{ col.title }}</div>
             </div>
           {% endfor %}
         </div>
