@@ -75,7 +75,19 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")}
+# Database configuration
+# When DATABASE_URL is provided (e.g. Supabase PostgreSQL), parse it via env.db_url.
+# If empty or unset, fall back to SQLite for local development.
+_database_url = env.str("DATABASE_URL", default="").strip()
+if _database_url:
+    DATABASES = {"default": env.db_url_config(_database_url)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

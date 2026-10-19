@@ -2,9 +2,13 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 
-# Allow hosts - include .vercel.app by default for Vercel preview/production deployments
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", ".vercel.app"])  # noqa: F405
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
+# Hosts and CSRF trusted origins for Vercel
+# Read from env if supplied; always ensure .vercel.app is included in production
+_env_allowed_hosts = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", ".vercel.app"])  # noqa: F405
+ALLOWED_HOSTS = list(dict.fromkeys(_env_allowed_hosts + [".vercel.app", "127.0.0.1", "localhost"]))
+
+_env_csrf = env.list("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_env_csrf + ["https://*.vercel.app"]))
 
 # In serverless reverse-proxy environments (like Vercel), tell Django to trust HTTPS headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -19,7 +23,22 @@ if not DATABASE_URL:
         "Please configure your Supabase PostgreSQL DATABASE_URL in the Vercel dashboard."
     )
 
-DATABASES = {"default": env.db_url("DATABASE_URL")}  # noqa: F405
+try:
+    _parsed_db = env.db_url_config(DATABASE_URL)
+except Exception as exc:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        f"Unable to parse DATABASE_URL into a valid Django database configuration: {exc}"
+    ) from exc
+
+if not _parsed_db.get("ENGINE"):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "settings.DATABASES is improperly configured. Please supply the ENGINE value. "
+        "Ensure DATABASE_URL starts with 'postgresql://' or 'postgres://'."
+    )
+
+DATABASES = {"default": _parsed_db}
 
 # Ensure secure SSL connection by default for remote PostgreSQL
 db_options = DATABASES["default"].setdefault("OPTIONS", {})
@@ -27,6 +46,7 @@ if "sslmode" not in db_options and "postgres" in DATABASES["default"].get("ENGIN
     db_options["sslmode"] = "require"
 
 # Disable persistent connections in serverless functions unless explicitly configured
+# In Vercel serverless functions with Supabase Transaction Pooler (port 6543), CONN_MAX_AGE must be 0
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=0)  # noqa: F405
 
 # Static & Media files storage handling
