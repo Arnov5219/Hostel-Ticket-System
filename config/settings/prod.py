@@ -9,10 +9,25 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F40
 # In serverless reverse-proxy environments (like Vercel), tell Django to trust HTTPS headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Database support for PostgreSQL or DATABASE_URL
-DATABASE_URL = env.str("DATABASE_URL", default="")  # noqa: F405
-if DATABASE_URL:
-    DATABASES = {"default": env.db_url("DATABASE_URL")}  # noqa: F405
+# Production Database (Supabase PostgreSQL / DATABASE_URL)
+DATABASE_URL = env.str("DATABASE_URL", default="").strip()  # noqa: F405
+if not DATABASE_URL:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "DATABASE_URL environment variable is required in production (config.settings.prod). "
+        "SQLite is not permitted in production serverless environments. "
+        "Please configure your Supabase PostgreSQL DATABASE_URL in the Vercel dashboard."
+    )
+
+DATABASES = {"default": env.db_url("DATABASE_URL")}  # noqa: F405
+
+# Ensure secure SSL connection by default for remote PostgreSQL
+db_options = DATABASES["default"].setdefault("OPTIONS", {})
+if "sslmode" not in db_options and "postgres" in DATABASES["default"].get("ENGINE", ""):
+    db_options["sslmode"] = "require"
+
+# Disable persistent connections in serverless functions unless explicitly configured
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=0)  # noqa: F405
 
 # Static & Media files storage handling
 STATIC_ROOT = BASE_DIR / "staticfiles"  # noqa: F405
