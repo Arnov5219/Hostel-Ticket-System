@@ -1,85 +1,207 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Sign In | Hostel Ticket System{% endblock %}
+{% block title %}Sign In | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
-{% block full_header %}{% endblock %}
+{% block default_theme_pref %}light{% endblock %}
 
-{% block content %}
-<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px 0;">
-  <div style="width: 100%; max-width: 420px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: 32px; display: flex; flex-direction: column; gap: 20px;">
-    
-    <!-- Logo & Title -->
-    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;">
-      <div class="rail-logo" style="width: 44px; height: 44px; font-size: var(--fs-lg); margin-bottom: 4px;">
-        H
+{% block body_layout %}
+<div class="auth-page-wrapper" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; background-color: var(--bg-app); position: relative; z-index: 1;">
+
+  <div style="width: 100%; max-width: 440px;" x-data="{ isStaff: false, showPass: false, rememberMe: false }">
+    <!-- Main Card matching Stitch reference design -->
+    <div class="card auth-card-portal" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 30px 30px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; text-align: center;">
+
+      <!-- Glowing Blue House/Portal Icon -->
+      <div style="width: 58px; height: 58px; border-radius: 17px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-primary); margin-bottom: 20px;">
+        <i data-lucide="home" style="width: 28px; height: 28px; color: var(--primary-text);" x-show="!isStaff"></i>
+        <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--primary-text); display: none;" x-show="isStaff"></i>
       </div>
-      <h1 style="font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);">Hostel Ticket System</h1>
-      <p style="font-size: var(--fs-sm); color: var(--text-muted);">Sign in with your Roll No or Employee ID</p>
-    </div>
 
-    <!-- Login Form -->
-    <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="display: flex; flex-direction: column; gap: 14px;">
-      {% csrf_token %}
+      <!-- Pill Badge -->
+      <div style="margin-bottom: 12px;">
+        <span style="display: inline-block; background: var(--primary-soft); border: 1px solid var(--border); color: var(--primary-ink); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 14px; border-radius: var(--radius-full);"
+              x-text="isStaff ? 'CAMPUS STAFF & WARDEN PORTAL' : 'CAMPUS RESIDENT PORTAL'">
+          CAMPUS RESIDENT PORTAL
+        </span>
+      </div>
 
-      {% if form.non_field_errors %}
-        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs);">
-          {% for error in form.non_field_errors %}
-            <div>{{ error }}</div>
-          {% endfor %}
+      <!-- Title & Subtitle -->
+      <h1 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; letter-spacing: -0.02em;"
+          x-text="isStaff ? 'Staff & Warden Sign In' : 'Hosteler Sign In'">
+        Hosteler Sign In
+      </h1>
+      <p style="font-size: 13.5px; color: var(--text-muted); margin: 0 0 22px; line-height: 1.45;">
+        Hostel Maintenance &amp; Issue Resolution Management
+      </p>
+
+      <!-- Segmented Control: Sign in | Create account -->
+      <div style="width: 100%; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 22px;">
+        <button type="button" style="background: var(--bg-surface); color: var(--text-primary); font-weight: 600; font-size: 14px; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: default;">
+          Sign in
+        </button>
+        <a href="{% url 'accounts:register' %}" style="background: transparent; color: var(--text-secondary); font-weight: 500; font-size: 14px; padding: 9px 12px; border-radius: var(--radius-sm); text-decoration: none; display: flex; align-items: center; justify-content: center; transition: color var(--duration-fast) ease;">
+          Create account
+        </a>
+      </div>
+
+      <!-- Form -->
+      <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: left;">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div style="background-color: var(--danger-light); color: var(--danger); padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; border: 1px solid var(--danger);">
+            {% for error in form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Roll Number / Email Input -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="id_login_id" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+            <span x-text="isStaff ? 'Staff ID / Campus Email' : 'Roll Number / Campus Email'">Roll Number / Campus Email</span>
+            <span style="color: var(--primary);">*</span>
+          </label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <i data-lucide="user" style="position: absolute; left: 14px; width: 17px; height: 17px; color: var(--text-muted); pointer-events: none;"></i>
+            <input type="text" name="login_id" id="id_login_id" required
+                   :placeholder="isStaff ? 'e.g. L1, L2, L3 or staff ID' : 'e.g. 23012345 or student@campus.edu'"
+                   class="form-control"
+                   style="width: 100%; height: 48px; padding: 0 16px 0 42px; border-radius: var(--radius-md); background: var(--bg-input); border: 1px solid var(--border); font-size: 14px; color: var(--text-primary); outline: none;">
+          </div>
+          {% if form.login_id.errors %}
+            <span style="font-size: 12px; color: var(--danger);">{{ form.login_id.errors.0 }}</span>
+          {% endif %}
         </div>
+
+        <!-- Password Input -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label for="id_password" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0;">
+              Password <span style="color: var(--primary);">*</span>
+            </label>
+            <span style="font-size: 12px; color: var(--primary); cursor: pointer; text-decoration: none;"
+                  onclick="alert('For password resets or recovery assistance, please visit the hostel caretaker desk or warden office.');">
+              Forgot password?
+            </span>
+          </div>
+          <div style="position: relative; display: flex; align-items: center;">
+            <i data-lucide="lock" style="position: absolute; left: 14px; width: 17px; height: 17px; color: var(--text-muted); pointer-events: none;"></i>
+            <input :type="showPass ? 'text' : 'password'" name="password" id="id_password" required
+                   placeholder="Enter your password"
+                   class="form-control"
+                   style="width: 100%; height: 48px; padding: 0 44px 0 42px; border-radius: var(--radius-md); background: var(--bg-input); border: 1px solid var(--border); font-size: 14px; color: var(--text-primary); outline: none;">
+            <button type="button" @click="showPass = !showPass" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center;" aria-label="Toggle password visibility">
+              <i data-lucide="eye" x-show="!showPass" style="width: 18px; height: 18px;"></i>
+              <i data-lucide="eye-off" x-show="showPass" style="width: 18px; height: 18px; display: none;"></i>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <span style="font-size: 12px; color: var(--danger);">{{ form.password.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Options Row: Remember this device -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0 4px;">
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;">
+            <input type="checkbox" name="remember_me" id="id_remember_me"
+                   style="width: 16px; height: 16px; border-radius: var(--radius-xs); accent-color: var(--primary); cursor: pointer;">
+            <span>Remember this device</span>
+          </label>
+        </div>
+
+        <!-- Primary Submit Button -->
+        <button type="submit"
+                class="btn btn-primary"
+                style="width: 100%; height: 48px; border-radius: var(--radius-md); background: var(--primary); color: var(--primary-text); font-weight: 600; font-size: 15px; border: none; box-shadow: var(--shadow-primary); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background var(--duration-fast) ease;">
+          <span>Sign in to Portal</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+
+        <!-- New hostel resident footer -->
+        <div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+          <span>New hostel resident?</span>
+          <a href="{% url 'accounts:register' %}" style="color: var(--primary); font-weight: 600; text-decoration: none; margin-left: 4px;">
+            Create account
+          </a>
+        </div>
+      </form>
+
+      <!-- Campus Hostel Help Desk Note -->
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); width: 100%; text-align: center;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+          <i data-lucide="life-buoy" style="width: 15px; height: 15px; color: var(--primary);"></i>
+          <span>Campus Hostel Help Desk</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin: 0 auto; line-height: 1.45; max-width: 330px;">
+          Locked out or need credentials assistance? Visit the administration office or contact floor proctor.
+        </p>
+      </div>
+
+      <!-- Collapsible Demo Accounts (L0..L5) for Quick Testing -->
+      {% if show_demo_accounts %}
+      <div x-data="{ openDemo: false }" style="width: 100%; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 12px;">
+        <button type="button" @click="openDemo = !openDemo" :aria-expanded="openDemo"
+                style="cursor: pointer; color: var(--text-muted); font-weight: 500; user-select: none; display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; padding: 0;">
+          <span>Demo credentials (password: <code style="font-family: var(--font-mono); font-weight: 700; color: var(--primary);">me1234</code>)</span>
+          <span style="font-size: 11px; color: var(--text-muted);" x-text="openDemo ? 'Quick fill ▴' : 'Quick fill ▾'">Quick fill ▾</span>
+        </button>
+        <div x-show="openDemo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px;">
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L0', 'me1234')">
+            <span>L0: Hosteler</span>
+            <span style="font-size: 10px; background: var(--primary-soft); color: var(--primary); padding: 2px 6px; border-radius: var(--radius-full);">Student</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L1', 'me1234')">
+            <span>L1: Caretaker</span>
+            <span class="level-chip l1" style="font-size: 10px;">L1</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L2', 'me1234')">
+            <span>L2: Warden</span>
+            <span class="level-chip l2" style="font-size: 10px;">L2</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L3', 'me1234')">
+            <span>L3: Chief Warden</span>
+            <span class="level-chip l3" style="font-size: 10px;">L3</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L4', 'me1234')">
+            <span>L4: Dean</span>
+            <span class="level-chip l4" style="font-size: 10px;">L4</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 11.5px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary);" onclick="setCreds('L5', 'me1234')">
+            <span>L5: Admin</span>
+            <span style="font-size: 10px; background: var(--bg-subtle); color: var(--text-secondary); padding: 2px 6px; border-radius: var(--radius-full);">System</span>
+          </button>
+        </div>
+      </div>
       {% endif %}
 
-      <div class="form-group" style="margin-bottom: 0;">
-        <label class="form-label" for="id_login_id">Roll No / Employee ID</label>
-        {{ form.login_id }}
-        {% if form.login_id.errors %}
-          <span class="form-error">{{ form.login_id.errors.0 }}</span>
-        {% endif %}
-      </div>
-
-      <div class="form-group" style="margin-bottom: 4px;">
-        <label class="form-label" for="id_password">Password</label>
-        {{ form.password }}
-        {% if form.password.errors %}
-          <span class="form-error">{{ form.password.errors.0 }}</span>
-        {% endif %}
-      </div>
-
-      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 9px; font-weight: 600; font-size: var(--fs-base); margin-top: 6px;">
-        Sign In
-      </button>
-    </form>
-
-    <!-- Quick Demo Accounts Switcher -->
-    <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
-      <span style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500; text-transform: uppercase;">Quick Demo Fill:</span>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('admin', 'admin123')">
-          Admin (L4)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('chief_warden', 'pass1234')">
-          Chief Warden (L3)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('warden_a', 'pass1234')">
-          Warden (L2)
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="setCreds('caretaker_a1', 'pass1234')">
-          Caretaker (L1)
-        </button>
-      </div>
-      <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="setCreds('student1', 'pass1234')">
-        Hosteler (Student)
-      </button>
     </div>
-
   </div>
 </div>
 
 <script>
 function setCreds(id, pwd) {
-  document.getElementById('id_login_id').value = id;
-  document.getElementById('id_password').value = pwd;
+  const idEl = document.getElementById('id_login_id');
+  const pwdEl = document.getElementById('id_password');
+  if (idEl) idEl.value = id;
+  if (pwdEl) pwdEl.value = pwd;
 }
+
+// Security: Prevent Back button from exposing authenticated pages after logout
+try {
+  sessionStorage.removeItem('hf_nav_stack');
+  Object.keys(sessionStorage).forEach(function(key) {
+    if (key.startsWith('hf_scroll_') || key.startsWith('hf_tab_state_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+} catch (e) {}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted && window.location.pathname.startsWith('/accounts/login')) {
+    window.location.reload();
+  }
+});
 </script>
 {% endblock %}

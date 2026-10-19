@@ -1,41 +1,63 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.notifications.models import Notification
+from apps.notifications.services import notify_ticket_escalated
 from apps.tickets.models import (
     ActivityAction,
-    SLAPolicy,
     Status,
     Ticket,
     TicketActivity,
 )
+from apps.tickets.services.sla import hours_for
 
 
-def find_escalation_assignee(ticket: Ticket, next_level: int) -> User | None:
-    """Finds next-level assignee in the hierarchy."""
+def find_escalation_assignee(ticket: Ticket, next_level: int) -> tuple[User | None, bool]:
+    """
+    Finds next-level assignee in the hierarchy, skipping inactive or archived staff.
+    Returns (assignee, is_admin_fallback).
+    """
+    active_staff_qs = User.objects.filter(is_active=True, archived_at__isnull=True)
+
     if next_level == 2:
-        # Hostel Warden for the same hostel
-        warden = User.objects.filter(hostel=ticket.hostel, role=Role.WARDEN, is_active=True).first()
+        # 1. Primary Level 2 Warden configured on the hostel
+        if (
+            ticket.hostel
+            and ticket.hostel.responsible_warden
+            and ticket.hostel.responsible_warden.is_active
+            and not getattr(ticket.hostel.responsible_warden, "archived_at", None)
+        ):
+            return ticket.hostel.responsible_warden, False
+        # 2. Hostel Warden assigned to the same hostel
+        warden = active_staff_qs.filter(hostel=ticket.hostel, role=Role.WARDEN).first()
         if warden:
-            return warden
+            return warden, False
     elif next_level == 3:
         # Chief Warden across all hostels
-        cw = User.objects.filter(role=Role.CHIEF_WARDEN, is_active=True).first()
+        cw = active_staff_qs.filter(role=Role.CHIEF_WARDEN).first()
         if cw:
-            return cw
+            return cw, False
     elif next_level == 4:
-        # Admin / Dean
-        admin_user = User.objects.filter(role=Role.ADMIN, is_active=True).first()
+        # Dean (final escalation)
+        dean = active_staff_qs.filter(role=Role.DEAN).first()
+        if dean:
+            return dean, False
+        # Fallback to active Admin when no active Dean exists (A5)
+        admin_user = active_staff_qs.filter(role=Role.ADMIN).first()
         if admin_user:
-            return admin_user
+            return admin_user, True
 
     # Fallback to any user at that level or admin
-    return (
-        User.objects.filter(escalation_level=next_level, is_active=True).first()
-        or User.objects.filter(role=Role.ADMIN, is_active=True).first()
-    )
+    fallback = active_staff_qs.filter(escalation_level=next_level).first()
+    if fallback:
+        return fallback, False
+    if next_level == 4:
+        admin_user = active_staff_qs.filter(role=Role.ADMIN).first()
+        if admin_user:
+            return admin_user, True
+
+    return None, False
 
 
 def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
@@ -46,17 +68,19 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
         return ticket
 
     next_level = ticket.current_level + 1
-    new_assignee = find_escalation_assignee(ticket, next_level)
+    new_assignee, is_fallback = find_escalation_assignee(ticket, next_level)
     old_assignee = ticket.assigned_to
 
-    # Compute new due date from policy
-    policy = SLAPolicy.objects.filter(priority=ticket.priority, level=next_level).first()
-    hours = policy.hours if policy else 24
+    # Compute new due date from SLA policy or fallback
+    hours = hours_for(ticket.priority, next_level)
 
+    now = timezone.now()
     ticket.current_level = next_level
+    ticket.level_started_at = now
+    ticket.last_activity_at = now
     if new_assignee:
         ticket.assigned_to = new_assignee
-    ticket.due_at = timezone.now() + timedelta(hours=hours)
+    ticket.due_at = now + timedelta(hours=hours)
     ticket.is_overdue = False
     ticket.save()
 
@@ -74,32 +98,18 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
         note=note_msg,
     )
 
-    # Notify new assignee
-    if new_assignee:
-        Notification.objects.create(
-            recipient=new_assignee,
+    if is_fallback:
+        TicketActivity.objects.create(
             ticket=ticket,
-            verb=f"Escalated to Level {next_level}",
-            message=f"Ticket {ticket.ticket_no} has escalated to you: {ticket.title}.",
+            actor=actor,
+            action=ActivityAction.LEVEL4_FALLBACK,
+            from_value="No active Dean",
+            to_value=new_assignee.login_id if new_assignee else "None",
+            note="No active Dean found; ticket escalated to Admin as fallback.",
         )
 
-    # Notify old assignee
-    if old_assignee and old_assignee != new_assignee:
-        Notification.objects.create(
-            recipient=old_assignee,
-            ticket=ticket,
-            verb="Ticket Escalated",
-            message=f"Ticket {ticket.ticket_no} has been escalated to L{next_level}.",
-        )
-
-    # Notify reporter
-    if ticket.reporter:
-        Notification.objects.create(
-            recipient=ticket.reporter,
-            ticket=ticket,
-            verb="Ticket Escalated",
-            message=f"Your ticket {ticket.ticket_no} was escalated to Level {next_level} ({new_assignee.get_role_display() if new_assignee else 'Higher Authority'}).",
-        )
+    # Notifications via centralized service
+    notify_ticket_escalated(ticket, old_assignee, new_assignee, next_level, actor=actor)
 
     return ticket
 

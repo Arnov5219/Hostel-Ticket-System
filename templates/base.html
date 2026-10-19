@@ -1,101 +1,290 @@
-{% load static %}
+{% load static ui %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme-pref="{% if request.user.is_authenticated %}{{ request.user.theme|lower }}{% else %}{% block default_theme_pref %}system{% endblock %}{% endif %}" data-user-theme="{% if request.user.is_authenticated %}{{ request.user.theme }}{% endif %}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F8FC" id="meta-theme-color">
+  <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
   <title>{% block title %}Hostel Ticket System{% endblock %}</title>
+
+  <!-- Immediate zero-flash theme application before CSS renders (Plan Section 3.2) -->
+  <script>
+    (function () {
+      try {
+        var userTheme = document.documentElement.getAttribute('data-user-theme') || '';
+        var stored = '';
+        try { stored = localStorage.getItem('theme') || ''; } catch (err) {}
+        var defaultPref = document.documentElement.getAttribute('data-theme-pref') || 'system';
+        var pref = (userTheme || stored || defaultPref).toLowerCase();
+        if (pref !== 'dark' && pref !== 'light' && pref !== 'system') {
+          pref = defaultPref.toLowerCase();
+        }
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        var meta = document.getElementById('meta-theme-color');
+        if (meta) meta.setAttribute('content', dark ? '#0B1220' : '#F6F8FC');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 
   <!-- Core Design System CSS -->
-  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" href="{% static 'css/layout.css' %}">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=linear4">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=linear4">
+
   {% block extra_css %}{% endblock %}
 
-  <!-- Local Vendor Scripts -->
+  <!-- Local Vendor Scripts & Theme Controller -->
+  <script src="{% static 'js/theme.js' %}?v=linear4"></script>
   <script src="{% static 'vendor/htmx.min.js' %}"></script>
   <script defer src="{% static 'vendor/alpine.min.js' %}"></script>
   <script src="{% static 'vendor/lucide.min.js' %}"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/app.js' %}?v=linear4"></script>
   {% block extra_js %}{% endblock %}
+
 </head>
 <body>
+  <!-- Fixed Layered Background (Off-white + dot mesh + subtle glows) -->
+  <div class="app-background" aria-hidden="true"></div>
+
+  <!-- App Launch / Initialization Screen (Mobile & App) -->
+  <div id="app-launch-screen" class="app-launch-screen" aria-live="polite">
+    <div class="launch-screen-card">
+      <div class="launch-logo-badge">
+        <svg viewBox="0 0 36 36" fill="none" class="launch-logo-svg" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 10V26M26 10V26M10 18H26" stroke="var(--primary-text)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="launch-brand-name">HostelFlow</div>
+      <div class="launch-tagline">Campus Living &amp; Facility Operations</div>
+      
+      <div class="launch-progress-track">
+        <div class="launch-progress-bar" id="launch-progress-bar"></div>
+      </div>
+      
+      <div class="launch-status-text" id="launch-status-text">Starting HostelFlow...</div>
+
+      <div class="launch-fallback-box" id="launch-fallback-box" style="display: none;">
+        <p class="launch-fallback-text" id="launch-fallback-msg">Connection is taking longer than expected.</p>
+        <button type="button" class="launch-retry-btn" onclick="retryAppLaunch()">
+          <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+          <span>Retry</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      try {
+        if (sessionStorage.getItem('hf_app_launched') === 'true') {
+          var ls = document.getElementById('app-launch-screen');
+          if (ls) ls.style.display = 'none';
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  {% block body_layout %}
   <div class="app-container">
     {% include 'components/_sidebar.html' %}
 
     <div class="app-main">
-      {% include 'components/_topbar.html' %}
-      
-      <div class="page-header">
-        <div class="page-header-title">
-          <h1 class="page-title">{% block page_title %}Hostel Ticket System{% endblock %}</h1>
-          {% block page_title_extra %}{% endblock %}
+      <!-- Top Bar (Desktop >= 768px) -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            {% block breadcrumbs %}
+              {% block breadcrumb %}
+                <a href="{% url 'core:home' %}">Home</a>
+              {% endblock %}
+            {% endblock %}
+          </nav>
         </div>
 
-        <div class="page-header-actions">
-          {% block page_actions %}
-            <a href="{% url 'tickets:create' %}" class="btn btn-primary">
-              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-              <span>Raise Ticket</span>
+        <div class="top-bar-right">
+
+          {% if request.user.is_authenticated %}
+            <!-- Theme Quick Toggle (Desktop only) -->
+            <button type="button" class="top-bar-btn desktop-theme-btn" id="theme-toggle-btn" title="Cycle theme (Light, Dark, System)" aria-label="Cycle theme" onclick="cycleTheme();">
+              <i data-lucide="sun" class="icon-light" style="width: 17px; height: 17px;"></i>
+              <i data-lucide="moon" class="icon-dark" style="width: 17px; height: 17px;"></i>
+            </button>
+
+            <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" id="notification-bell"
+               hx-get="{% url 'notifications:poll' %}" hx-trigger="every 30s" hx-target="#notification-badge-target" hx-swap="innerHTML" aria-label="Notifications">
+              <i data-lucide="bell" style="width: 17px; height: 17px;"></i>
+              <span id="notification-badge-target">
+                {% if unread_notifications_count > 0 %}
+                  <span class="notification-badge"></span>
+                {% endif %}
+              </span>
             </a>
+
+            <!-- User Menu Dropdown -->
+            <div class="dropdown" x-data="{ open: false }">
+              <button type="button" class="top-bar-btn user-btn" @click="open = !open" @click.outside="open = false" style="padding: 2px;" aria-label="User menu">
+                {% user_avatar request.user size="sm" %}
+                <span class="user-role-hint">{{ request.user.get_role_display|slice:":15" }}</span>
+              </button>
+              <div class="dropdown-menu" x-show="open" x-transition style="display: none; min-width: 240px;">
+                <div style="padding: 10px 14px; border-bottom: 1px solid var(--border);">
+                  <div style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
+                    {{ request.user.full_name|default:request.user.login_id }}
+                  </div>
+                  <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 2px;">
+                    {{ request.user.get_role_display }} {% if request.user.hostel %}· {{ request.user.hostel.name }}{% endif %}
+                  </div>
+                </div>
+                <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+                  <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+                  <span>Profile</span>
+                </a>
+
+                <!-- Standardized Theme Switcher Partial -->
+                <div style="padding: 8px 12px; border-bottom: 1px solid var(--border);">
+                  <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Theme</div>
+                  {% include 'components/theme_switcher.html' %}
+                </div>
+
+                <div class="dropdown-divider"></div>
+                <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item danger" style="width: 100%; border: none; background: transparent; text-align: left;">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    <span>Log Out</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% else %}
+            <button type="button" class="top-bar-btn" id="theme-toggle-btn" title="Cycle theme" aria-label="Cycle theme" onclick="cycleTheme();">
+              <i data-lucide="sun" class="icon-light" style="width: 17px; height: 17px;"></i>
+              <i data-lucide="moon" class="icon-dark" style="width: 17px; height: 17px;"></i>
+            </button>
+            <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-sm">Sign In</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Page Header (Unified 56-64px Header on Phone; Page Header on Desktop) -->
+      <div class="page-header">
+        <div class="page-header-title">
+          <!-- Mobile Brand Header (Home on phone) vs Mobile Back Button (Inner pages on phone) -->
+          {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}
+            <div class="mobile-brand-title">
+              <div class="sidebar-brand-logo" style="width: 32px; height: 32px; font-size: 15px; border-radius: var(--radius-sm);">
+                H
+              </div>
+              <span class="mobile-brand-name">{{ site_name|default:"HostelFlow" }}</span>
+              {% if request.user.hostel %}
+                <span class="role-badge" style="font-size: 10px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 2px 6px; border-radius: var(--r-chip);">
+                  {{ request.user.hostel.code }}
+                </span>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="mobile-back-nav">
+              <button type="button" class="mobile-back-btn" onclick="handleMobileBack(this)" data-fallback="{% block mobile_back_fallback %}{% if request.resolver_match.url_name == 'detail' %}{% url 'tickets:list' %}{% elif current_section == 'tickets_create' or current_section == 'tickets' %}{% url 'tickets:list' %}{% else %}{% url 'dashboard:index' %}{% endif %}{% endblock %}" aria-label="Go back">
+                <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+              </button>
+            </div>
+          {% endif %}
+
+          <h1 class="page-title {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}hide-on-mobile{% endif %}">
+            {% block page_title %}Hostel Ticket System{% endblock %}
+          </h1>
+          <div class="page-subtitle hide-on-mobile">{% block page_subtitle %}{% endblock %}</div>
+        </div>
+
+        <!-- Phone Header Actions (Search & Bell on right of phone header) -->
+        <div class="mobile-header-actions">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'notifications:list' %}" class="top-bar-btn" title="Notifications" aria-label="Notifications" style="position: relative;">
+              <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+              {% if unread_notifications_count > 0 %}
+                <span class="notification-badge" style="position: absolute; top: 6px; right: 6px;"></span>
+              {% endif %}
+            </a>
+            {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}
+              <a href="{% url 'accounts:profile' %}" style="display: flex; align-items: center; text-decoration: none; margin-left: 2px;">
+                {% user_avatar request.user size="sm" is_self=True %}
+              </a>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Desktop Page Header Actions (Hidden on phones per D6) -->
+        <div class="page-header-actions desktop-page-actions">
+          {% block page_actions %}
+            {% if request.user.is_authenticated and not request.user.is_staff_member and request.resolver_match.url_name != 'create' %}
+              <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span>Raise Ticket</span>
+              </a>
+            {% endif %}
           {% endblock %}
         </div>
       </div>
 
+      <!-- Main Content Block -->
       <main class="app-content">
         {% block content %}{% endblock %}
       </main>
     </div>
-  </div>
 
-  <!-- Command Palette Modal (⌘K / Ctrl+K) -->
-  <div id="command-palette" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-    <div class="command-palette-modal">
-      <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); gap: 10px;">
-        <i data-lucide="search" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-        <input type="text" id="search-input" placeholder="Search tickets, hostel, roll no... (Type to search)"
-               style="flex: 1; border: none; font-size: var(--fs-md); outline: none; background: transparent; color: var(--text-primary);"
-               autocomplete="off"
-               onkeydown="if(event.key === 'Enter') { window.location.href = '{% url 'tickets:list' %}?search=' + encodeURIComponent(this.value); }">
-        <span class="search-kbd">ESC</span>
-      </div>
-      <div id="palette-hint" style="padding: 8px 12px; font-size: var(--fs-xs); color: var(--text-muted); background: var(--bg-subtle);">
-        Quick navigation: Dashboard, Tickets, Kanban, Profile
-      </div>
-      <div id="palette-results" style="max-height: 320px; overflow-y: auto; padding: 6px;">
-        <a href="{% url 'tickets:create' %}" class="dropdown-item" style="border-radius: var(--radius-sm);">
-          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-          <span>Raise a new ticket</span>
-        </a>
-        <a href="{% url 'tickets:list' %}" class="dropdown-item" style="border-radius: var(--radius-sm);">
-          <i data-lucide="list" style="width: 14px; height: 14px;"></i>
-          <span>View all tickets</span>
-        </a>
-        {% if request.user.is_authenticated and not request.user.is_hosteler %}
-        <a href="{% url 'tickets:kanban' %}" class="dropdown-item" style="border-radius: var(--radius-sm);">
-          <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
-          <span>Open Kanban board</span>
-        </a>
-        {% endif %}
-      </div>
-    </div>
+    <!-- Mobile Bottom Navigation -->
+    {% include 'components/_bottom_nav.html' %}
   </div>
+  {% endblock %}
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container">
+
+  <!-- Toast Notification Stack (Bottom-right, non-overlapping B-09) -->
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite">
+    {% if undo_delete %}
+      {% include "tickets/partials/_delete_toast.html" with ticket_no=undo_delete.ticket_no undo_token=undo_delete.token is_oob=False %}
+    {% endif %}
     {% if messages %}
       {% for message in messages %}
-        <div class="toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+        <div class="toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" onclick="dismissToast(this);">
           <span>{{ message }}</span>
+          <button type="button" class="toast-close" aria-label="Close message">✕</button>
         </div>
       {% endfor %}
     {% endif %}
   </div>
+
+  <script>
+    // Global toast dismisser & auto-clear
+    function dismissToast(el) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(8px)';
+      setTimeout(() => el.remove(), 200);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('#toast-container .toast').forEach((toast, idx) => {
+        setTimeout(() => dismissToast(toast), 4000 + (idx * 500));
+      });
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    });
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  </script>
 </body>
 </html>
+

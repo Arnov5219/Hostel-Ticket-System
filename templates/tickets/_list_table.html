@@ -1,81 +1,147 @@
 {% load ui %}
 
-<div class="table-container" style="border: none; border-radius: 0;">
-  <table class="app-table">
-    <thead>
-      <tr>
-        <th style="width: 32px;"><input type="checkbox" id="select-all-tickets"></th>
-        <th>Title</th>
-        <th>Status</th>
-        <th>Category</th>
-        <th>Priority</th>
-        <th>Hostel</th>
-        <th>Level</th>
-        <th>SLA</th>
-        <th>Ticket ID</th>
-        <th>Updated</th>
-        <th style="width: 36px;"><i data-lucide="message-square" style="width: 13px; height: 13px;"></i></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ticket in tickets %}
-        <tr onclick="if(!event.target.closest('input')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
-          <td><input type="checkbox" name="selected_tickets" value="{{ ticket.id }}"></td>
-          <td style="font-weight: 600;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span>{{ ticket.title }}</span>
-              {% if ticket.attachments.exists %}
-                <i data-lucide="paperclip" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-              {% endif %}
-            </div>
-          </td>
-          <td>{% status_pill ticket.status %}</td>
-          <td>
-            <span style="display: inline-flex; align-items: center; gap: 4px;">
-              <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px;"></i>
-              {{ ticket.category.name }}
-            </span>
-          </td>
-          <td>{% priority_dot ticket.priority %}</td>
-          <td>{{ ticket.hostel.name }}</td>
-          <td>{% level_badge ticket.current_level %}</td>
-          <td>
-            <div class="sla-bar-container" title="{{ ticket.due_at|date:'M d, H:i' }}">
-              {% if ticket.is_overdue %}
-                <div class="sla-bar red" style="width: 100%;"></div>
-              {% elif ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
-                <div class="sla-bar green" style="width: 100%;"></div>
-              {% else %}
-                <div class="sla-bar {% if ticket.priority == 'URGENT' %}amber{% else %}green{% endif %}" style="width: 50%;"></div>
-              {% endif %}
-            </div>
-          </td>
-          <td style="font-family: monospace; font-size: var(--fs-xs); color: var(--text-muted);">
-            {{ ticket.ticket_no }}
-          </td>
-          <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
-            {% time_ago ticket.updated_at %}
-          </td>
-          <td style="text-align: center; color: var(--text-muted); font-size: var(--fs-xs);">
-            {{ ticket.comment_count|default:0 }}
-          </td>
-        </tr>
-      {% empty %}
+<!-- Desktop Data Table View (>= 768px) -->
+<div class="desktop-table-view">
+  <div class="table-container" style="border: none; border-radius: 0;">
+    <table class="app-table">
+      <thead>
         <tr>
-          <td colspan="11" style="text-align: center; padding: 48px; color: var(--text-muted);">
-            <div class="empty-state">
-              <i data-lucide="ticket" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 8px;"></i>
-              <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary);">No tickets found</h3>
-              <p style="font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: 12px;">Try adjusting your filters or search terms.</p>
-              {% if request.user.is_hosteler or request.user.is_admin %}
-              <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">+ Raise Ticket</a>
-              {% endif %}
-            </div>
-          </td>
+          <th style="width: 32px;"><input type="checkbox" id="select-all-tickets" aria-label="Select all tickets"></th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Hostel</th>
+          <th>Level</th>
+          <th>SLA</th>
+          <th>Ticket ID</th>
+          <th>Updated</th>
+          <th style="width: 36px; text-align: center;"><i data-lucide="message-square" style="width: 13px; height: 13px;"></i></th>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for ticket in tickets %}
+          <tr onclick="if(!event.target.closest('input')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
+            <td><input type="checkbox" name="selected_tickets" value="{{ ticket.id }}" aria-label="Select ticket {{ ticket.ticket_no }}"></td>
+            <td style="font-weight: 500;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-primary); max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ticket.title }}</span>
+                {% if ticket.attachments.exists %}
+                  <i data-lucide="paperclip" style="width: 12px; height: 12px; color: var(--text-muted); flex-shrink: 0;"></i>
+                {% endif %}
+              </div>
+            </td>
+            <td style="white-space: nowrap;">{% status_pill ticket.status %}</td>
+            <td style="white-space: nowrap;">
+              <span style="display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--text-secondary);">
+                {% if ticket.category.icon %}
+                  <i data-lucide="{{ ticket.category.icon }}" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+                {% endif %}
+                {{ ticket.category.name }}
+              </span>
+            </td>
+            <td style="white-space: nowrap;">
+              {% priority_dot ticket.priority %}
+            </td>
+            <td style="white-space: nowrap; font-size: var(--fs-xs);">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span>{{ ticket.hostel.name }}</span>
+                {% if ticket.room_number %}
+                  <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Room {{ ticket.room_number }}</span>
+                {% endif %}
+                {% if ticket.outside_own_hostel %}
+                  <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 10px; padding: 1px 4px; align-self: flex-start;">Outside</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="white-space: nowrap;">{% level_badge ticket.current_level %}</td>
+            <td style="white-space: nowrap;">
+              {% sla_indicator ticket %}
+            </td>
+            <td>
+              <span class="ticket-id">{{ ticket.ticket_no }}</span>
+            </td>
+            <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+              {% time_ago ticket.updated_at %}
+            </td>
+            <td style="text-align: center; color: var(--text-muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;">
+              {{ ticket.comment_count|default:0 }}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="11" style="text-align: center; padding: 48px; color: var(--text-muted);">
+              <div class="empty-state">
+                <div class="empty-state-icon">
+                  <i data-lucide="ticket" style="width: 20px; height: 20px;"></i>
+                </div>
+                <h3 class="empty-state-title">No tickets found</h3>
+                <p class="empty-state-text">Try adjusting your filters or search terms.</p>
+                {% if request.user.is_hosteler or request.user.is_admin %}
+                  <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">
+                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                    <span>Raise ticket</span>
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mobile-card-list" style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+  {% for ticket in tickets %}
+    <div class="card" onclick="window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';" style="cursor: pointer; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-card); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 8px; transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <span class="ticket-id" style="font-size: 13px; font-weight: 700; color: var(--primary-ink); white-space: nowrap;">{{ ticket.ticket_no }}</span>
+        <div style="flex-shrink: 0;">
+          {% status_pill ticket.status %}
+        </div>
+      </div>
+
+      <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+        {{ ticket.title }}
+      </span>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span>{{ ticket.category.name }}</span>
+          <span>·</span>
+          <span>{{ ticket.hostel.code|default:ticket.hostel.name }}</span>
+          {% if ticket.room_number %}
+            <span>·</span>
+            <span>Rm {{ ticket.room_number }}</span>
+          {% endif %}
+          {% if ticket.outside_own_hostel %}
+            <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 10px; padding: 1px 4px;">Outside</span>
+          {% endif %}
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          {% priority_dot ticket.priority %}
+          <span>{% time_ago ticket.updated_at %}</span>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i data-lucide="ticket" style="width: 24px; height: 24px;"></i>
+        </div>
+        <h3 class="empty-state-title" style="margin-top: 8px;">No tickets found</h3>
+        <p class="empty-state-text">Try adjusting your filters or search terms.</p>
+        {% if request.user.is_hosteler or request.user.is_admin %}
+          <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm" style="margin-top: 10px;">
+            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+            <span>Raise ticket</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
 </div>
 
 {% include 'components/_pagination.html' with page_obj=page_obj query_params=query_params %}

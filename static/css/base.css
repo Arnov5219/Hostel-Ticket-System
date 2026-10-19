@@ -15,7 +15,7 @@ html, body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -23,9 +23,11 @@ a:hover {
   text-decoration: underline;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, .page-title, .card-title {
   font-weight: 600;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 h1 { font-size: var(--fs-lg); }
@@ -45,7 +47,7 @@ input, button, select, textarea {
 
 input:focus, select:focus, textarea:focus, button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent);
+  box-shadow: var(--ring);
 }
 
 /* Custom scrollbars */
@@ -66,3 +68,28 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+/* Theme toggle icon switching */
+html[data-theme="dark"] #theme-toggle-btn .icon-dark,
+html[data-theme="dark"] .theme-icon-dark {
+  display: none !important;
+}
+html[data-theme="dark"] #theme-toggle-btn .icon-light,
+html[data-theme="dark"] .theme-icon-light {
+  display: inline-block !important;
+}
+html[data-theme="light"] #theme-toggle-btn .icon-light,
+html[data-theme="light"] .theme-icon-light {
+  display: none !important;
+}
+html[data-theme="light"] #theme-toggle-btn .icon-dark,
+html[data-theme="light"] .theme-icon-dark {
+  display: inline-block !important;
+}
+
+

@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Manage Rooms | Hostel Ticket System{% endblock %}
+
+{% block mobile_back_fallback %}{% url 'hostels:manage_hostels' %}{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'hostels:manage_hostels' %}">Hostels</a>
+  <span class="separator">/</span>
+  <span class="current">Rooms</span>
+{% endblock %}
+
+{% block page_title %}Room Management{% endblock %}
+{% block page_subtitle %}Manage 1,440 campus rooms across 12 hostel residences{% endblock %}
+
+{% block content %}
+<div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Admin Sub-Navigation -->
+  {% include 'components/_admin_subnav.html' %}
+
+  <!-- Filter & Search Bar -->
+  <div class="card" style="padding: 16px; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <form method="get" action="{% url 'hostels:manage_rooms' %}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+      
+      <div style="flex: 1 1 140px; min-width: 130px;">
+        <label class="form-label" style="font-size: var(--fs-xs); margin-bottom: 4px;">Hostel</label>
+        <select name="hostel" class="form-select form-select-sm">
+          <option value="">All Hostels</option>
+          {% for h in hostels %}
+            <option value="{{ h.id }}" {% if selected_hostel == h.id|stringformat:"s" %}selected{% endif %}>
+              {{ h.code }} ({{ h.name }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="flex: 0 1 110px; min-width: 100px;">
+        <label class="form-label" style="font-size: var(--fs-xs); margin-bottom: 4px;">Floor</label>
+        <select name="floor" class="form-select form-select-sm">
+          <option value="">All Floors</option>
+          <option value="1" {% if selected_floor == "1" %}selected{% endif %}>Floor 1</option>
+          <option value="2" {% if selected_floor == "2" %}selected{% endif %}>Floor 2</option>
+          <option value="3" {% if selected_floor == "3" %}selected{% endif %}>Floor 3</option>
+        </select>
+      </div>
+
+      <div style="flex: 0 1 120px; min-width: 110px;">
+        <label class="form-label" style="font-size: var(--fs-xs); margin-bottom: 4px;">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+
+      <div style="flex: 0 1 130px; min-width: 120px;">
+        <label class="form-label" style="font-size: var(--fs-xs); margin-bottom: 4px;">Occupancy</label>
+        <select name="occupancy" class="form-select form-select-sm">
+          <option value="">All Occupancy</option>
+          <option value="empty" {% if selected_occupancy == "empty" %}selected{% endif %}>Empty (0)</option>
+          <option value="partial" {% if selected_occupancy == "partial" %}selected{% endif %}>Partially Full</option>
+          <option value="full" {% if selected_occupancy == "full" %}selected{% endif %}>Full</option>
+        </select>
+      </div>
+
+      <div style="flex: 1 1 160px; min-width: 140px;">
+        <label class="form-label" style="font-size: var(--fs-xs); margin-bottom: 4px;">Room Number</label>
+        <input type="text" name="q" value="{{ search_query }}" class="form-control form-control-sm" placeholder="e.g. 214">
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i data-lucide="filter" style="width: 12px; height: 12px;"></i>
+          <span>Filter</span>
+        </button>
+        {% if selected_hostel or selected_floor or selected_status or selected_occupancy or search_query %}
+          <a href="{% url 'hostels:manage_rooms' %}" class="btn btn-ghost btn-sm" title="Clear Filters">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Rooms Table & Desktop View -->
+  <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    <div class="table-container" style="border: none;">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Hostel</th>
+            <th>Room Number</th>
+            <th>Floor</th>
+            <th>Capacity</th>
+            <th>Occupancy</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for room in page_obj %}
+            <tr>
+              <td>
+                <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 600; background: var(--bg-subtle); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                  {{ room.hostel.code }}
+                </span>
+                <span style="font-size: var(--fs-xs); color: var(--text-secondary); margin-left: 6px;">{{ room.hostel.name }}</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary); font-family: var(--font-mono); font-size: var(--fs-md);">
+                  {{ room.room_number }}
+                </strong>
+              </td>
+              <td style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                Floor {{ room.floor }}
+              </td>
+              <td style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                {{ room.capacity }} bed{{ room.capacity|pluralize }}
+              </td>
+              <td>
+                {% if room.resident_count >= room.capacity %}
+                  <span class="status-pill open" style="background: var(--st-open-bg); color: var(--st-open-fg); border-color: var(--st-open-dot);">
+                    Full ({{ room.resident_count }}/{{ room.capacity }})
+                  </span>
+                {% elif room.resident_count > 0 %}
+                  <span class="status-pill in-progress" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border-color: var(--st-progress-dot);">
+                    Partial ({{ room.resident_count }}/{{ room.capacity }})
+                  </span>
+                {% else %}
+                  <span class="status-pill resolved" style="background: var(--bg-subtle); color: var(--text-muted); border-color: var(--border);">
+                    Empty (0/{{ room.capacity }})
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if room.is_active %}
+                  <span class="status-pill resolved">Active</span>
+                {% else %}
+                  <span class="status-pill closed">Inactive</span>
+                {% endif %}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 4px; align-items: center;">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openEditRoomModal('{{ room.id }}', '{{ room.room_number }}', '{{ room.capacity }}');" title="Edit Capacity">
+                    <i data-lucide="settings" style="width: 12px; height: 12px;"></i>
+                    <span>Capacity</span>
+                  </button>
+
+                  <form method="post" action="{% url 'hostels:toggle_room_status' room.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    {% if room.is_active %}
+                      <button type="submit" class="btn btn-danger-ghost btn-sm" onclick="return confirm('Deactivate Room {{ room.room_number }}?');">
+                        <span>Deactivate</span>
+                      </button>
+                    {% else %}
+                      <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--st-resolved-fg);">
+                        <span>Activate</span>
+                      </button>
+                    {% endif %}
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                <div class="empty-state">
+                  <div class="empty-state-icon">
+                    <i data-lucide="door-closed" style="width: 24px; height: 24px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">No rooms match your filters</h3>
+                  <p class="empty-state-text">Try adjusting your filters, or generate rooms from the Hostels section.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div style="padding: 12px 16px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: var(--fs-xs); color: var(--text-secondary);">
+          Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} rooms
+        </span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_occupancy %}&occupancy={{ selected_occupancy }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-secondary btn-sm">
+              Previous
+            </a>
+          {% endif %}
+          <span style="font-size: var(--fs-xs); color: var(--text-muted); padding: 0 8px;">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </span>
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_hostel %}&hostel={{ selected_hostel }}{% endif %}{% if selected_floor %}&floor={{ selected_floor }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_occupancy %}&occupancy={{ selected_occupancy }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-secondary btn-sm">
+              Next
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Edit Room Capacity Modal -->
+<div id="edit-room-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
+  <div class="command-palette-modal" style="padding: 24px; max-width: 400px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="font-size: var(--fs-md); font-weight: 600; margin: 0;">Edit Room Capacity</h2>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-room-modal').style.display='none';">✕</button>
+    </div>
+
+    <form id="edit-room-form" method="post" action="" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+      <p style="font-size: var(--fs-sm); color: var(--text-secondary); margin: 0;">
+        Adjust bed capacity for Room <strong id="modal-room-number"></strong>:
+      </p>
+
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Bed Capacity *</label>
+        <input type="number" name="capacity" id="modal-room-capacity" class="form-control" min="1" max="8" required>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-room-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Capacity</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditRoomModal(id, number, capacity) {
+  document.getElementById('modal-room-number').innerText = number;
+  document.getElementById('modal-room-capacity').value = capacity;
+  document.getElementById('edit-room-form').action = '/manage/rooms/' + id + '/edit/';
+  document.getElementById('edit-room-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

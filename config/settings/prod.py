@@ -3,6 +3,8 @@ from .base import *  # noqa: F403
 DEBUG = False
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])  # noqa: F405
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
+
 
 # Database support for PostgreSQL or DATABASE_URL
 DATABASE_URL = env.str("DATABASE_URL", default="")  # noqa: F405

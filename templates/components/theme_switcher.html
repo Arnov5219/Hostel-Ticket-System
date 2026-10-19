@@ -1,0 +1,35 @@
+<div class="theme-switcher-control" data-theme-switcher role="radiogroup" aria-label="Color theme">
+  <button type="button"
+          class="theme-switcher-btn"
+          data-theme-option="light"
+          role="radio"
+          aria-checked="false"
+          onclick="setThemePreference('light')"
+          aria-label="Light theme">
+    <i data-lucide="sun" style="width: 17px; height: 17px;"></i>
+    <span>Light</span>
+    <i data-lucide="check" class="check-indicator"></i>
+  </button>
+  <button type="button"
+          class="theme-switcher-btn"
+          data-theme-option="dark"
+          role="radio"
+          aria-checked="false"
+          onclick="setThemePreference('dark')"
+          aria-label="Dark theme">
+    <i data-lucide="moon" style="width: 17px; height: 17px;"></i>
+    <span>Dark</span>
+    <i data-lucide="check" class="check-indicator"></i>
+  </button>
+  <button type="button"
+          class="theme-switcher-btn"
+          data-theme-option="system"
+          role="radio"
+          aria-checked="false"
+          onclick="setThemePreference('system')"
+          aria-label="System theme">
+    <i data-lucide="laptop" style="width: 17px; height: 17px;"></i>
+    <span>System</span>
+    <i data-lucide="check" class="check-indicator"></i>
+  </button>
+</div>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load ui %}
 
 {% block title %}Hostel Responsibility | Hostel Ticket System{% endblock %}
 
@@ -11,41 +12,73 @@
 {% endblock %}
 
 {% block page_title %}Hostel Responsibility{% endblock %}
-
-{% block page_actions %}
-  <a href="{% url 'hostels:manage_hostels' %}" class="btn btn-secondary">
-    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i>
-    <span>Hostels</span>
-  </a>
-  <a href="{% url 'hostels:manage_staff' %}" class="btn btn-secondary">
-    <i data-lucide="users" style="width: 14px; height: 14px;"></i>
-    <span>Staff Management</span>
-  </a>
-{% endblock %}
+{% block page_subtitle %}Designate primary Level 1 staff caretakers for each hostel residence{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 16px;">
+<div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
 
-  <!-- Information Banner -->
-  <div class="card" style="background: var(--bg-subtle); border-left: 3px solid var(--accent); padding: 16px 20px;">
-    <div style="display: flex; align-items: flex-start; gap: 12px;">
-      <i data-lucide="info" style="width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; margin-top: 2px;"></i>
-      <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.5;">
-        <strong style="color: var(--text-primary);">Level 1 Hostel Responsibility Model</strong><br>
-        Each hostel has one Level 1 responsible staff member. All ticket categories (Electrical, Plumbing, Cleaning, etc.) for that hostel are automatically assigned to this responsible caretaker.
+  <!-- Mobile Header (Visible on Mobile <= 767px, matches Stitch) -->
+  <div class="manage-resp-mobile-header">
+    <button type="button" class="mobile-back-btn" onclick="handleMobileBack(this)" data-fallback="{% url 'hostels:manage_hostels' %}" aria-label="Go back">
+      <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+    </button>
+    <div class="manage-resp-mobile-header__text">
+      <h1 class="manage-resp-mobile-header__title">Hostel Responsibility</h1>
+      <p class="manage-resp-mobile-header__subtitle">L1 Caretaker &amp; L2 Warden coverage matrix</p>
+    </div>
+  </div>
+
+  <!-- Admin Sub-Navigation (Fix U-09) -->
+  {% include 'components/_admin_subnav.html' %}
+
+  <!-- Responsibility Information Banner (Reference 2) -->
+  <div class="resp-info-banner">
+    <div class="resp-info-banner__icon">
+      <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+    </div>
+    <div class="resp-info-banner__content">
+      <div class="resp-info-banner__title">Level 1 &amp; Level 2 Responsibility Model</div>
+      <div class="resp-info-banner__desc">
+        Each hostel routes new tickets directly to its assigned Level 1 Caretaker. Level 2 Wardens supervise resolution and handle ticket escalations when SLA thresholds are reached.
       </div>
     </div>
   </div>
 
-  <!-- Responsibility Table -->
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <!-- Search & Sort Controls Card -->
+  <div class="resp-controls-card">
+    <div class="resp-controls-form">
+      <!-- Search Input -->
+      <div class="resp-search-box">
+        <i data-lucide="search" class="resp-search-icon"></i>
+        <input type="text" id="resp-search-input" class="resp-search-input" placeholder="Search hostels or staff..." oninput="filterResponsibility(this.value);">
+        <button type="button" id="resp-search-clear" class="resp-search-clear" onclick="clearRespSearch();" style="display: none;">✕</button>
+      </div>
+
+      <!-- Sort Dropdown -->
+      <div class="resp-sort-box">
+        <label class="resp-sort-label">Sort</label>
+        <select id="resp-sort-select" class="resp-sort-select" onchange="sortResponsibility(this.value);">
+          <option value="name">Hostel Name</option>
+          <option value="code">Hostel Code</option>
+          <option value="coverage">Coverage Status</option>
+          <option value="caretaker">L1 Caretaker</option>
+          <option value="warden">L2 Warden</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Responsibility Table (Desktop >= 768px) -->
+  <div class="card resp-table-desktop" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
     <div class="table-container" style="border: none;">
       <table class="app-table">
         <thead>
           <tr>
             <th>Hostel</th>
-            <th>Level 1 Responsible Staff</th>
-            <th>Hostel Status</th>
+            <th>Level 1 Caretaker</th>
+            <th>Level 2 Warden</th>
+            <th>Coverage Status</th>
             <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
@@ -53,45 +86,74 @@
           {% for hostel in hostels %}
             <tr>
               <td>
-                <div style="font-weight: 600;">{{ hostel.name }}</div>
-                <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: monospace;">{{ hostel.code }} · {{ hostel.get_gender_type_display }}</div>
+                <div style="font-weight: 600; color: var(--text-primary);">{{ hostel.name }}</div>
+                <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">{{ hostel.code }} · {{ hostel.get_gender_type_display }}</div>
               </td>
               <td>
                 {% if hostel.responsible_staff %}
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="user-avatar" style="width: 26px; height: 26px; font-size: 11px;">
-                      {{ hostel.responsible_staff.login_id|slice:":2"|upper }}
-                    </div>
+                    {% user_avatar hostel.responsible_staff size="sm" %}
                     <div>
-                      <div style="font-weight: 500;">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
-                      <div style="font-size: var(--fs-xs); color: var(--text-muted);">Caretaker (L1) · {{ hostel.responsible_staff.login_id }}</div>
+                      <div style="font-weight: 500; font-size: var(--fs-sm); color: var(--text-primary);">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
+                      <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ hostel.responsible_staff.login_id }}</div>
                     </div>
                   </div>
                 {% else %}
-                  <div style="display: flex; align-items: center; gap: 6px; color: var(--st-progress-fg);">
-                    <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
-                    <span style="font-style: italic;">Unassigned (Falls back to caretaker/warden)</span>
-                  </div>
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border-color: var(--st-progress-dot);">
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -2px;"></i>
+                    Missing Caretaker
+                  </span>
                 {% endif %}
               </td>
               <td>
-                {% if hostel.is_active %}
-                  <span class="status-pill resolved">Active</span>
+                {% if hostel.warden %}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    {% user_avatar hostel.warden size="sm" %}
+                    <div>
+                      <div style="font-weight: 500; font-size: var(--fs-sm); color: var(--text-primary);">{{ hostel.warden.full_name|default:hostel.warden.login_id }}</div>
+                      <div style="font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono);">{{ hostel.warden.login_id }}</div>
+                    </div>
+                  </div>
                 {% else %}
-                  <span class="status-pill closed">Inactive</span>
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border-color: var(--st-progress-dot);">
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -2px;"></i>
+                    Missing Warden
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if hostel.responsible_staff and hostel.warden %}
+                  <span class="status-pill resolved">Complete Coverage</span>
+                {% elif not hostel.responsible_staff and not hostel.warden %}
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); font-weight: 600;">
+                    Missing Staff
+                  </span>
+                {% elif not hostel.responsible_staff %}
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); font-weight: 600;">
+                    Missing Caretaker
+                  </span>
+                {% else %}
+                  <span class="status-pill open" style="background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot); font-weight: 600;">
+                    Missing Warden
+                  </span>
                 {% endif %}
               </td>
               <td style="text-align: right;">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
-                  <i data-lucide="user-check" style="width: 13px; height: 13px;"></i>
-                  <span>{% if hostel.responsible_staff %}Change Staff{% else %}Assign Staff{% endif %}</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}', '{{ hostel.warden.id|default:'' }}');">
+                  <i data-lucide="sliders" style="width: 12px; height: 12px;"></i>
+                  <span>Manage Staff</span>
                 </button>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                No hostels configured yet.
+              <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div class="empty-state">
+                  <div class="empty-state-icon">
+                    <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">No hostels configured yet</h3>
+                </div>
               </td>
             </tr>
           {% endfor %}
@@ -100,48 +162,1019 @@
     </div>
   </div>
 
+  <!-- Mobile Responsibility Cards (Mobile <= 767px, Reference 2 Stack) -->
+  <div class="resp-cards-mobile" id="resp-cards-container">
+    {% for hostel in hostels %}
+      <div class="resp-card-item"
+           data-hostel-name="{{ hostel.name|lower }}"
+           data-hostel-code="{{ hostel.code|lower }}"
+           data-caretaker="{% if hostel.responsible_staff %}{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id|lower }}{% endif %}"
+           data-warden="{% if hostel.warden %}{{ hostel.warden.full_name|default:hostel.warden.login_id|lower }}{% endif %}"
+           data-coverage="{% if hostel.responsible_staff and hostel.warden %}complete{% else %}incomplete{% endif %}">
+        
+        <!-- Header: Hostel Name, Code, Type, Coverage Status -->
+        <div class="resp-card-header">
+          <div class="resp-card-title-group">
+            <h4 class="resp-card-name">{{ hostel.name }}</h4>
+            <div class="resp-card-badges">
+              <span class="resp-code-pill">{{ hostel.code }}</span>
+              <span class="resp-type-pill">{{ hostel.get_gender_type_display }}</span>
+            </div>
+          </div>
+          <div class="resp-card-status">
+            {% if hostel.responsible_staff and hostel.warden %}
+              <span class="coverage-pill complete">
+                <span class="status-dot"></span> Complete Coverage
+              </span>
+            {% elif not hostel.responsible_staff and not hostel.warden %}
+              <span class="coverage-pill alert">
+                <span class="status-dot"></span> Missing Staff
+              </span>
+            {% elif not hostel.responsible_staff %}
+              <span class="coverage-pill warning">
+                <span class="status-dot"></span> Missing Caretaker
+              </span>
+            {% else %}
+              <span class="coverage-pill warning">
+                <span class="status-dot"></span> Missing Warden
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Inset Staff Coverage Box: Level 1 Caretaker | Level 2 Warden -->
+        <div class="resp-card-details-box">
+          <!-- Level 1 Caretaker Section -->
+          <div class="resp-card-col">
+            <div class="resp-card-col-label">LEVEL 1 CARETAKER</div>
+            <div class="resp-staff-row">
+              {% if hostel.responsible_staff %}
+                {% user_avatar hostel.responsible_staff size="sm" %}
+                <div class="resp-staff-text">
+                  <div class="resp-staff-name">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
+                  <div class="resp-staff-designation">
+                    <span class="resp-level-tag l1">L1</span>
+                    {{ hostel.responsible_staff.login_id }}
+                  </div>
+                </div>
+              {% else %}
+                <div class="resp-unassigned-notice">
+                  <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--st-progress-dot);"></i>
+                  <span>Unassigned (Fallback)</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Level 2 Warden Section -->
+          <div class="resp-card-col">
+            <div class="resp-card-col-label">LEVEL 2 WARDEN</div>
+            <div class="resp-staff-row">
+              {% if hostel.warden %}
+                {% user_avatar hostel.warden size="sm" %}
+                <div class="resp-staff-text">
+                  <div class="resp-staff-name">{{ hostel.warden.full_name|default:hostel.warden.login_id }}</div>
+                  <div class="resp-staff-designation">
+                    <span class="resp-level-tag l2">L2</span>
+                    {{ hostel.warden.login_id }}
+                  </div>
+                </div>
+              {% else %}
+                <div class="resp-unassigned-notice">
+                  <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--st-progress-dot);"></i>
+                  <span>Unassigned</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Escalation Path Note -->
+        <div class="resp-escalation-note">
+          <i data-lucide="git-commit" style="width: 13px; height: 13px; color: var(--color-primary); flex-shrink: 0;"></i>
+          <span>Tickets route to L1 Caretaker; escalates to L2 Warden if SLA is exceeded</span>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="resp-card-footer">
+          <div class="resp-coverage-summary">
+            {% if hostel.responsible_staff and hostel.warden %}
+              <span class="summary-text complete">✓ Full escalation coverage</span>
+            {% else %}
+              <span class="summary-text partial">⚠ Partial coverage — action required</span>
+            {% endif %}
+          </div>
+          <button type="button" class="btn-card-action"
+                  onclick="openRespModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}', '{{ hostel.warden.id|default:'' }}');">
+            <i data-lucide="sliders" style="width: 12px; height: 12px;"></i>
+            <span>Manage Staff</span>
+          </button>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state-mobile">
+        <i data-lucide="building-2" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+        <h4>No hostels configured yet</h4>
+        <p>Configure hostels first to assign responsible caretakers and wardens.</p>
+      </div>
+    {% endfor %}
+
+    <div id="resp-no-results" class="empty-state-mobile" style="display: none;">
+      <i data-lucide="search-x" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+      <h4>No matching responsibility records</h4>
+      <p>Try searching for a different hostel or staff member.</p>
+    </div>
+  </div>
+
 </div>
 
-<!-- Change Staff Modal -->
-<div id="change-resp-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px; max-width: 480px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600;">Assign Level 1 Responsible Staff</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('change-resp-modal').style.display='none';">✕</button>
+<!-- Manage Staff Assignments Modal -->
+<div id="change-resp-modal" class="app-modal-backdrop command-palette-backdrop" style="display: none;">
+  <div class="app-modal-dialog command-palette-modal resp-manage-modal">
+    <div class="resp-modal-header">
+      <div class="resp-modal-header__text">
+        <h2 class="resp-modal-title">Manage Staff Assignments</h2>
+        <p class="resp-modal-subtitle">Assign Level 1 Caretaker and Level 2 Warden for <strong id="resp-hostel-name"></strong></p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm app-modal-close" onclick="closeModal('change-resp-modal');" aria-label="Close dialog">✕</button>
     </div>
 
-    <form id="change-resp-form" method="post" action="" style="display: flex; flex-direction: column; gap: 12px;">
+    <form id="change-resp-form" method="post" action="" class="resp-modal-form">
       {% csrf_token %}
       <input type="hidden" name="next" value="{% url 'hostels:manage_responsibility' %}">
 
-      <p style="font-size: var(--fs-sm); color: var(--text-secondary);">
-        Choose the Level 1 staff member who will receive and handle all tickets for <strong id="resp-hostel-name"></strong>:
-      </p>
+      <!-- Section 1: Level 1 Caretaker -->
+      <div class="resp-modal-section">
+        <div class="resp-section-header">
+          <div class="resp-section-icon ct-icon">
+            <i data-lucide="user-check" style="width: 15px; height: 15px;"></i>
+          </div>
+          <div class="resp-section-titles">
+            <span class="resp-section-label">LEVEL 1 CARETAKER</span>
+            <span class="resp-section-desc">Primary contact for all incoming tickets</span>
+          </div>
+          <div class="resp-section-current">
+            <span class="current-label">Current:</span>
+            <span id="resp-current-ct-badge" class="current-badge">Loading...</span>
+          </div>
+        </div>
 
-      <div class="form-group">
-        <label class="form-label">Level 1 Staff (Caretaker) *</label>
-        <select name="responsible_staff" id="resp-staff-select" class="form-select" required>
-          <option value="">-- Select Caretaker --</option>
-          {% for ct in available_caretakers %}
-            <option value="{{ ct.id }}">{{ ct.full_name|default:ct.login_id }} ({{ ct.login_id }})</option>
-          {% endfor %}
-        </select>
+        <div class="resp-searchable-field">
+          <div class="resp-select-search-wrap">
+            <i data-lucide="search" class="resp-select-search-icon"></i>
+            <input type="text"
+                   id="resp-ct-search"
+                   class="form-control form-control-sm resp-filter-input"
+                   placeholder="Search eligible caretakers..."
+                   oninput="filterRoleSelect('resp-staff-select', this.value);">
+          </div>
+          <select name="responsible_staff" id="resp-staff-select" class="form-select resp-staff-select" onchange="updateCurrentBadge('resp-staff-select', 'resp-current-ct-badge');">
+            <option value="">-- No Caretaker (Unassigned) --</option>
+            {% for ct in available_caretakers %}
+              <option value="{{ ct.id }}" data-search="{{ ct.full_name|lower }} {{ ct.login_id|lower }}">
+                {{ ct.full_name|default:ct.login_id }} (@{{ ct.login_id }}) — Level 1 Caretaker
+              </option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('change-resp-modal').style.display='none';">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Assignment</button>
+      <!-- Section 2: Level 2 Warden -->
+      <div class="resp-modal-section">
+        <div class="resp-section-header">
+          <div class="resp-section-icon warden-icon">
+            <i data-lucide="shield-alert" style="width: 15px; height: 15px;"></i>
+          </div>
+          <div class="resp-section-titles">
+            <span class="resp-section-label">LEVEL 2 WARDEN</span>
+            <span class="resp-section-desc">Supervises resolution &amp; receives SLA escalations</span>
+          </div>
+          <div class="resp-section-current">
+            <span class="current-label">Current:</span>
+            <span id="resp-current-warden-badge" class="current-badge">Loading...</span>
+          </div>
+        </div>
+
+        <div class="resp-searchable-field">
+          <div class="resp-select-search-wrap">
+            <i data-lucide="search" class="resp-select-search-icon"></i>
+            <input type="text"
+                   id="resp-warden-search"
+                   class="form-control form-control-sm resp-filter-input"
+                   placeholder="Search eligible wardens..."
+                   oninput="filterRoleSelect('resp-warden-select', this.value);">
+          </div>
+          <select name="responsible_warden" id="resp-warden-select" class="form-select resp-staff-select" onchange="updateCurrentBadge('resp-warden-select', 'resp-current-warden-badge');">
+            <option value="">-- No Warden (Unassigned) --</option>
+            {% for w in available_wardens %}
+              <option value="{{ w.id }}" data-search="{{ w.full_name|lower }} {{ w.login_id|lower }}">
+                {{ w.full_name|default:w.login_id }} (@{{ w.login_id }}) — Level 2 Warden
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="resp-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('change-resp-modal');">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+          <span>Save Changes</span>
+        </button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-function openRespModal(id, name, staffId) {
+function filterRoleSelect(selectId, query) {
+  query = (query || '').toLowerCase().trim();
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  const options = select.options;
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i];
+    if (!opt.value) {
+      opt.hidden = false;
+      continue;
+    }
+    const searchData = (opt.getAttribute('data-search') || opt.text).toLowerCase();
+    opt.hidden = Boolean(query && !searchData.includes(query));
+  }
+}
+
+function updateCurrentBadge(selectId, badgeId) {
+  const select = document.getElementById(selectId);
+  const badge = document.getElementById(badgeId);
+  if (!select || !badge) return;
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.value) {
+    badge.innerText = opt.text.split(' — ')[0];
+  } else {
+    badge.innerText = 'Unassigned';
+  }
+}
+
+function resetSelectFilter(selectId, inputId) {
+  const input = document.getElementById(inputId);
+  if (input) input.value = '';
+  filterRoleSelect(selectId, '');
+}
+
+function openRespModal(id, name, caretakerId, wardenId) {
   document.getElementById('resp-hostel-name').innerText = name;
-  document.getElementById('resp-staff-select').value = staffId;
-  document.getElementById('change-resp-form').action = '/hostels/hostels/' + id + '/change-responsible/';
-  document.getElementById('change-resp-modal').style.display = 'flex';
+
+  const ctSelect = document.getElementById('resp-staff-select');
+  if (ctSelect) {
+    ctSelect.value = caretakerId || '';
+    resetSelectFilter('resp-staff-select', 'resp-ct-search');
+    updateCurrentBadge('resp-staff-select', 'resp-current-ct-badge');
+  }
+
+  const wardenSelect = document.getElementById('resp-warden-select');
+  if (wardenSelect) {
+    wardenSelect.value = wardenId || '';
+    resetSelectFilter('resp-warden-select', 'resp-warden-search');
+    updateCurrentBadge('resp-warden-select', 'resp-current-warden-badge');
+  }
+
+  document.getElementById('change-resp-form').action = '/manage/hostels/' + id + '/change-responsible/';
+  openModal('change-resp-modal');
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function filterResponsibility(query) {
+  query = (query || '').toLowerCase().trim();
+  const clearBtn = document.getElementById('resp-search-clear');
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  const cards = document.querySelectorAll('.resp-card-item');
+  let visibleCount = 0;
+  cards.forEach(card => {
+    const name = card.getAttribute('data-hostel-name') || '';
+    const code = card.getAttribute('data-hostel-code') || '';
+    const ct = card.getAttribute('data-caretaker') || '';
+    const w = card.getAttribute('data-warden') || '';
+    const match = !query || name.includes(query) || code.includes(query) || ct.includes(query) || w.includes(query);
+    card.style.display = match ? 'flex' : 'none';
+    if (match) visibleCount++;
+  });
+
+  const noResults = document.getElementById('resp-no-results');
+  if (noResults) {
+    noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+  }
+
+  // Also filter desktop table rows
+  const rows = document.querySelectorAll('.resp-table-desktop tbody tr');
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = (!query || text.includes(query)) ? '' : 'none';
+  });
+}
+
+function clearRespSearch() {
+  const input = document.getElementById('resp-search-input');
+  if (input) {
+    input.value = '';
+    filterResponsibility('');
+    input.focus();
+  }
+}
+
+function sortResponsibility(criteria) {
+  const container = document.getElementById('resp-cards-container');
+  if (!container) return;
+
+  const cards = Array.from(container.querySelectorAll('.resp-card-item'));
+  cards.sort((a, b) => {
+    if (criteria === 'name') {
+      return (a.getAttribute('data-hostel-name') || '').localeCompare(b.getAttribute('data-hostel-name') || '');
+    } else if (criteria === 'code') {
+      return (a.getAttribute('data-hostel-code') || '').localeCompare(b.getAttribute('data-hostel-code') || '');
+    } else if (criteria === 'coverage') {
+      const covA = a.getAttribute('data-coverage') || '';
+      const covB = b.getAttribute('data-coverage') || '';
+      return covA.localeCompare(covB);
+    } else if (criteria === 'caretaker') {
+      return (a.getAttribute('data-caretaker') || '').localeCompare(b.getAttribute('data-caretaker') || '');
+    } else if (criteria === 'warden') {
+      return (a.getAttribute('data-warden') || '').localeCompare(b.getAttribute('data-warden') || '');
+    }
+    return 0;
+  });
+
+  cards.forEach(card => container.appendChild(card));
 }
 </script>
+
+<style>
+/* Base Desktop Defaults */
+.manage-resp-mobile-header {
+  display: none;
+}
+.resp-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.resp-info-banner__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.resp-info-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+.resp-info-banner__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+.resp-info-banner__desc {
+  font-size: 12px;
+  color: #8b95a5;
+  line-height: 1.4;
+}
+.resp-controls-card {
+  display: none;
+}
+.resp-cards-mobile {
+  display: none;
+}
+
+/* Staff Assignment Modal */
+.resp-manage-modal {
+  max-width: 520px !important;
+  width: 100% !important;
+  border-radius: 16px !important;
+  padding: 22px 24px !important;
+  background: var(--bg-surface-glass, #0f172a) !important;
+  border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1)) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+}
+.resp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.resp-modal-header__text {
+  flex: 1;
+  min-width: 0;
+}
+.resp-modal-title {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary, #ffffff) !important;
+  margin: 0 0 4px 0 !important;
+  line-height: 1.25;
+}
+.resp-modal-subtitle {
+  font-size: 12.5px !important;
+  color: var(--text-muted, #8b95a5) !important;
+  margin: 0 !important;
+  line-height: 1.4;
+}
+.resp-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.resp-modal-section {
+  background: #090e17;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.resp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.resp-section-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.resp-section-icon.ct-icon {
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+}
+.resp-section-icon.warden-icon {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+.resp-section-titles {
+  flex: 1;
+  min-width: 120px;
+}
+.resp-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+  display: block;
+  line-height: 1.2;
+}
+.resp-section-desc {
+  font-size: 11px;
+  color: #8b95a5;
+  display: block;
+  margin-top: 1px;
+}
+.resp-section-current {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.current-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.current-badge {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resp-searchable-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resp-select-search-wrap {
+  position: relative;
+  width: 100%;
+}
+.resp-select-search-icon {
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  width: 13px;
+  height: 13px;
+  color: #64748b;
+  pointer-events: none;
+}
+.resp-filter-input {
+  width: 100%;
+  background: #06090e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 7px !important;
+  height: 30px !important;
+  font-size: 12px !important;
+  color: #ffffff !important;
+  padding-left: 28px !important;
+  padding-right: 10px !important;
+}
+.resp-filter-input:focus {
+  border-color: #2563eb !important;
+  outline: none;
+}
+.resp-staff-select {
+  width: 100%;
+  background-color: #0b1320 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  height: 38px !important;
+  font-size: 12.5px !important;
+  color: #e2e8f0 !important;
+  padding: 0 10px !important;
+}
+.resp-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Mobile Stitch Design System (<= 767px) */
+@media (max-width: 767px) {
+  /* Hide generic base page-header on mobile */
+  .page-header {
+    display: none !important;
+  }
+
+  .page--narrow {
+    gap: 14px !important;
+    padding-bottom: 96px !important;
+  }
+
+  /* Stitch Mobile Title */
+  .manage-resp-mobile-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-top: -4px;
+    margin-bottom: 2px;
+  }
+
+  .manage-resp-mobile-header__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .manage-resp-mobile-header__title {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 2px 0 !important;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .manage-resp-mobile-header__subtitle {
+    font-size: 12.5px !important;
+    color: #8b95a5 !important;
+    margin: 0 !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Admin Sub-Navigation Capsule Bar on Mobile */
+  .admin-subnav {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #0b1320 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 0 !important;
+    scrollbar-width: none;
+  }
+  .admin-subnav::-webkit-scrollbar {
+    display: none;
+  }
+  .admin-subnav__item {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+  }
+  .admin-subnav__item.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Controls Card: Search & Sort */
+  .resp-controls-card {
+    display: block !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .resp-controls-form {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .resp-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .resp-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 11px;
+    width: 15px;
+    height: 15px;
+    color: #64748b;
+    pointer-events: none;
+  }
+
+  .resp-search-input {
+    width: 100%;
+    background: #090e17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+    padding-left: 36px !important;
+    padding-right: 30px !important;
+    outline: none;
+  }
+
+  .resp-search-input::placeholder {
+    color: #8b95a5 !important;
+  }
+
+  .resp-search-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+  }
+
+  .resp-search-clear {
+    position: absolute;
+    right: 10px;
+    top: 9px;
+    background: none;
+    border: none;
+    color: #8b95a5;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .resp-sort-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .resp-sort-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .resp-sort-select {
+    background-color: #090e17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    color: #e2e8f0 !important;
+    padding: 0 24px 0 10px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+  }
+
+  /* Hide Desktop Table */
+  .resp-table-desktop {
+    display: none !important;
+  }
+
+  /* Mobile Responsibility Cards Stack */
+  .resp-cards-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .resp-card-item {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 15px 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resp-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .resp-card-title-group {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .resp-card-name {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .resp-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .resp-code-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: #1e293b;
+    color: #93c5fd;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 600;
+    border: 1px solid rgba(147, 197, 253, 0.2);
+  }
+
+  .resp-type-pill {
+    font-size: 11px;
+    color: #8b95a5;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+
+  /* Coverage Status Pills */
+  .coverage-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .coverage-pill.complete {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .coverage-pill.warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+  .coverage-pill.alert {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+  }
+  .coverage-pill .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .coverage-pill.complete .status-dot { background: #10b981; }
+  .coverage-pill.warning .status-dot { background: #f59e0b; }
+  .coverage-pill.alert .status-dot { background: #ef4444; }
+
+  /* Inset 2-Column Staff Box */
+  .resp-card-details-box {
+    background: #090e17;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0 10px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 360px) {
+    .resp-card-details-box {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+  }
+
+  .resp-card-col {
+    min-width: 0;
+  }
+
+  .resp-card-col-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .resp-staff-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .resp-staff-row .avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 11px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .resp-staff-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .resp-staff-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+
+  .resp-staff-designation {
+    font-size: 11px;
+    color: #8b95a5;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .resp-level-tag {
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+  .resp-level-tag.l1 {
+    background: rgba(37, 99, 235, 0.2);
+    color: #60a5fa;
+  }
+  .resp-level-tag.l2 {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+  }
+
+  .resp-unassigned-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: #f59e0b;
+    font-style: italic;
+  }
+
+  /* Escalation Note */
+  .resp-escalation-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 6px;
+    font-size: 11px;
+    color: #93c5fd;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  /* Footer */
+  .resp-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .resp-coverage-summary {
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .summary-text.complete {
+    color: #10b981;
+  }
+  .summary-text.partial {
+    color: #fbbf24;
+  }
+
+  .btn-card-action {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background var(--duration-fast);
+  }
+  .btn-card-action:active {
+    background: #334155;
+  }
+
+  .empty-state-mobile {
+    text-align: center;
+    padding: 36px 16px;
+    background: #0f172a;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+  .empty-state-mobile h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 10px 0 4px 0;
+  }
+  .empty-state-mobile p {
+    font-size: 12.5px;
+    color: #8b95a5;
+    margin: 0;
+  }
+}
+</style>
 {% endblock %}

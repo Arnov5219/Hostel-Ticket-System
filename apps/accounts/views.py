@@ -1,10 +1,70 @@
+import os
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
+from django.core.exceptions import ValidationError
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 
-from apps.accounts.forms import LoginForm, ProfileUpdateForm
+from apps.accounts.forms import (
+    HostelerRegistrationForm,
+    LoginForm,
+    ProfileUpdateForm,
+    ResidenceForm,
+    StyledPasswordChangeForm,
+)
+from apps.accounts.services import (
+    generate_registration_token,
+    register_hosteler,
+    set_residence,
+)
+from apps.hostels.models import Hostel
+
+
+def register_view(request):
+    """
+    Public student self-registration view.
+    GET: renders registration form with anti-bot token.
+    POST: validates inputs, creates HOSTELER user, logs in, redirects to home.
+    """
+    if request.user.is_authenticated:
+        return redirect("dashboard:index")
+
+    if request.method == "POST":
+        form = HostelerRegistrationForm(request.POST)
+        if form.is_valid():
+            try:
+                user = register_hosteler(
+                    data=form.cleaned_data,
+                    request_meta=request.META,
+                )
+                login(request, user)
+                msg = f"Welcome, {user.full_name or user.login_id}! Your account has been registered."
+                if not form.cleaned_data.get("login_id"):
+                    msg += f" Your assigned Login ID is {user.login_id} (save this to sign in)."
+                msg += " You can report room and hostel issues right away."
+                messages.success(request, msg)
+                return redirect("dashboard:index")
+            except ValidationError as e:
+                messages.error(request, str(e.message if hasattr(e, "message") else e))
+        else:
+            messages.error(request, "Please check the form for errors.")
+    else:
+        form = HostelerRegistrationForm(initial={"ts_token": generate_registration_token()})
+
+    from apps.hostels.services import natural_sort_key
+    hostels = sorted(Hostel.objects.filter(is_active=True), key=natural_sort_key)
+    return render(
+        request,
+        "accounts/register.html",
+        {
+            "form": form,
+            "hostels": hostels,
+        },
+    )
+
 
 
 def login_view(request):
@@ -24,7 +84,11 @@ def login_view(request):
     else:
         form = LoginForm()
 
-    return render(request, "accounts/login.html", {"form": form})
+    show_demo_accounts = settings.DEBUG or os.environ.get("ENABLE_DEMO_ACCOUNTS") == "1"
+    return render(request, "accounts/login.html", {
+        "form": form,
+        "show_demo_accounts": show_demo_accounts,
+    })
 
 
 def logout_view(request):
@@ -37,23 +101,29 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     profile_form = ProfileUpdateForm(instance=request.user)
-    password_form = PasswordChangeForm(request.user)
+    password_form = StyledPasswordChangeForm(request.user)
 
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "update_profile":
-            profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
+            profile_form = ProfileUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, "Profile updated successfully.")
                 return redirect("accounts:profile")
         elif action == "change_password":
-            password_form = PasswordChangeForm(request.user, request.POST)
+            password_form = StyledPasswordChangeForm(request.user, request.POST)
             if password_form.is_valid():
                 user = password_form.save()
                 update_session_auth_hash(request, user)
-                messages.success(request, "Your password has been changed.")
+                messages.success(request, "Your password has been changed successfully.")
                 return redirect("accounts:profile")
+            else:
+                messages.error(request, "Unable to change password. Please check the errors below.")
+
+    residence_form = None
+    if request.user.is_hosteler:
+        residence_form = ResidenceForm(initial={"hostel": request.user.hostel_id})
 
     return render(
         request,
@@ -61,6 +131,99 @@ def profile_view(request):
         {
             "profile_form": profile_form,
             "password_form": password_form,
+            "residence_form": residence_form,
             "current_section": "profile",
         },
     )
+
+
+@login_required
+def onboarding_view(request):
+    """
+    Mandatory onboarding gate for hostelers lacking a complete residence.
+    """
+    if not request.user.is_hosteler:
+        return redirect("dashboard:index")
+
+    if request.user.has_residence and request.method == "GET":
+        return redirect("dashboard:index")
+
+    form = ResidenceForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                set_residence(
+                    user=request.user,
+                    hostel=form.cleaned_data["hostel"],
+                    changed_by=request.user,
+                )
+                messages.success(request, f"Welcome to {form.cleaned_data['hostel'].name}! Your residence has been saved.")
+                return redirect("dashboard:index")
+            except ValidationError as e:
+                messages.error(request, str(e.message if hasattr(e, "message") else e))
+        else:
+            messages.error(request, "Please select a valid Hostel.")
+
+    hostels = Hostel.objects.filter(is_active=True).order_by("code")
+    return render(
+        request,
+        "accounts/onboarding.html",
+        {
+            "form": form,
+            "hostels": hostels,
+        },
+    )
+
+
+@login_required
+def profile_residence_view(request):
+    """
+    Residence management view.
+    Hostelers are strictly prevented from self-assigning or changing their hostel.
+    Only authorized administrators may update hostel assignments.
+    """
+    if request.user.is_hosteler:
+        messages.error(
+            request,
+            "Hostel assignments are managed by administration and cannot be changed by residents.",
+        )
+        return redirect("accounts:profile")
+
+    if not request.user.is_admin:
+        messages.error(
+            request, "Only administrators have permission to manage hostel assignments."
+        )
+        return redirect("accounts:profile")
+
+    if request.method == "POST":
+        form = ResidenceForm(request.POST)
+        if form.is_valid():
+            try:
+                set_residence(
+                    user=request.user,
+                    hostel=form.cleaned_data["hostel"],
+                    changed_by=request.user,
+                )
+                messages.success(request, "Residence was updated successfully.")
+            except ValidationError as e:
+                messages.error(request, str(e.message if hasattr(e, "message") else e))
+        else:
+            messages.error(request, "Invalid residence selection. Please select a valid Hostel.")
+        return redirect("accounts:profile")
+
+    return redirect("accounts:profile")
+
+
+def change_theme_view(request):
+    """
+    POST /accounts/theme/ saves theme choice (SYSTEM, LIGHT, DARK).
+    """
+    if request.method == "POST":
+        theme = request.POST.get("theme", "").upper()
+        if theme in ["LIGHT", "DARK", "SYSTEM"]:
+            if request.user.is_authenticated:
+                request.user.theme = theme
+                request.user.save(update_fields=["theme"])
+            return HttpResponse(status=204)
+        return HttpResponseBadRequest("Invalid theme choice")
+    return HttpResponseBadRequest("POST required")

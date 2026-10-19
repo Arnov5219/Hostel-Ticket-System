@@ -4,12 +4,17 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.core.permissions import can_add_internal_note, can_view_ticket
+from apps.core.permissions import (
+    can_add_internal_note,
+    can_view_ticket,
+)
 from apps.tickets.forms import CommentForm
 from apps.tickets.models import (
+    CommentScope,
     Status,
     Ticket,
 )
+from apps.tickets.services.deletion import can_delete
 
 
 @login_required
@@ -17,8 +22,8 @@ def ticket_detail(request, ticket_no):
     ticket = get_object_or_404(
         Ticket.objects.select_related(
             "category",
-            "sub_category",
             "hostel",
+            "room",
             "reporter",
             "assigned_to",
         ).prefetch_related(
@@ -34,10 +39,10 @@ def ticket_detail(request, ticket_no):
     if not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to view this ticket.")
 
-    # Comments visibility: internal notes hidden from hostelers!
+    # Comments visibility: internal notes hidden from hostelers
     comments_qs = ticket.comments.all()
     if request.user.is_hosteler:
-        comments_qs = comments_qs.filter(is_internal=False)
+        comments_qs = comments_qs.exclude(scope=CommentScope.INTERNAL).filter(is_hidden=False)
 
     # SLA time calculation
     sla_percentage = 0
@@ -72,17 +77,16 @@ def ticket_detail(request, ticket_no):
 
     # Eligible assignees for reassigning
     eligible_staff = User.objects.filter(
-        role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+        role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN],
         is_active=True,
     )
-    if ticket.hostel:
-        eligible_staff = (
-            eligible_staff.filter(models_Q_hostel=ticket.hostel) if False else eligible_staff
-        )
 
+    # Activity timeline: legacy actions excluded automatically by manager
     activities_qs = ticket.activities.all()
     if request.user.is_hosteler:
         activities_qs = activities_qs.exclude(note__icontains="internal")
+
+    user_can_delete, delete_block_reason = can_delete(request.user, ticket)
 
     context = {
         "ticket": ticket,
@@ -97,5 +101,7 @@ def ticket_detail(request, ticket_no):
         "current_section": "tickets",
         "eligible_staff": eligible_staff,
         "statuses": Status.choices,
+        "user_can_delete": user_can_delete,
+        "delete_block_reason": delete_block_reason,
     }
     return render(request, "tickets/detail.html", context)

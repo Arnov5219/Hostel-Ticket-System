@@ -4,10 +4,12 @@ from apps.accounts.factories import UserFactory
 from apps.hostels.factories import HostelFactory
 from apps.tickets.models import (
     Category,
+    CommentScope,
     Priority,
     Status,
     Ticket,
     TicketComment,
+    TicketVisibility,
 )
 from apps.tickets.services.numbering import generate_ticket_number
 
@@ -31,10 +33,20 @@ class TicketFactory(factory.django.DjangoModelFactory):
     title = factory.Faker("sentence", nb_words=5)
     description = factory.Faker("paragraph")
     category = factory.SubFactory(CategoryFactory)
+    visibility = TicketVisibility.PRIVATE
+    base_priority = Priority.MEDIUM
     priority = Priority.MEDIUM
     status = Status.OPEN
     reporter = factory.SubFactory(UserFactory)
-    hostel = factory.SubFactory(HostelFactory)
+    hostel = factory.LazyAttribute(lambda o: o.reporter.hostel if (o.reporter and o.reporter.hostel) else HostelFactory())
+    room = factory.LazyAttribute(lambda o: o.reporter.room if (o.reporter and o.reporter.room) else None)
+    room_number = factory.LazyAttribute(
+        lambda o: (
+            o.room.room_number
+            if o.room
+            else (o.reporter.room.room_number if (o.reporter and o.reporter.room) else "101")
+        )
+    )
     current_level = 1
 
 
@@ -45,4 +57,5 @@ class TicketCommentFactory(factory.django.DjangoModelFactory):
     ticket = factory.SubFactory(TicketFactory)
     author = factory.SubFactory(UserFactory)
     body = factory.Faker("sentence")
-    is_internal = False
+    scope = CommentScope.PRIVATE
+

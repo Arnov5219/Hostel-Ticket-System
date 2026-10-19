@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load static ui %}
 
-{% block title %}Kanban Board | Hostel Ticket System{% endblock %}
+{% block title %}Kanban | {{ site_name|default:"HostelFlow" }}{% endblock %}
+
+{% block mobile_back_fallback %}{% url 'tickets:list' %}{% endblock %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
@@ -15,59 +17,158 @@
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>
+  <a href="{% url 'tickets:list' %}">Tickets</a>
+  <span class="separator">/</span>
   <span class="current">Kanban</span>
 {% endblock %}
 
-{% block page_title %}Ticket Kanban Board{% endblock %}
+{% block page_title %}Kanban{% endblock %}
+{% block page_subtitle %}{% endblock %}
 
 {% block page_actions %}
-  <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" title="List View">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <a href="{% url 'tickets:list' %}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 13px; font-weight: 500; border-radius: var(--radius-sm);" title="List View">
       <i data-lucide="list" style="width: 14px; height: 14px;"></i>
-      <span>List View</span>
+      <span>List</span>
     </a>
 
-    <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" title="Refresh">
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; background: var(--primary); color: var(--primary-text); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);" title="Vertical Kanban">
+      <i data-lucide="kanban" style="width: 14px; height: 14px;"></i>
+      <span>Vertical Kanban</span>
+    </a>
+
+    <a href="{% url 'tickets:kanban' %}" class="btn btn-ghost btn-sm" style="padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);" title="Refresh board">
       <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-    </a>
-
-    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
-      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-      <span>Raise Ticket</span>
     </a>
   </div>
 {% endblock %}
 
 {% block content %}
-<div class="kanban-board">
-  {% for col in columns %}
-    <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}">
-      
-      <!-- Column Header -->
-      <div class="kanban-col-header">
-        <div class="kanban-col-title-wrap">
-          <span class="prio-dot {{ col.status|lower }}"></span>
-          <span class="kanban-col-title">{{ col.title }}</span>
-          <span class="kanban-col-count">({{ col.tickets.count }})</span>
-        </div>
-      </div>
+<style>
+  [x-cloak] { display: none !important; }
+</style>
 
-      <!-- Add Ticket ghost button for Open/Assigned column -->
-      {% if col.status == 'OPEN' %}
-        <a href="{% url 'tickets:create' %}" class="kanban-add-btn">
-          <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
-          <span>Add Ticket</span>
-        </a>
-      {% endif %}
-
-      <!-- Cards Container (SortableJS Target) -->
-      <div class="kanban-cards-container" data-status="{{ col.status }}">
-        {% for ticket in col.tickets %}
-          {% include 'tickets/_kanban_card.html' with ticket=ticket %}
-        {% endfor %}
-      </div>
-
+<div x-data="{ search: '', allOpen: false }" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+  
+  <!-- Kanban Search & Flow Header Bar matching reference image -->
+  <div class="kanban-toolbar">
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.01em;">Kanban</h2>
+      <span style="display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 600; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--border);">
+        Vertical Stack Flow
+      </span>
     </div>
-  {% endfor %}
+
+    <!-- Filter Cards on board -->
+    <div style="position: relative; max-width: 360px; width: 100%; min-width: 240px;">
+      <i data-lucide="search" style="position: absolute; left: 14px; top: 10px; width: 15px; height: 15px; color: var(--text-muted); pointer-events: none;"></i>
+      <input type="text" x-model="search" placeholder="Filter cards on board..."
+             class="form-control" style="width: 100%; height: 36px; padding: 0 14px 0 40px; font-size: 13px; border-radius: var(--radius-sm); background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); outline: none;">
+    </div>
+
+    <!-- Right overview button -->
+    <button type="button" @click="allOpen = !allOpen; $dispatch('toggle-all-stages', allOpen);"
+            class="btn btn-ghost btn-sm"
+            style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); border: 1px solid var(--border); padding: 6px 12px; border-radius: var(--radius-sm); background: var(--bg-surface); cursor: pointer;">
+      <i data-lucide="layers" style="width: 14px; height: 14px; color: var(--primary);"></i>
+      <span x-text="allOpen ? 'Collapse all stages' : 'Expand all stages'">Expand all stages</span>
+    </button>
+  </div>
+
+  <!-- Vertically Stacked Stage Rows -->
+  <div class="kanban-board vertical-kanban-board" id="kanban-board">
+    {% for col in columns %}
+      <div class="kanban-column {{ col.status|lower }}" data-status="{{ col.status }}"
+           x-data="{ isOpen: false, sortPrio: false }"
+           x-on:toggle-all-stages.window="isOpen = $event.detail">
+        
+        <!-- Stage Header Row Bar -->
+        <div class="kanban-stage-header"
+             @click="isOpen = !isOpen"
+             :aria-expanded="isOpen.toString()">
+          
+          <!-- Left: Glowing dot, Stage Title, Count, Description -->
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            {% if col.status == 'OPEN' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--st-open-dot); box-shadow: 0 0 8px var(--st-open-dot);"></span>
+            {% elif col.status == 'ASSIGNED' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--st-assigned-dot); box-shadow: 0 0 8px var(--st-assigned-dot);"></span>
+            {% elif col.status == 'IN_PROGRESS' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--st-progress-dot); box-shadow: 0 0 8px var(--st-progress-dot);"></span>
+            {% elif col.status == 'ON_HOLD' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--st-hold-dot); box-shadow: 0 0 8px var(--st-hold-dot);"></span>
+            {% elif col.status == 'RESOLVED' %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--st-resolved-dot); box-shadow: 0 0 8px var(--st-resolved-dot);"></span>
+            {% else %}
+              <span class="stage-dot" style="width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); box-shadow: 0 0 8px var(--text-muted);"></span>
+            {% endif %}
+
+            <span style="font-size: 14px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.03em; text-transform: uppercase;">
+              {{ col.title }}
+            </span>
+
+            <span class="kanban-col-count" style="font-size: 11.5px; font-weight: 700; color: var(--primary-ink); background: var(--primary-soft); border: 1px solid var(--border); padding: 2px 8px; border-radius: var(--radius-full);">
+              {{ col.tickets.count }}
+            </span>
+
+            {% if col.desc %}
+              <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+                &bull; {{ col.desc }}
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Right: Action & Collapse Chevron -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            {% if col.status == 'OPEN' and request.user.is_admin %}
+              <a href="{% url 'tickets:create' %}" @click.stop style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--primary); background: var(--primary-soft); border: 1px solid var(--border); padding: 4px 10px; border-radius: var(--radius-xs); text-decoration: none;">
+                <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+                <span>Add Ticket</span>
+              </a>
+            {% elif col.status == 'ASSIGNED' %}
+              <button type="button" @click.stop="sortPrio = !sortPrio"
+                      style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-subtle); border: 1px solid var(--border); padding: 4px 10px; border-radius: var(--radius-xs); cursor: pointer;">
+                <i data-lucide="arrow-up-down" style="width: 12px; height: 12px; color: var(--primary);"></i>
+                <span>Priority</span>
+              </button>
+            {% elif col.status == 'IN_PROGRESS' %}
+              <button type="button" @click.stop="sortPrio = !sortPrio"
+                      style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-subtle); border: 1px solid var(--border); padding: 4px 10px; border-radius: var(--radius-xs); cursor: pointer;">
+                <i data-lucide="arrow-up-down" style="width: 12px; height: 12px; color: var(--st-progress-dot);"></i>
+                <span>Urgency</span>
+              </button>
+            {% endif %}
+
+            <!-- Expand / Collapse chevron -->
+            <button type="button" @click.stop="isOpen = !isOpen"
+                    style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center;"
+                    :title="isOpen ? 'Collapse stage' : 'Expand stage'"
+                    :aria-expanded="isOpen.toString()">
+              <i data-lucide="chevron-up" x-show="isOpen" style="width: 16px; height: 16px; display: none;"></i>
+              <i data-lucide="chevron-down" x-show="!isOpen" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards Container (Horizontal Grid for this Stage) -->
+        <div class="kanban-cards-container" data-status="{{ col.status }}" x-show="isOpen" x-cloak style="margin-top: 10px;">
+          {% for ticket in col.tickets %}
+            <div x-show="!search || $el.innerText.toLowerCase().includes(search.toLowerCase())"
+                 class="kanban-card-wrapper" data-priority="{{ ticket.priority }}">
+              {% include 'tickets/_kanban_card.html' with ticket=ticket %}
+            </div>
+          {% empty %}
+            <div class="kanban-empty-col">
+              <i data-lucide="inbox" style="width: 22px; height: 22px; opacity: 0.5; margin-bottom: 6px;"></i>
+              <div>No tickets currently in {{ col.title }}</div>
+            </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
 </div>
 {% endblock %}

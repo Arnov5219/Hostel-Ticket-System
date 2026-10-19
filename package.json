@@ -1,0 +1,38 @@
+{
+  "name": "hostel-ticket-system",
+  "version": "1.0.0",
+  "description": "A production-grade, enterprise-dense web application for campus hostel ticket, maintenance, and grievance management built with **Django 5.x**, **HTMX**, **Alpine.js**, and an aesthetic design system inspired by **Frappe / ERPNext**.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "cap:sync": "cap sync android",
+    "cap:copy": "cap copy android",
+    "cap:open": "cap open android",
+    "android:build": "cd android && gradlew.bat assembleDebug",
+    "android:release": "cd android && gradlew.bat assembleRelease"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arnov5219/Hostel-Ticket-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Arnov5219/Hostel-Ticket-System/issues"
+  },
+  "homepage": "https://github.com/Arnov5219/Hostel-Ticket-System#readme",
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/network": "^7.0.4",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6"
+  }
+}

@@ -27,8 +27,8 @@ wheels/
 # Django
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
+db.sqlite3*
+*.bak
 /media/
 
 # Environment
@@ -46,3 +46,20 @@ db.sqlite3-journal
 .coverage
 htmlcov/
 .ruff_cache/
+
+# Local planning documents
+/plan/
+
+# Node / Capacitor
+node_modules/
+package-lock.json
+
+# Android
+.gradle/
+local.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+*.apk
+*.aab

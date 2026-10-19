@@ -1,13 +1,17 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 
-from apps.accounts.models import User
-from apps.core.permissions import can_add_internal_note, can_reassign_or_escalate, can_view_ticket
-from apps.notifications.models import Notification
-from apps.tickets.forms import CommentForm
+from apps.accounts.models import Role, User
+from apps.core.permissions import (
+    Capability,
+    can_reassign_or_escalate,
+    can_view_ticket,
+    has_capability,
+)
+from apps.notifications.services import notify_ticket_reassigned
 from apps.tickets.models import (
     ActivityAction,
     Ticket,
@@ -19,68 +23,19 @@ from apps.tickets.services.status import change_status as service_change_status
 
 @login_required
 def add_comment(request, ticket_no):
-    ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if not can_view_ticket(request.user, ticket):
-        raise PermissionDenied("You cannot comment on this ticket.")
-
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.ticket = ticket
-            comment.author = request.user
-
-            if comment.is_internal and not can_add_internal_note(request.user):
-                comment.is_internal = False
-
-            comment.save()
-
-            note_type = "Internal Note" if comment.is_internal else "Public Comment"
-            act_note = (
-                "Added an internal staff note"
-                if comment.is_internal
-                else f"Added a comment: {comment.body[:60]}..."
-            )
-            TicketActivity.objects.create(
-                ticket=ticket,
-                actor=request.user,
-                action=ActivityAction.COMMENTED,
-                note=act_note,
-            )
-
-            recipient = ticket.assigned_to if request.user == ticket.reporter else ticket.reporter
-            if recipient and not comment.is_internal:
-                Notification.objects.create(
-                    recipient=recipient,
-                    ticket=ticket,
-                    verb="New Comment",
-                    message=f"{request.user.full_name or request.user.login_id} commented on {ticket.ticket_no}.",
-                )
-
-            if request.headers.get("HX-Request") == "true":
-                comments = ticket.comments.all()
-                if request.user.is_hosteler:
-                    comments = comments.filter(is_internal=False)
-                return render(
-                    request,
-                    "tickets/_activity.html",
-                    {
-                        "ticket": ticket,
-                        "comments": comments,
-                        "activities": ticket.activities.all(),
-                        "can_add_note": can_add_internal_note(request.user),
-                    },
-                )
-
-            messages.success(request, f"{note_type} posted successfully.")
-            return redirect("tickets:detail", ticket_no=ticket.ticket_no)
-
-    return redirect("tickets:detail", ticket_no=ticket.ticket_no)
+    """
+    Comment submission endpoint - disabled per cleanup plan.
+    Ticket comments/discussions have been permanently removed in favor of the activity timeline.
+    """
+    raise PermissionDenied("Ticket comments have been disabled.")
 
 
 @login_required
 def change_status(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
+        raise PermissionDenied("Admin cannot change ticket status.")
+
     if request.method == "POST":
         new_status = request.POST.get("status")
         note = request.POST.get("note", "").strip()
@@ -96,6 +51,9 @@ def change_status(request, ticket_no):
 @login_required
 def move_ticket(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
+    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
+        raise PermissionDenied("Admin cannot change ticket status.")
+
     if request.method == "POST":
         new_status = request.POST.get("status")
         try:
@@ -129,6 +87,7 @@ def reassign(request, ticket_no):
         )
         new_assignee_name = new_assignee.full_name or new_assignee.login_id
 
+        old_assignee = ticket.assigned_to
         ticket.assigned_to = new_assignee
         ticket.save()
 
@@ -141,12 +100,7 @@ def reassign(request, ticket_no):
             note=note,
         )
 
-        Notification.objects.create(
-            recipient=new_assignee,
-            ticket=ticket,
-            verb="Ticket Reassigned",
-            message=f"Ticket {ticket.ticket_no} has been reassigned to you by {request.user.full_name or request.user.login_id}.",
-        )
+        notify_ticket_reassigned(ticket, old_assignee, new_assignee, request.user)
 
         messages.success(request, f"Ticket reassigned to {new_assignee_name}.")
 
@@ -156,7 +110,7 @@ def reassign(request, ticket_no):
 @login_required
 def manual_escalate(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if not can_reassign_or_escalate(request.user, ticket):
+    if not has_capability(request.user, Capability.ESCALATE) or not can_view_ticket(request.user, ticket):
         raise PermissionDenied("You do not have permission to escalate this ticket.")
 
     if request.method == "POST":

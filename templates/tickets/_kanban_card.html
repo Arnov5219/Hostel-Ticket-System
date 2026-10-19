@@ -1,37 +1,98 @@
 {% load ui %}
 
-<div class="kanban-card" data-ticket-no="{{ ticket.ticket_no }}" onclick="if(!event.target.closest('button') && !event.target.closest('a')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
+<div class="kanban-card" data-ticket-no="{{ ticket.ticket_no }}"
+     onclick="if(!event.target.closest('button') && !event.target.closest('a') && !event.target.closest('form')) window.location.href='{% url 'tickets:detail' ticket.ticket_no %}';">
   
-  <div class="kanban-card-top">
-    <span class="kanban-ticket-no">{{ ticket.ticket_no }}</span>
-    {% priority_dot ticket.priority %}
-  </div>
+  <!-- Top Row: Ticket ID + Priority Pill + Menu -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+    <span class="ticket-id">
+      {{ ticket.ticket_no }}
+    </span>
 
-  <div class="kanban-card-title">{{ ticket.title }}</div>
-
-  <div class="kanban-card-location">
-    <i data-lucide="map-pin" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-    <span>{{ ticket.hostel.name }}</span>
-  </div>
-
-  <div class="kanban-card-footer">
-    <div class="kanban-card-meta">
-      {% if ticket.assigned_to %}
-        {% user_avatar ticket.assigned_to size="sm" %}
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <!-- Priority Badge -->
+      {% if ticket.priority == 'URGENT' %}
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--st-open-bg); color: var(--st-open-fg); border: 1px solid var(--st-open-dot);">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--st-open-dot);"></span>
+          <span>Urgent</span>
+        </span>
+      {% elif ticket.priority == 'HIGH' %}
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--st-progress-bg); color: var(--st-progress-fg); border: 1px solid var(--st-progress-dot);">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--st-progress-dot);"></span>
+          <span>High</span>
+        </span>
+      {% elif ticket.priority == 'MEDIUM' %}
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--st-assigned-bg); color: var(--st-assigned-fg); border: 1px solid var(--st-assigned-dot);">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--st-assigned-dot);"></span>
+          <span>Medium</span>
+        </span>
       {% else %}
-        <span class="avatar avatar-sm" style="font-size: 9px;">?</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--st-closed-bg); color: var(--st-closed-fg); border: 1px solid var(--st-closed-dot);">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--st-closed-dot);"></span>
+          <span>Low</span>
+        </span>
       {% endif %}
 
+      <!-- Move / Actions Dropdown -->
+      <div class="dropdown" x-data="{ moveOpen: false }" style="position: relative;">
+        <button type="button" @click.stop="moveOpen = !moveOpen"
+                style="background: transparent; border: none; padding: 2px 4px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center;"
+                title="Move ticket">
+          <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
+        </button>
+        <div class="dropdown-menu" x-show="moveOpen" @click.outside="moveOpen = false"
+             style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; box-shadow: var(--shadow-modal); z-index: 20;">
+          <div style="padding: 4px 8px; font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em;">MOVE TO</div>
+          {% for st_val, st_lbl in kanban_statuses %}
+            {% if st_val != ticket.status %}
+              <form method="post" action="{% url 'tickets:move' ticket.ticket_no %}" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="{{ st_val }}">
+                <button type="submit" style="width: 100%; border: none; background: transparent; text-align: left; padding: 6px 8px; font-size: 12px; color: var(--text-primary); cursor: pointer; border-radius: var(--radius-xs); transition: background var(--duration-fast) ease;"
+                        onmouseover="this.style.background='var(--primary-soft)'; this.style.color='var(--primary)';"
+                        onmouseout="this.style.background='transparent'; this.style.color='var(--text-primary)';">
+                  {{ st_lbl }}
+                </button>
+              </form>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Title -->
+  <div class="kanban-card-title">
+    {{ ticket.title }}
+  </div>
+
+  <!-- Card Location / Category -->
+  <div class="kanban-card-location">
+    <i data-lucide="map-pin" style="width: 12px; height: 12px; color: var(--text-muted); flex-shrink: 0;"></i>
+    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+      {{ ticket.hostel.name }}{% if ticket.room_number %} (Rm {{ ticket.room_number }}){% endif %}{% if ticket.category %} · {{ ticket.category.name }}{% endif %}
+    </span>
+  </div>
+
+  <!-- Card Footer: Avatar + SLA Status + Level -->
+  <div class="kanban-card-footer">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      {% if ticket.assigned_to %}
+        {% user_avatar ticket.assigned_to size="xs" %}
+      {% else %}
+        <span class="avatar--unassigned" title="Unassigned">
+          <i data-lucide="user" style="width: 11px; height: 11px;"></i>
+        </span>
+      {% endif %}
+
+      <!-- SLA Badge -->
       <span class="kanban-sla-badge {% if ticket.is_overdue %}overdue{% endif %}">
         <i data-lucide="clock" style="width: 11px; height: 11px;"></i>
-        {% if ticket.is_overdue %}
-          Overdue
-        {% else %}
-          {% time_ago ticket.due_at %} left
-        {% endif %}
+        <span>{% kanban_time_copy ticket %}</span>
       </span>
     </div>
 
+    <!-- Escalation Level Chip -->
     <div style="display: flex; align-items: center; gap: 4px;">
       {% level_badge ticket.current_level %}
     </div>

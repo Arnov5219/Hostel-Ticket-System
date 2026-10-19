@@ -57,5 +57,5 @@ def ticket_create(request):
     return render(
         request,
         "tickets/create.html",
-        {"form": form, "current_section": "tickets"},
+        {"form": form, "current_section": "tickets_create"},
     )

@@ -1,58 +1,289 @@
 :root {
-  /* Surfaces */
-  --bg-app:        #F4F5F6;   /* page background */
-  --bg-surface:    #FFFFFF;   /* cards, tables */
-  --bg-subtle:     #F3F3F3;   /* inputs, hover rows, filter chips */
-  --border:        #E5E7EB;
-  --border-strong: #D1D5DB;
+  /* Brand (HostelFlow Modern DNA - Plan Section 3.1) */
+  --primary:           #2563EB;   /* buttons, links, selected, active nav */
+  --primary-hover:     #1D4ED8;
+  --primary-press:     #1E40AF;
+  --primary-active:    #1E40AF;
+  --primary-soft:      #EAF1FF;   /* selected backgrounds, tip callouts, SLA card */
+  --primary-ink:       #1D4ED8;   /* blue text on soft backgrounds (AA) */
+  --primary-text:      #FFFFFF;
+  --ink:               #0F172A;   /* headings, active chips, avatars, ink buttons */
+
+  /* Text & Typography */
+  --text:              #0F172A;
+  --text-primary:      #0F172A;   /* Main text */
+  --text-2:            #334155;
+  --text-secondary:    #334155;   /* Secondary slate */
+  --text-muted:        #5B6B82;   /* AA on white and on --bg-app */
+  --text-inverse:      #FFFFFF;
+
+  /* Surfaces & Backgrounds */
+  --bg-app:            #F6F8FC;   /* Friendly soft blue-gray page */
+  --bg-surface:        #FFFFFF;   /* Clean white cards */
+  --bg-surface-glass:  rgba(255, 255, 255, 0.94);
+  --bg-subtle:         #EEF2F8;   /* Soft filled surfaces */
+  --bg-subtle-hover:   #E2E8F0;
+  --bg-input:          #EEF2F9;   /* Filled inputs as in mockups */
+  --border:            #E2E8F0;   /* Clean divider */
+  --border-strong:     #CBD5E1;
+  --border-glass:      rgba(226, 232, 240, 0.8);
+  --border-soft:       rgba(15, 23, 42, 0.06);
+  --border-hover:      rgba(15, 23, 42, 0.15);
+  --backdrop-dark:     rgba(15, 23, 42, 0.60);
+  --backdrop-blur:     6px;
+  --overlay-light:     rgba(255, 255, 255, 0.22);
+  --overlay-dark:      rgba(15, 23, 42, 0.70);
+  --overlay-subtle:    rgba(15, 23, 42, 0.08);
+
+  /* Status Pills (bg / text / dot - Plan Section 3.1) */
+  --st-open-bg:        #FFE9EC;  --st-open-fg:        #BE123C;  --st-open-dot: #E11D48;
+  --st-assigned-bg:    #E0EAFF;  --st-assigned-fg:    #1D4ED8;  --st-assigned-dot: #2563EB;
+  --st-progress-bg:    #FFF4D6;  --st-progress-fg:    #B45309;  --st-progress-dot: #D97706;
+  --st-hold-bg:        #EEE8FF;  --st-hold-fg:        #6D28D9;  --st-hold-dot: #8B5CF6;
+  --st-resolved-bg:    #DDF7E8;  --st-resolved-fg:    #047857;  --st-resolved-dot: #10B981;
+  --st-closed-bg:      #E8EDF3;  --st-closed-fg:      #475569;  --st-closed-dot: #64748B;
+  --st-escalated-bg:   #FFE4EC;  --st-escalated-fg:   #BE185D;  --st-escalated-dot: #E11D48;
+  --st-rejected-bg:    #FEE2E2;  --st-rejected-fg:    #991B1B;  --st-rejected-dot: #DC2626;
+
+  /* Priority Tokens */
+  --prio-urgent:       #E11D48;
+  --prio-high:         #F97316;
+  --prio-medium:       #2563EB;
+  --prio-low:          #94A3B8;
+
+  /* Notice Severities (bg / border / text) */
+  --notice-info-bg:    #EAF1FF;  --notice-info-bd:    #C7D9FF;  --notice-info-fg: #1D4ED8;
+  --notice-imp-bg:     #FFF7DB;  --notice-imp-bd:     #F6DE8A;  --notice-imp-fg:  #92400E;
+  --notice-urg-bg:     #FFE9EC;  --notice-urg-bd:     #FBC2CB;  --notice-urg-fg:  #9F1239;
+  --alert-strong-bg:   #FEE2E2;  /* Immediate action card */
+
+  /* KPI Label Colors (contrast-checked AA) */
+  --kpi-open:          #BE123C;
+  --kpi-progress:      #B45309;
+  --kpi-resolved:      #047857;
+  --kpi-total:         #5B6B82;
+
+  /* Level Badges */
+  --lvl-1-bg:          #E0EAFF;  --lvl-1-fg:          #1D4ED8;
+  --lvl-2-bg:          #FFF4D6;  --lvl-2-fg:          #B45309;
+  --lvl-3-bg:          #FFEDD5;  --lvl-3-fg:          #C2410C;
+  --lvl-4-bg:          #FFE4EC;  --lvl-4-fg:          #BE185D;
+
+  /* Kanban Columns */
+  --col-open:          #FFF1F3;
+  --col-assigned:      #F0F5FF;
+  --col-progress:      #FFFDF0;
+  --col-hold:          #F7F4FE;
+  --col-resolved:      #F0FDF6;
+
+  /* Chart Categorical Palette */
+  --chart-1:           #2563EB;
+  --chart-2:           #3B82F6;
+  --chart-3:           #047857;
+  --chart-4:           #64748B;
+  --chart-5:           #B45309;
+  --chart-6:           #7C3AED;
+
+  /* Shapes & Radii (Plan Section 3.1 & Mockup DNA) */
+  --r-card:            20px;
+  --r-card-sm:         16px;
+  --r-control:         14px;
+  --r-chip:            999px;
+  --r-tile:            12px;
+
+  /* Compatibility radius aliases */
+  --radius-xs:         4px;
+  --radius-sm:         8px;
+  --radius-md:         12px;
+  --radius-lg:         16px;
+  --radius-xl:         20px;
+  --radius-2xl:        24px;
+  --radius-full:       9999px;
+
+  /* Elevation & Shadows (Soft wide depth from mockups) */
+  --shadow-card:       0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px -14px rgba(15, 23, 42, 0.16);
+  --shadow-raised:     0 2px 4px rgba(15, 23, 42, 0.06), 0 16px 36px -14px rgba(15, 23, 42, 0.24);
+  --shadow-primary:    0 10px 22px -8px rgba(37, 99, 235, 0.50);
+  --shadow-fab:        0 10px 24px -6px rgba(37, 99, 235, 0.55);
+  --shadow-sm:         0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-hover:      0 6px 18px rgba(15, 23, 42, 0.09);
+  --shadow-pop:        0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-modal:      0 20px 40px rgba(15, 23, 42, 0.18);
+
+  /* Spacing (4px grid) */
+  --space-1:           4px;
+  --space-2:           8px;
+  --space-3:           12px;
+  --space-4:           16px;
+  --space-5:           20px;
+  --space-6:           24px;
+  --space-8:           32px;
+
+  /* Typography scale */
+  --font:              "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:         ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --fs-xs:             12px;
+  --fs-sm:             13px;
+  --fs-base:           14px;
+  --fs-md:             16px;
+  --fs-lg:             18px;
+  --fs-title:          20px;
+  --fs-stat:           28px;
+
+  /* Motion & Focus */
+  --t-fast:            120ms;
+  --t-base:            180ms;
+  --ease:              cubic-bezier(0.2, 0, 0, 1);
+  --ring:              0 0 0 3px rgba(37, 99, 235, 0.28);
+  --duration-fast:     120ms;
+  --duration-normal:   160ms;
+  --duration-slow:     220ms;
+  --ease-standard:     cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* SLA Turnaround Colors */
+  --sla-green:         #047857;
+  --sla-blue:          #2563EB;
+  --sla-amber:         #B45309;
+  --sla-red:           #BE123C;
+  --white:             #FFFFFF;
+  --danger:            #E11D48;
+  --danger-light:      #FFE9EC;
+  --danger-hover-bg:   #FEE2E2;
+
+  /* Dot Grid background */
+  --bg-dot:            rgba(15, 23, 42, 0.04);
+
+  /* Launch / Splash Screen (Mobile & App) */
+  --launch-bg:         #0B1220;
+  --launch-card-bg:    #111A2E;
+  --launch-border:     #243049;
+  --launch-text:       #FFFFFF;
+  --launch-muted:      #94A3B8;
+  --launch-track-bg:   rgba(255, 255, 255, 0.08);
+  --launch-bar-start:  #3B82F6;
+  --launch-bar-end:    #60A5FA;
+  --launch-glow:       rgba(59, 130, 246, 0.45);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Brand (Section 3.3: #2F6FEB ensures 4.6:1 AA contrast with white text) */
+  --primary:           #2F6FEB;
+  --primary-hover:     #4A85F5;
+  --primary-press:     #2558C8;
+  --primary-active:    #2558C8;
+  --primary-soft:      rgba(47, 111, 235, 0.18);
+  --primary-ink:       #93C5FD;
+  --primary-text:      #FFFFFF;
+  --ink:               #E6EAF2;
 
   /* Text */
-  --text-primary:   #171717;
-  --text-secondary: #525252;
-  --text-muted:     #8D8D8D;
+  --text:              #E6EAF2;
+  --text-primary:      #E6EAF2;
+  --text-2:            #B6C0D2;
+  --text-secondary:    #B6C0D2;
+  --text-muted:        #8D9BB3;
+  --text-inverse:      #0B1220;
 
-  /* Brand / actions */
-  --primary:        #171717;  /* black "+ Add" button, like reference */
-  --primary-text:   #FFFFFF;
-  --accent:         #2490EF;  /* links, focus ring, logo tile */
-  --accent-light:   #EAF4FD;
+  /* Surfaces */
+  --bg-app:            #0B1220;
+  --bg-surface:        #111A2E;
+  --bg-surface-glass:  rgba(17, 26, 46, 0.92);
+  --bg-subtle:         #18233A;
+  --bg-subtle-hover:   #202D4A;
+  --bg-input:          #18233A;
+  --border:            #243049;
+  --border-strong:     #33415C;
+  --border-glass:      rgba(36, 48, 73, 0.8);
+  --border-soft:       rgba(255, 255, 255, 0.07);
+  --overlay-light:     rgba(255, 255, 255, 0.16);
+  --overlay-dark:      rgba(0, 0, 0, 0.70);
+  --overlay-subtle:    rgba(255, 255, 255, 0.08);
+  --border-hover:      rgba(255, 255, 255, 0.16);
+  --backdrop-dark:     rgba(0, 0, 0, 0.78);
+  --backdrop-blur:     6px;
 
-  /* Status pills: bg / text */
-  --st-open-bg:     #FDE8E8;  --st-open-fg:     #C53030;  /* red-ish */
-  --st-assigned-bg: #E8F1FD;  --st-assigned-fg: #1D5FB4;  /* blue */
-  --st-progress-bg: #FFF3E0;  --st-progress-fg: #B45309;  /* orange */
-  --st-hold-bg:     #EFE7FB;  --st-hold-fg:     #6B3FA0;  /* purple */
-  --st-resolved-bg: #E3F5EA;  --st-resolved-fg: #1F7A4D;  /* green */
-  --st-closed-bg:   #EDEDED;  --st-closed-fg:   #525252;  /* grey */
-  --st-escalated-bg:#FFE4EC;  --st-escalated-fg:#B4234F;  /* pink */
-  --st-rejected-bg: #F5E8E8;  --st-rejected-fg: #742A2A;
+  /* Status Pills */
+  --st-open-bg:        rgba(244, 63, 94, 0.16);   --st-open-fg:        #FDA4AF;  --st-open-dot: #F43F5E;
+  --st-assigned-bg:    rgba(59, 130, 246, 0.18);  --st-assigned-fg:    #93C5FD;  --st-assigned-dot: #3B82F6;
+  --st-progress-bg:    rgba(245, 158, 11, 0.16);  --st-progress-fg:    #FCD34D;  --st-progress-dot: #F59E0B;
+  --st-hold-bg:        rgba(139, 92, 246, 0.20);  --st-hold-fg:        #C4B5FD;  --st-hold-dot: #8B5CF6;
+  --st-resolved-bg:    rgba(16, 185, 129, 0.16);  --st-resolved-fg:    #6EE7B7;  --st-resolved-dot: #10B981;
+  --st-closed-bg:      rgba(148, 163, 184, 0.14); --st-closed-fg:      #CBD5E1;  --st-closed-dot: #94A3B8;
+  --st-escalated-bg:   rgba(244, 63, 94, 0.16);   --st-escalated-fg:   #FDA4AF;  --st-escalated-dot: #F43F5E;
+  --st-rejected-bg:    rgba(244, 63, 94, 0.16);   --st-rejected-fg:    #FDA4AF;  --st-rejected-dot: #F43F5E;
 
-  /* Kanban column tints (very light) */
-  --col-open:      #FBECEC;
-  --col-assigned:  #EAF1FB;
-  --col-progress:  #FDF2E4;
-  --col-hold:      #F1ECFA;
-  --col-resolved:  #E8F5EC;
+  /* Priority */
+  --prio-urgent:       #FB7185;
+  --prio-high:         #FB923C;
+  --prio-medium:       #60A5FA;
+  --prio-low:          #94A3B8;
 
-  /* Priority dots */
-  --prio-urgent: #E03E3E;
-  --prio-high:   #F08C00;
-  --prio-medium: #2490EF;
-  --prio-low:    #8D8D8D;
+  /* Notice Severities */
+  --notice-info-bg:    rgba(59, 130, 246, 0.16);  --notice-info-bd:    rgba(59, 130, 246, 0.30);  --notice-info-fg: #93C5FD;
+  --notice-imp-bg:     rgba(245, 158, 11, 0.16);  --notice-imp-bd:     rgba(245, 158, 11, 0.30);  --notice-imp-fg:  #FCD34D;
+  --notice-urg-bg:     rgba(244, 63, 94, 0.16);   --notice-urg-bd:     rgba(244, 63, 94, 0.30);   --notice-urg-fg:  #FDA4AF;
+  --alert-strong-bg:   rgba(244, 63, 94, 0.20);
 
-  /* Shape and spacing */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow-card: 0 1px 2px rgba(0,0,0,.05);
-  --shadow-pop:  0 8px 24px rgba(0,0,0,.12);
 
-  /* Type */
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-base: 13px;
-  --fs-md: 14px;
-  --fs-lg: 18px;
-  --fs-xl: 22px;
+  /* KPI Label Colors */
+  --kpi-open:          #FDA4AF;
+  --kpi-progress:      #FCD34D;
+  --kpi-resolved:      #6EE7B7;
+  --kpi-total:         #8D9BB3;
+
+  /* Level Badges */
+  --lvl-1-bg:          rgba(59, 130, 246, 0.18);  --lvl-1-fg:          #93C5FD;
+  --lvl-2-bg:          rgba(245, 158, 11, 0.16);  --lvl-2-fg:          #FCD34D;
+  --lvl-3-bg:          rgba(249, 115, 22, 0.18);  --lvl-3-fg:          #FDBA74;
+  --lvl-4-bg:          rgba(244, 63, 94, 0.18);   --lvl-4-fg:          #FDA4AF;
+
+  /* Kanban Columns */
+  --col-open:          rgba(244, 63, 94, 0.08);
+  --col-assigned:      rgba(59, 130, 246, 0.08);
+  --col-progress:      rgba(245, 158, 11, 0.08);
+  --col-hold:          rgba(139, 92, 246, 0.08);
+  --col-resolved:      rgba(16, 185, 129, 0.08);
+
+  /* Chart Colors (Dark) */
+  --chart-1:           #8A99AD;
+  --chart-2:           #5A9FE2;
+  --chart-3:           #40BFAF;
+  --chart-4:           #F0B348;
+  --chart-5:           #A292E0;
+  --chart-6:           #DE839C;
+
+  /* Shadows (Dark Mode) */
+  --shadow-card:       0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 28px -16px rgba(0, 0, 0, 0.7);
+  --shadow-raised:     0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 36px -14px rgba(0, 0, 0, 0.6);
+  --shadow-primary:    0 10px 22px -8px rgba(59, 130, 246, 0.45);
+  --shadow-fab:        0 10px 24px -6px rgba(59, 130, 246, 0.50);
+  --shadow-sm:         0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-hover:      0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  --shadow-pop:        0 16px 40px -8px rgba(0, 0, 0, 0.7);
+  --shadow-modal:      0 24px 48px -12px rgba(0, 0, 0, 0.85);
+
+  --ring:              0 0 0 3px rgba(96, 165, 250, 0.40);
+  --danger:            #F43F5E;
+  --danger-light:      rgba(244, 63, 94, 0.18);
+  --danger-hover-bg:   rgba(244, 63, 94, 0.25);
+
+  --sla-green:         #6EE7B7;
+  --sla-blue:          #93C5FD;
+  --sla-amber:         #FCD34D;
+  --sla-red:           #FDA4AF;
+
+  --bg-dot:            rgba(255, 255, 255, 0.04);
+
+  /* Launch / Splash Screen (Mobile & App) */
+  --launch-bg:         #0B1220;
+  --launch-card-bg:    #111A2E;
+  --launch-border:     #243049;
+  --launch-text:       #FFFFFF;
+  --launch-muted:      #94A3B8;
+  --launch-track-bg:   rgba(255, 255, 255, 0.08);
+  --launch-bar-start:  #3B82F6;
+  --launch-bar-end:    #60A5FA;
+  --launch-glow:       rgba(59, 130, 246, 0.45);
 }

@@ -3,9 +3,9 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 from apps.accounts.factories import UserFactory
-from apps.accounts.models import Role, User
+from apps.accounts.models import Role
 from apps.hostels.factories import HostelFactory
-from apps.hostels.models import GenderType, Hostel
+from apps.hostels.models import GenderType
 from apps.hostels.services import (
     assign_staff_to_hostel,
     change_hostel_responsible_staff,
@@ -15,7 +15,7 @@ from apps.hostels.services import (
     update_hostel,
 )
 from apps.tickets.factories import CategoryFactory, TicketFactory
-from apps.tickets.models import Category, Priority, Status, Ticket
+from apps.tickets.models import Status, Ticket
 from apps.tickets.services.routing import assign_initial
 
 
@@ -29,7 +29,6 @@ def test_create_hostel_validation():
         name="Boys Hostel A",
         code="BH-A",
         gender_type=GenderType.BOYS,
-        address="North Campus",
         responsible_staff=caretaker,
     )
     assert hostel.pk is not None
@@ -79,7 +78,7 @@ def test_update_hostel():
 @pytest.mark.django_db
 def test_deactivate_hostel_safeguard():
     hostel = HostelFactory(is_active=True)
-    ticket = TicketFactory(hostel=hostel, status=Status.IN_PROGRESS)
+    TicketFactory(hostel=hostel, status=Status.IN_PROGRESS)
 
     _, active_count = deactivate_hostel(hostel)
     hostel.refresh_from_db()

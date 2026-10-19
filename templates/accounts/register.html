@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account | Hostel Ticket System{% endblock %}
+
+{% block default_theme_pref %}light{% endblock %}
+
+{% block body_layout %}
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; z-index: 1;">
+
+  <!-- Top Right Theme Toggle -->
+  <div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+    <button type="button" class="btn btn-ghost btn-sm" id="theme-toggle-btn" title="Cycle theme" onclick="cycleTheme();" style="padding: 6px; border-radius: var(--radius-full); border: 1px solid var(--border); background: var(--bg-surface);">
+      <i data-lucide="sun" class="icon-light" style="width: 16px; height: 16px;"></i>
+      <i data-lucide="moon" class="icon-dark" style="width: 16px; height: 16px;"></i>
+    </button>
+  </div>
+
+  <!-- Subtle glow halo behind the card -->
+  <div style="position: absolute; width: 480px; height: 480px; background: radial-gradient(circle, var(--primary-soft) 0%, transparent 70%); pointer-events: none; border-radius: 50%;"></div>
+
+  <div class="card" style="width: 100%; max-width: 480px; padding: 32px 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: var(--shadow-modal); position: relative; z-index: 2;">
+    
+    <!-- Header with Identity Tile -->
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
+      <div class="sidebar-brand-logo" style="width: 44px; height: 44px; font-size: 20px; margin-bottom: 4px; border-radius: var(--radius-md);">
+        H
+      </div>
+      <h1 style="font-size: var(--fs-title); font-weight: 700; color: var(--text-primary); letter-spacing: -0.015em; margin: 0;">
+        Hosteler Registration
+      </h1>
+      <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 0;">
+        Hostel Maintenance &amp; Issue Resolution
+      </p>
+    </div>
+
+    <!-- Segmented Auth Navigation -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+      <a href="{% url 'accounts:login' %}" style="text-align: center; padding: 6px 12px; font-size: var(--fs-xs); font-weight: 500; border-radius: var(--radius-sm); color: var(--text-secondary); text-decoration: none;">
+        Sign in
+      </a>
+      <a href="{% url 'accounts:register' %}" style="text-align: center; padding: 6px 12px; font-size: var(--fs-xs); font-weight: 600; border-radius: var(--radius-sm); background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); text-decoration: none;">
+        Create account
+      </a>
+    </div>
+
+    <!-- Registration Form -->
+    <form method="post" action="{% url 'accounts:register' %}" style="display: flex; flex-direction: column; gap: 14px;" x-data="{ showPass: false }">
+      {% csrf_token %}
+
+      <!-- Anti-bot honeypot and signed timestamp -->
+      <div style="display: none !important;">
+        {{ form.website }}
+        {{ form.ts_token }}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div style="background-color: var(--st-open-bg); color: var(--st-open-fg); padding: 8px 12px; border-radius: var(--radius-sm); font-size: var(--fs-xs); border: 1px solid var(--border);">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="id_full_name">Full Name *</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}<span class="form-error">{{ form.full_name.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="id_login_id">Roll Number</label>
+          {{ form.login_id }}
+          {% if form.login_id.errors %}<span class="form-error">{{ form.login_id.errors.0 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="id_email">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}<span class="form-error">{{ form.email.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="id_phone">Phone</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<span class="form-error">{{ form.phone.errors.0 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <!-- Residence Allocation Box -->
+      <div class="card" style="padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; margin: 0;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-primary);">
+          <i data-lucide="map-pin" style="width: 14px; height: 14px; color: var(--primary);"></i>
+          <span>Hostel Residence Assignment</span>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" style="font-size: var(--fs-xs);">Hostel *</label>
+          <select name="hostel" id="id_hostel" class="form-select form-select-sm" required>
+            <option value="">Select hostel</option>
+            {% for h in hostels %}
+              <option value="{{ h.id }}" {% if form.data.hostel == h.id|stringformat:"s" %}selected{% endif %}>
+                {{ h.code }} ({{ h.name }})
+              </option>
+            {% endfor %}
+          </select>
+          {% if form.hostel.errors %}<span class="form-error">{{ form.hostel.errors.0 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <!-- Password Section -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin: 0; position: relative;">
+          <label class="form-label" for="id_password">Password *</label>
+          <input :type="showPass ? 'text' : 'password'" name="password" id="id_password" class="form-control" placeholder="••••••••" required>
+          {% if form.password.errors %}<span class="form-error">{{ form.password.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin: 0; position: relative;">
+          <label class="form-label" for="id_confirm_password">Confirm *</label>
+          <input :type="showPass ? 'text' : 'password'" name="confirm_password" id="id_confirm_password" class="form-control" placeholder="••••••••" required>
+          {% if form.confirm_password.errors %}<span class="form-error">{{ form.confirm_password.errors.0 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-secondary); cursor: pointer; user-select: none;">
+          <input type="checkbox" @change="showPass = !showPass" class="form-checkbox">
+          <span>Show passwords</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; height: 40px; font-weight: 600; font-size: var(--fs-base); margin-top: 4px;">
+        Create account
+      </button>
+
+      <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">
+        A warden will verify your residence details. You can report hostel maintenance tickets immediately after registration.
+      </p>
+    </form>
+
+  </div>
+</div>
+
+<script>
+// Security: Prevent Back button from exposing authenticated pages
+try {
+  sessionStorage.removeItem('hf_nav_stack');
+  Object.keys(sessionStorage).forEach(function(key) {
+    if (key.startsWith('hf_scroll_') || key.startsWith('hf_tab_state_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+} catch (e) {}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted && window.location.pathname.startsWith('/accounts/register')) {
+    window.location.reload();
+  }
+});
+</script>
+{% endblock %}

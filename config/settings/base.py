@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.tickets.apps.TicketsConfig",
     "apps.dashboard.apps.DashboardConfig",
     "apps.notifications.apps.NotificationsConfig",
+    "apps.announcements.apps.AnnouncementsConfig",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -46,6 +47,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.EnforcePasswordChangeAndSessionMiddleware",
+    "apps.accounts.middleware.RequireResidenceMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -106,3 +109,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
+
+ENFORCE_ROOM_CAPACITY = env.bool("ENFORCE_ROOM_CAPACITY", default=False)
+CHIEF_WARDEN_CAN_MANAGE_ADMINS = env.bool("CHIEF_WARDEN_CAN_MANAGE_ADMINS", default=False)
+
+# HostelFlow Branding & Help Settings (Plan Section 2)
+SITE_NAME = env("SITE_NAME", default="HostelFlow")
+SITE_DESCRIPTOR = env("SITE_DESCRIPTOR", default="Hostel Ticket System")
+SITE_TAGLINE = env("SITE_TAGLINE", default="Report. Track. Resolve.")
+DEPARTMENT_NAME = env("DEPARTMENT_NAME", default="Department of Residential Infrastructure")
+HELP_HOTLINE_NUMBER = env("HELP_HOTLINE_NUMBER", default="+91-1800-419-4678")
+HELP_WARDEN_DESK_NUMBER = env("HELP_WARDEN_DESK_NUMBER", default="+91-1800-419-4679")
+HELP_GUIDE_URL = env("HELP_GUIDE_URL", default="#")
+

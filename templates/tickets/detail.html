@@ -1,14 +1,19 @@
 {% extends 'base.html' %}
-{% load ui %}
+{% load ui static %}
 
-{% block title %}{{ ticket.ticket_no }}: {{ ticket.title }} | Hostel Ticket System{% endblock %}
+{% block title %}{{ ticket.ticket_no }}: {{ ticket.title }} | {{ site_name|default:"HostelFlow" }}{% endblock %}
+
+{% block mobile_back_fallback %}{% url 'tickets:list' %}{% endblock %}
 
 {% block breadcrumbs %}
-  <a href="{% url 'core:home' %}">Home</a>
-  <span class="separator">/</span>
-  <a href="{% url 'tickets:list' %}">Tickets</a>
-  <span class="separator">/</span>
-  <span class="current">{{ ticket.ticket_no }}</span>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <a href="{% url 'tickets:list' %}" style="display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500;">
+      <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+      <span>Tickets</span>
+    </a>
+    <span style="color: var(--border-strong); font-size: 11px;">/</span>
+    <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--primary);">{{ ticket.ticket_no }}</span>
+  </div>
 {% endblock %}
 
 {% block page_title %}{{ ticket.ticket_no }}{% endblock %}
@@ -19,19 +24,25 @@
 {% endblock %}
 
 {% block page_actions %}
-  <div style="display: flex; align-items: center; gap: 8px;">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
     <!-- Follow button -->
-    <button type="button" class="btn btn-ghost btn-sm" hx-post="{% url 'tickets:follow' ticket.ticket_no %}" hx-swap="outerHTML" style="color: {% if is_following %}var(--st-open-fg){% else %}var(--text-muted){% endif %};">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" {% if is_following %}fill="currentColor"{% else %}fill="none"{% endif %} stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+    <button type="button" class="btn btn-ghost btn-sm" hx-post="{% url 'tickets:follow' ticket.ticket_no %}" hx-swap="outerHTML" style="color: {% if is_following %}var(--st-open-fg){% else %}var(--text-muted){% endif %};" title="Follow ticket updates">
+      <i data-lucide="bell" style="width: 15px; height: 15px;"></i>
       <span>{{ ticket.followers.count }}</span>
+    </button>
+
+    <!-- Copy Link Share button -->
+    <button type="button" class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(window.location.href); alert('Ticket link copied to clipboard!');" title="Share ticket link">
+      <i data-lucide="share-2" style="width: 15px; height: 15px;"></i>
+      <span>Share</span>
     </button>
 
     <!-- Staff Actions (Status, Reassign, Escalate) -->
     {% if not request.user.is_hosteler %}
       <div class="dropdown">
-        <button type="button" class="btn btn-secondary btn-sm" data-dropdown-toggle>
-          <span>Change Status</span>
-          <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+        <button type="button" class="btn btn-secondary btn-sm" data-dropdown-toggle style="border-radius: var(--r-control);">
+          <span>Change status</span>
+          <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
         </button>
         <div class="dropdown-menu">
           {% for st_code, st_label in statuses %}
@@ -39,7 +50,7 @@
             <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
               {% csrf_token %}
               <input type="hidden" name="status" value="{{ st_code }}">
-              <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left;">
+              <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left; cursor: pointer;">
                 {% status_pill st_code %}
               </button>
             </form>
@@ -48,13 +59,13 @@
         </div>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('reassign-modal').style.display='flex';">
-        <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('reassign-modal');" style="border-radius: var(--r-control);">
+        <i data-lucide="user-check" style="width: 13px; height: 13px;"></i>
         <span>Reassign</span>
       </button>
 
-      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('escalate-modal').style.display='flex';">
-        <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('escalate-modal');" style="border-radius: var(--r-control);">
+        <i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i>
         <span>Escalate</span>
       </button>
     {% endif %}
@@ -65,56 +76,86 @@
         <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="display: inline;">
           {% csrf_token %}
           <input type="hidden" name="status" value="CLOSED">
-          <button type="submit" class="btn btn-primary btn-sm">Confirm & Close</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius: var(--r-control);">Confirm &amp; Close</button>
         </form>
         <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="display: inline;">
           {% csrf_token %}
           <input type="hidden" name="status" value="IN_PROGRESS">
-          <button type="submit" class="btn btn-secondary btn-sm">Reopen Ticket</button>
+          <button type="submit" class="btn btn-secondary btn-sm" style="border-radius: var(--r-control);">Reopen ticket</button>
         </form>
       {% elif ticket.status == 'CLOSED' %}
         <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="display: inline;">
           {% csrf_token %}
           <input type="hidden" name="status" value="IN_PROGRESS">
-          <button type="submit" class="btn btn-secondary btn-sm">Reopen Ticket</button>
+          <button type="submit" class="btn btn-secondary btn-sm" style="border-radius: var(--r-control);">Reopen ticket</button>
         </form>
+      {% endif %}
+    {% endif %}
+
+    <!-- Delete Ticket Actions -->
+    {% if user_can_delete %}
+      {% if request.user.is_hosteler %}
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openModal('hosteler-delete-modal');" title="Delete ticket">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Delete</span>
+        </button>
       {% else %}
-        <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="display: inline;" onsubmit="return confirm('Close this ticket?');">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="CLOSED">
-          <button type="submit" class="btn btn-secondary btn-sm">Close Ticket</button>
-        </form>
+        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="openModal('staff-delete-modal');" title="Delete ticket">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Delete</span>
+        </button>
       {% endif %}
     {% endif %}
   </div>
 {% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start;">
+<div class="ticket-detail-grid" style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start;">
 
-  <!-- LEFT COLUMN: Main Ticket Content & Activity -->
-  <div style="display: flex; flex-direction: column; gap: 20px;">
+  <!-- LEFT COLUMN: Main Ticket Content, Evidence & Discussion -->
+  <div class="ticket-detail-main" style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
     
-    <!-- Ticket Summary Card -->
-    <div class="card" style="padding: 24px;">
-      <h2 style="font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">
-        {{ ticket.title }}
-      </h2>
+    <!-- 1. Ticket Summary & Header Card (Mockup 6) -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="hostel-badge-pill" style="font-size: 12px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 3px 10px; border-radius: var(--r-chip);">
+            {{ ticket.hostel.code }} · {{ ticket.hostel.name }}
+          </span>
+          {% if ticket.room_number %}
+            <span class="badge" style="background: var(--bg-subtle); color: var(--text-primary); font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--r-chip); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 5px;">
+              <i data-lucide="door-closed" style="width: 13px; height: 13px; color: var(--primary);"></i>
+              <span>Room {{ ticket.room_number }}</span>
+            </span>
+          {% endif %}
+        </div>
+        <span style="font-size: 12.5px; color: var(--text-muted);">
+          Reported {{ ticket.created_at|timesince }} ago
+          {% if request.user == ticket.reporter or not request.user.is_hosteler %}
+            by <strong style="color: var(--text-primary);">{{ ticket.reporter.full_name|default:ticket.reporter.login_id }}</strong>
+          {% endif %}
+        </span>
+      </div>
 
-      <div style="font-size: var(--fs-base); color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; margin-bottom: 20px;">
+      <h1 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.35; letter-spacing: -0.01em;">
+        {{ ticket.title }}
+      </h1>
+
+      <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; margin-top: 4px;">
         {{ ticket.description }}
       </div>
 
-      <!-- Attachments Grid -->
+      <!-- Attachments Gallery Grid (Mockup 6) -->
       {% if ticket.attachments.exists %}
-        <div style="border-top: 1px solid var(--border); padding-top: 16px;">
-          <h4 style="font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">
-            Attachments ({{ ticket.attachments.count }})
+        <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 6px;">
+          <h4 style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 0 0 10px; letter-spacing: 0.05em;">
+            Visual Evidence ({{ ticket.attachments.count }})
           </h4>
           <div style="display: flex; flex-wrap: wrap; gap: 12px;">
             {% for att in ticket.attachments.all %}
-              <a href="{{ att.file.url }}" target="_blank" rel="noopener" style="display: block; width: 100px; height: 100px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-card);">
-                <img src="{{ att.file.url }}" alt="Attachment" style="width: 100%; height: 100%; object-fit: cover;">
+              <a href="{{ att.file.url }}" target="_blank" rel="noopener" style="display: block; width: 104px; height: 104px; border-radius: var(--r-card-sm); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform var(--t-fast) var(--ease);" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='none'">
+                <img src="{{ att.file.url }}" alt="Ticket attachment" style="width: 100%; height: 100%; object-fit: cover;">
               </a>
             {% endfor %}
           </div>
@@ -122,191 +163,269 @@
       {% endif %}
     </div>
 
-    <!-- Activity & Comments Card -->
-    <div class="card" style="padding: 24px;">
-      <h3 style="font-size: var(--fs-md); font-weight: 600; margin-bottom: 16px;">Activity & Discussion</h3>
-
-      {% include 'tickets/_activity.html' %}
-
-      <!-- Post Comment Form -->
-      <form method="post" action="{% url 'tickets:comment' ticket.ticket_no %}" hx-post="{% url 'tickets:comment' ticket.ticket_no %}" hx-target="#activity-container" hx-swap="outerHTML" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
-        {% csrf_token %}
-        <label class="form-label">Add a response</label>
-        {{ comment_form.body }}
-
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          {% if can_add_note %}
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-secondary); cursor: pointer;">
-              {{ comment_form.is_internal }}
-              <span>Internal Staff Note (Hidden from hosteler)</span>
-            </label>
-          {% else %}
-            <div></div>
+    <!-- 2. Lifecycle Status Card (Mockup 6 Stepper) -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Lifecycle status</h2>
+        <span style="font-size: 12px; font-weight: 600; color: var(--primary);">
+          {% if ticket.status == 'CLOSED' %}Step 4 of 4 (Closed)
+          {% elif ticket.status == 'RESOLVED' %}Step 4 of 4 (Awaiting confirmation)
+          {% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}Step 3 of 4 (In progress)
+          {% elif ticket.status == 'ASSIGNED' %}Step 2 of 4 (Assigned)
+          {% else %}Step 1 of 4 (Created)
           {% endif %}
-
-          <button type="submit" class="btn btn-primary btn-sm">
-            <span>Send Reply</span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-  </div>
-
-  <!-- RIGHT COLUMN: Metadata & SLA Sidebar -->
-  <aside style="display: flex; flex-direction: column; gap: 16px;">
-    
-    <!-- SLA & Escalation Card -->
-    <div class="card" style="padding: 16px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; color: var(--text-muted);">SLA Status</span>
-        <span style="font-size: var(--fs-xs); font-weight: 600; color: {% if sla_status == 'red' %}var(--st-open-fg){% elif sla_status == 'amber' %}var(--prio-high){% else %}var(--st-resolved-fg){% endif %};">
-          {{ time_left_str }}
         </span>
       </div>
 
-      <div class="sla-bar-container" style="max-width: 100%; height: 8px; margin-bottom: 16px;">
-        <div class="sla-bar {{ sla_status }}" style="width: {{ sla_percentage }}%;"></div>
-      </div>
-
-      <!-- Escalation Path (L1 -> L2 -> L3 -> L4) -->
-      <span style="font-size: var(--fs-xs); color: var(--text-muted); font-weight: 500; display: block; margin-bottom: 8px;">Escalation Tier:</span>
-      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-subtle); border-radius: var(--radius-sm); padding: 8px 12px;">
-        <span class="level-badge l1" style="opacity: {% if ticket.current_level >= 1 %}1{% else %}0.4{% endif %}; font-weight: {% if ticket.current_level == 1 %}700{% else %}500{% endif %};">L1 Caretaker</span>
-        <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-        <span class="level-badge l2" style="opacity: {% if ticket.current_level >= 2 %}1{% else %}0.4{% endif %}; font-weight: {% if ticket.current_level == 2 %}700{% else %}500{% endif %};">L2 Warden</span>
-        <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-        <span class="level-badge l3" style="opacity: {% if ticket.current_level >= 3 %}1{% else %}0.4{% endif %}; font-weight: {% if ticket.current_level == 3 %}700{% else %}500{% endif %};">L3 Chief</span>
-        <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-        <span class="level-badge l4" style="opacity: {% if ticket.current_level >= 4 %}1{% else %}0.4{% endif %}; font-weight: {% if ticket.current_level == 4 %}700{% else %}500{% endif %};">L4 Dean</span>
-      </div>
-    </div>
-
-    <!-- Ticket Attributes Card -->
-    <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
-      
-      <div>
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Assigned To</div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-          {% if ticket.assigned_to %}
-            {% user_avatar ticket.assigned_to size="sm" %}
-            <span style="font-weight: 600; font-size: var(--fs-sm);">{{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}</span>
-            {% level_badge ticket.assigned_to.escalation_level %}
-          {% else %}
-            <span style="color: var(--text-muted); font-size: var(--fs-sm);">Unassigned</span>
-          {% endif %}
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Reporter</div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-          {% user_avatar ticket.reporter size="sm" %}
-          <div>
-            <div style="font-weight: 600; font-size: var(--fs-sm);">{{ ticket.reporter.full_name|default:ticket.reporter.login_id }}</div>
-            <div style="font-size: var(--fs-xs); color: var(--text-muted);">{{ ticket.reporter.login_id }}</div>
+      <!-- Vertical 4-Step Stepper -->
+      <div class="lifecycle-stepper" style="display: flex; flex-direction: column; gap: 0; padding-left: 6px;">
+        
+        <!-- Step 1: Created -->
+        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--st-resolved-fg); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+              ✓
+            </div>
+            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; background: var(--st-resolved-fg);"></div>
+          </div>
+          <div style="flex: 1; padding-top: 2px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Ticket created</span>
+              <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.created_at|date:"M d, H:i" }}</span>
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+              Logged by {{ ticket.reporter.full_name|default:ticket.reporter.login_id }} via portal
+            </div>
           </div>
         </div>
+
+        <!-- Step 2: Assigned -->
+        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status != 'OPEN' %}background: var(--st-resolved-fg); color: var(--white);{% else %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+              {% if ticket.status != 'OPEN' %}✓{% else %}●{% endif %}
+            </div>
+            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status != 'OPEN' and ticket.status != 'ASSIGNED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
+          </div>
+          <div style="flex: 1; padding-top: 2px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Assigned to caretaker</span>
+              {% if ticket.assigned_to %}
+                <span style="font-size: 12px; color: var(--text-muted);">Level 1</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+              {% if ticket.assigned_to %}Allocated to {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}{% else %}Awaiting staff assignment in {{ ticket.hostel.code }}{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: In Progress / Escalated -->
+        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+              {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}●{% else %}3{% endif %}
+            </div>
+            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
+          </div>
+          <div style="flex: 1; padding-top: 2px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">In progress</span>
+              {% if ticket.current_level > 1 %}
+                <span class="level-chip l{{ ticket.current_level }}" style="font-size: 11px;">Tier L{{ ticket.current_level }}</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+              {% if ticket.current_level > 1 %}
+                Escalated to Level {{ ticket.current_level }} for priority resolution
+              {% elif ticket.status == 'IN_PROGRESS' %}
+                Under active inspection and repair
+              {% elif ticket.status == 'ON_HOLD' %}
+                Temporarily on hold for replacement parts
+              {% else %}
+                Technician dispatch and triage
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Resolved & Verified -->
+        <div style="display: flex; gap: 14px; position: relative;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'RESOLVED' %}background: var(--kpi-progress); color: var(--white); box-shadow: 0 0 0 3px var(--notice-imp-bg);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+              {% if ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'RESOLVED' %}●{% else %}4{% endif %}
+            </div>
+          </div>
+          <div style="flex: 1; padding-top: 2px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Resolved &amp; verified</span>
+              {% if ticket.resolved_at %}
+                <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.resolved_at|date:"M d, H:i" }}</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+              {% if ticket.status == 'CLOSED' %}
+                Confirmed resolved and closed
+              {% elif ticket.status == 'RESOLVED' %}
+                <span style="color: var(--kpi-progress); font-weight: 600;">Waiting for your confirmation</span>
+              {% else %}
+                Work verification and hosteler confirmation
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Hostel</div>
-        <div style="font-weight: 500; font-size: var(--fs-sm); margin-top: 2px;">
-          {{ ticket.hostel.name }}
+      <!-- Confirmation CTA if Resolved and user is reporter -->
+      {% if ticket.status == 'RESOLVED' and request.user == ticket.reporter %}
+        <div style="background: var(--st-resolved-bg); border: 1px solid var(--st-resolved-fg); border-radius: var(--r-card-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 6px;">
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--st-resolved-fg);">Has your issue been resolved?</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Confirm the repair to close this ticket, or reopen if you need further work.</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="CLOSED">
+              <button type="submit" class="btn btn-primary btn-sm" style="background: var(--st-resolved-fg); border-color: var(--st-resolved-fg);">Confirm &amp; close</button>
+            </form>
+            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="IN_PROGRESS">
+              <button type="submit" class="btn btn-secondary btn-sm">Reopen</button>
+            </form>
+          </div>
         </div>
-      </div>
-
-      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Category</div>
-        <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; font-weight: 500; font-size: var(--fs-sm);">
-          <i data-lucide="{{ ticket.category.icon }}" style="width: 14px; height: 14px;"></i>
-          <span>{{ ticket.category.name }}</span>
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Created Date</div>
-        <div style="font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 2px;">
-          {{ ticket.created_at|date:"M d, Y · H:i" }}
-        </div>
-      </div>
-
-      {% if ticket.rating %}
-      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-        <div style="font-size: var(--fs-xs); color: var(--text-muted);">Hosteler Rating</div>
-        <div style="font-size: var(--fs-sm); color: #F08C00; font-weight: 600; margin-top: 2px;">
-          ★ {{ ticket.rating }} / 5
-        </div>
-      </div>
       {% endif %}
 
     </div>
 
-  </aside>
+    <!-- 3. Ticket Timeline & Audit History -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Activity Timeline</h3>
 
-</div>
-
-<!-- Reassign Staff Modal -->
-{% if not request.user.is_hosteler %}
-<div id="reassign-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600;">Reassign Ticket</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('reassign-modal').style.display='none';">✕</button>
+      {% include 'tickets/_activity.html' %}
     </div>
 
-    <form method="post" action="{% url 'tickets:reassign' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 12px;">
-      {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Assign To</label>
-        <select name="assignee_id" class="form-select" required>
-          {% for s in eligible_staff %}
-            <option value="{{ s.id }}" {% if s == ticket.assigned_to %}selected{% endif %}>
-              {{ s.full_name|default:s.login_id }} ({{ s.get_role_display }})
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Reason / Reassignment Note *</label>
-        <textarea name="note" class="form-textarea" rows="2" placeholder="Explain reason for reassigning..." required></textarea>
-      </div>
-
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('reassign-modal').style.display='none';">Cancel</button>
-        <button type="submit" class="btn btn-primary">Reassign</button>
-      </div>
-    </form>
   </div>
-</div>
 
-<!-- Manual Escalate Modal -->
-<div id="escalate-modal" class="command-palette-backdrop" style="display: none;" onclick="if(event.target === this) this.style.display='none';">
-  <div class="command-palette-modal" style="padding: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: var(--fs-md); font-weight: 600;">Escalate to Next Level</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('escalate-modal').style.display='none';">✕</button>
+  <!-- RIGHT COLUMN: SLA Hero Card & Assigned Personnel -->
+  <div class="ticket-detail-side" style="display: flex; flex-direction: column; gap: 20px;">
+    
+    <!-- 1. SLA Hero Card (Mockup 6) -->
+    <div class="card sla-hero-card" style="padding: 20px; border-radius: var(--r-card); background: var(--primary-soft); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 12px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--primary-ink); letter-spacing: 0.05em;">TARGET RESOLUTION</span>
+        <span class="badge" style="background: var(--bg-surface); color: var(--primary-ink); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-chip); border: 1px solid var(--border);">
+          {{ ticket.priority }} SLA
+        </span>
+      </div>
+
+      <!-- Tabular Countdown Value -->
+      <div style="font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: {% if sla_status == 'red' %}var(--st-open-fg){% elif sla_status == 'amber' %}var(--prio-high){% else %}var(--primary-ink){% endif %};">
+        {{ time_left_str }}
+      </div>
+
+      <!-- 8px Progress Bar -->
+      <div class="sla-bar-container" style="width: 100%; height: 8px; border-radius: 4px; background: var(--overlay-subtle); overflow: hidden;">
+        <div class="sla-bar {{ sla_status }}" style="width: {{ sla_percentage }}%; height: 100%; border-radius: 4px; background: {% if sla_status == 'red' %}var(--st-open-dot){% elif sla_status == 'amber' %}var(--prio-high){% else %}var(--primary){% endif %}; transition: width 0.3s ease;"></div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--primary-ink); font-weight: 500;">
+        <i data-lucide="shield-alert" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+        <span>Auto-escalates if unresolved past turnaround target</span>
+      </div>
     </div>
 
-    <form method="post" action="{% url 'tickets:escalate' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 12px;">
-      {% csrf_token %}
-      <p style="font-size: var(--fs-sm); color: var(--text-secondary);">
-        Escalate ticket from <strong>Level {{ ticket.current_level }}</strong> to <strong>Level {{ ticket.current_level|add:1 }}</strong>.
-      </p>
-
-      <div class="form-group">
-        <label class="form-label">Escalation Reason *</label>
-        <textarea name="reason" class="form-textarea" rows="3" placeholder="Provide clear reason for manual escalation..." required></textarea>
+    <!-- 2. Assigned Personnel Card (Mockup 6) -->
+    <div class="card" style="padding: 20px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">ASSIGNED PERSONNEL</span>
+      
+      <div style="display: flex; align-items: center; gap: 12px;">
+        {% if ticket.assigned_to %}
+          {% user_avatar ticket.assigned_to size="lg" %}
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              {{ ticket.assigned_to.get_role_display }} • Level {{ ticket.assigned_to.escalation_level|default:"1" }}
+            </div>
+          </div>
+        {% else %}
+          <div style="width: 44px; height: 44px; border-radius: 50%; border: 2px dashed var(--border-strong); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+            <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Unassigned</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Under dispatch triage</div>
+          </div>
+        {% endif %}
       </div>
 
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('escalate-modal').style.display='none';">Cancel</button>
-        <button type="submit" class="btn btn-danger">Escalate Ticket</button>
+      {% if ticket.assigned_to and ticket.assigned_to.phone %}
+        <div style="display: flex; gap: 8px; margin-top: 4px;">
+          <a href="tel:{{ ticket.assigned_to.phone }}" class="btn btn-secondary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
+            <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--primary);"></i>
+            <span>Call</span>
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 3. Ticket Context Details Card -->
+    <div class="card" style="padding: 20px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 12px;">
+      
+      <div>
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">ESCALATION TIER</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-subtle); border-radius: var(--r-control); padding: 8px 12px; border: 1px solid var(--border); margin-top: 6px;">
+          <span class="level-chip l1" style="{% if ticket.current_level == 1 %}font-weight: 700; box-shadow: 0 0 0 2px var(--primary);{% else %}opacity: 0.55;{% endif %}">L1</span>
+          <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+          <span class="level-chip l2" style="{% if ticket.current_level == 2 %}font-weight: 700; box-shadow: 0 0 0 2px var(--primary);{% else %}opacity: 0.55;{% endif %}">L2</span>
+          <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+          <span class="level-chip l3" style="{% if ticket.current_level == 3 %}font-weight: 700; box-shadow: 0 0 0 2px var(--primary);{% else %}opacity: 0.55;{% endif %}">L3</span>
+          <i data-lucide="chevron-right" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+          <span class="level-chip l4" style="{% if ticket.current_level == 4 %}font-weight: 700; box-shadow: 0 0 0 2px var(--primary);{% else %}opacity: 0.55;{% endif %}">L4</span>
+        </div>
       </div>
-    </form>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">CATEGORY</span>
+        <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="{{ ticket.category.icon|default:'wrench' }}" style="width: 15px; height: 15px; color: var(--primary);"></i>
+          <span>{{ ticket.category.name|default:"General" }}</span>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">ROOM NUMBER</span>
+        <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="door-closed" style="width: 15px; height: 15px; color: var(--primary);"></i>
+          <span>{% if ticket.room_number %}{{ ticket.room_number }}{% elif ticket.room %}{{ ticket.room.room_number }}{% else %}Unspecified{% endif %}</span>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 10px;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">CREATED DATE</span>
+        <div style="font-size: 13px; color: var(--text-primary); margin-top: 4px;">
+          {{ ticket.created_at|date:"M d, Y · H:i" }}
+        </div>
+      </div>
+
+    </div>
+
   </div>
-</div>
-{% endif %}
 
+</div>
+
+<style>
+@media (min-width: 900px) {
+  .ticket-detail-grid {
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+  }
+}
+</style>
 {% endblock %}

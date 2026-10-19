@@ -1,0 +1,813 @@
+{% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Trash | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Trash</span>
+{% endblock %}
+
+{% block page_title %}Trash Log{% endblock %}
+{% block page_subtitle %}Soft-deleted tickets log (retained for 90 days before permanent auto-purge){% endblock %}
+
+{% block content %}
+<div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Mobile Header (Visible on Mobile <= 767px, matches Stitch) -->
+  <div class="trash-mobile-header">
+    <button type="button" class="mobile-back-btn" onclick="handleMobileBack(this)" data-fallback="{% url 'tickets:list' %}" aria-label="Go back">
+      <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+    </button>
+    <div class="trash-mobile-header__text">
+      <h1 class="trash-mobile-header__title">Trash Log</h1>
+      <p class="trash-mobile-header__subtitle">{{ tickets|length }} deleted ticket{{ tickets|length|pluralize }}</p>
+    </div>
+    <div class="trash-retention-pill">
+      <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+      <span>90d retention</span>
+    </div>
+  </div>
+
+  <!-- Admin Sub-Navigation -->
+  {% include 'components/_admin_subnav.html' %}
+
+  <!-- Retention Policy Summary Banner (Reference 3) -->
+  <div class="trash-retention-banner">
+    <div class="trash-retention-banner__icon">
+      <i data-lucide="archive-restore" style="width: 18px; height: 18px;"></i>
+    </div>
+    <div class="trash-retention-banner__content">
+      <div class="trash-retention-banner__title">90-Day Trash Retention Policy</div>
+      <div class="trash-retention-banner__desc">
+        Soft-deleted tickets are securely preserved for 90 days before automatic permanent purging. Administrators can review and restore any ticket back into active maintenance queues.
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls Card -->
+  <div class="trash-controls-card">
+    <div class="trash-search-row">
+      <div class="trash-search-box">
+        <i data-lucide="search" class="trash-search-icon"></i>
+        <input type="text" id="trash-search-input" class="trash-search-input" placeholder="Search deleted ticket #, title, or user..." oninput="filterTrash();">
+        <button type="button" id="trash-search-clear" class="trash-search-clear" onclick="clearTrashSearch();" style="display: none;">✕</button>
+      </div>
+      <button type="button" class="btn-trash-filter-toggle" id="trash-filter-toggle-btn" onclick="toggleTrashFilters();">
+        <i data-lucide="sliders-horizontal" style="width: 14px; height: 14px;"></i>
+        <span>Filter</span>
+      </button>
+    </div>
+
+    <!-- Collapsible Filter Panel (Mobile friendly) -->
+    <div id="trash-filters-panel" class="trash-filters-panel" style="display: none;">
+      <div class="trash-filters-grid">
+        <div class="trash-filter-item">
+          <label class="trash-filter-label">Filter by Hostel</label>
+          <select id="trash-hostel-filter" class="trash-filter-select" onchange="filterTrash();">
+            <option value="">All hostels</option>
+            {% for h in hostels %}
+              <option value="{{ h.id }}">{{ h.name }} ({{ h.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="trash-filter-actions">
+          <button type="button" class="btn-trash-reset" onclick="resetTrashFilters();">
+            Reset filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Table (Desktop >= 768px) -->
+  <div class="card trash-table-desktop" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+    {% if tickets %}
+      <div class="table-container" style="border: none;">
+        <table class="app-table" id="desktop-trash-table">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Title</th>
+              <th>Hostel</th>
+              <th>Deleted by</th>
+              <th>Reason</th>
+              <th>Deleted at</th>
+              {% if can_restore %}
+                <th style="text-align: right;">Action</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in tickets %}
+              <tr data-ticket-no="{{ ticket.ticket_no|lower }}"
+                  data-ticket-title="{{ ticket.title|lower }}"
+                  data-hostel-id="{{ ticket.hostel.id|default:'' }}"
+                  data-deleted-by="{{ ticket.deleted_by.get_full_name|default:ticket.deleted_by.login_id|default:'system'|lower }}">
+                <td style="font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); font-weight: 600;">
+                  #{{ ticket.ticket_no }}
+                </td>
+                <td style="font-weight: 500; color: var(--text-primary); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  {{ ticket.title }}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                  {{ ticket.hostel.name|default:"—" }}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-secondary);">
+                  {{ ticket.deleted_by.get_full_name|default:ticket.deleted_by.username|default:"System" }}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  {{ ticket.delete_reason|default:"—" }}
+                </td>
+                <td style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+                  {{ ticket.deleted_at|date:"M d, Y H:i" }}
+                </td>
+                {% if can_restore %}
+                  <td style="text-align: right; white-space: nowrap;">
+                    <form method="post" action="{% url 'tickets:restore' ticket_no=ticket.ticket_no %}" style="display: inline; margin: 0;" onsubmit="return confirm('Restore ticket #{{ ticket.ticket_no|escapejs }} back to active status?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline" style="padding: 4px 10px; font-size: var(--fs-xs); font-weight: 500; color: var(--primary); border-color: var(--border-strong);">
+                        <i data-lucide="rotate-ccw" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                        <span>Restore</span>
+                      </button>
+                    </form>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 48px 24px;">
+        <i data-lucide="trash-2" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 8px;"></i>
+        <h3 style="font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Nothing in the trash</h3>
+        <p style="font-size: var(--fs-sm); color: var(--text-muted); margin: 0;">Deleted tickets will appear here before being permanently purged.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Mobile Deleted Tickets Cards (Mobile <= 767px, Reference 3 Stack) -->
+  <div class="trash-cards-mobile" id="trash-cards-container">
+    {% for ticket in tickets %}
+      <div class="trash-card-item"
+           data-ticket-no="{{ ticket.ticket_no|lower }}"
+           data-ticket-title="{{ ticket.title|lower }}"
+           data-hostel-id="{{ ticket.hostel.id|default:'' }}"
+           data-deleted-by="{{ ticket.deleted_by.get_full_name|default:ticket.deleted_by.login_id|default:'system'|lower }}">
+        
+        <!-- Header: Ticket ID & Hostel on left | Date on right -->
+        <div class="trash-card-header">
+          <div class="trash-card-identifiers">
+            <span class="trash-ticket-id">#{{ ticket.ticket_no }}</span>
+            <span class="trash-hostel-badge">{{ ticket.hostel.code|default:ticket.hostel.name|default:"General" }}</span>
+          </div>
+          <div class="trash-timestamp-badge">
+            {{ ticket.deleted_at|date:"M d, Y" }}
+          </div>
+        </div>
+
+        <!-- Ticket Title (Full natural wrapping, never clipped) -->
+        <h4 class="trash-card-title">{{ ticket.title }}</h4>
+
+        <!-- Inset Details Box: Deleted By, Timestamp, and Reason -->
+        <div class="trash-card-details-box">
+          <div class="trash-detail-row">
+            <div class="trash-detail-col">
+              <span class="trash-detail-label">DELETED BY</span>
+              <div class="trash-deleted-by-info">
+                {% if ticket.deleted_by %}
+                  {% user_avatar ticket.deleted_by size="xs" %}
+                  <span class="trash-deleted-by-name">{{ ticket.deleted_by.get_full_name|default:ticket.deleted_by.login_id }}</span>
+                {% else %}
+                  <span class="trash-deleted-by-name">System</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="trash-detail-col">
+              <span class="trash-detail-label">DELETED TIME</span>
+              <span class="trash-deleted-at-val">{{ ticket.deleted_at|date:"h:i A" }}</span>
+            </div>
+          </div>
+
+          <div class="trash-reason-block">
+            <span class="trash-detail-label">DELETION REASON</span>
+            <p class="trash-reason-text">{{ ticket.delete_reason|default:"No deletion reason provided." }}</p>
+          </div>
+        </div>
+
+        <!-- Footer: Status on left | Restore Button on right -->
+        <div class="trash-card-footer">
+          <div class="trash-status-tag">
+            <span class="trash-dot"></span>
+            <span>Soft-Deleted</span>
+          </div>
+
+          {% if can_restore %}
+            <form method="post" action="{% url 'tickets:restore' ticket_no=ticket.ticket_no %}" style="display: inline; margin: 0;" onsubmit="return confirm('Restore ticket #{{ ticket.ticket_no|escapejs }} back to active status?');">
+              {% csrf_token %}
+              <button type="submit" class="btn-restore-mobile">
+                <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+                <span>Restore Ticket</span>
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state-mobile">
+        <i data-lucide="trash-2" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+        <h4>Nothing in the trash</h4>
+        <p>Soft-deleted tickets will appear here for 90 days before auto-purge.</p>
+      </div>
+    {% endfor %}
+
+    <div id="trash-no-results" class="empty-state-mobile" style="display: none;">
+      <i data-lucide="search-x" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+      <h4>No matching deleted tickets</h4>
+      <p>Try searching with another query or reset the hostel filter.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleTrashFilters() {
+  const panel = document.getElementById('trash-filters-panel');
+  const btn = document.getElementById('trash-filter-toggle-btn');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (btn) {
+    if (isHidden) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+}
+
+function filterTrash() {
+  const searchInput = document.getElementById('trash-search-input');
+  const hostelSelect = document.getElementById('trash-hostel-filter');
+  const clearBtn = document.getElementById('trash-search-clear');
+
+  const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+  const selectedHostel = hostelSelect ? hostelSelect.value : '';
+
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  const cards = document.querySelectorAll('.trash-card-item');
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const ticketNo = card.getAttribute('data-ticket-no') || '';
+    const title = card.getAttribute('data-ticket-title') || '';
+    const hostelId = card.getAttribute('data-hostel-id') || '';
+    const deletedBy = card.getAttribute('data-deleted-by') || '';
+
+    const matchesSearch = !query || ticketNo.includes(query) || title.includes(query) || deletedBy.includes(query);
+    const matchesHostel = !selectedHostel || hostelId === selectedHostel;
+
+    const visible = matchesSearch && matchesHostel;
+    card.style.display = visible ? 'flex' : 'none';
+    if (visible) visibleCount++;
+  });
+
+  const noResults = document.getElementById('trash-no-results');
+  if (noResults) {
+    noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+  }
+
+  // Also filter desktop table rows
+  const rows = document.querySelectorAll('#desktop-trash-table tbody tr');
+  rows.forEach(row => {
+    const ticketNo = row.getAttribute('data-ticket-no') || '';
+    const title = row.getAttribute('data-ticket-title') || '';
+    const hostelId = row.getAttribute('data-hostel-id') || '';
+    const deletedBy = row.getAttribute('data-deleted-by') || '';
+
+    const matchesSearch = !query || ticketNo.includes(query) || title.includes(query) || deletedBy.includes(query);
+    const matchesHostel = !selectedHostel || hostelId === selectedHostel;
+
+    row.style.display = (matchesSearch && matchesHostel) ? '' : 'none';
+  });
+}
+
+function clearTrashSearch() {
+  const input = document.getElementById('trash-search-input');
+  if (input) {
+    input.value = '';
+    filterTrash();
+    input.focus();
+  }
+}
+
+function resetTrashFilters() {
+  const searchInput = document.getElementById('trash-search-input');
+  const hostelSelect = document.getElementById('trash-hostel-filter');
+  if (searchInput) searchInput.value = '';
+  if (hostelSelect) hostelSelect.value = '';
+  filterTrash();
+}
+</script>
+
+<style>
+/* Base Desktop Defaults */
+.trash-mobile-header {
+  display: none;
+}
+.trash-retention-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.trash-retention-banner__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.trash-retention-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+.trash-retention-banner__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+.trash-retention-banner__desc {
+  font-size: 12px;
+  color: #8b95a5;
+  line-height: 1.4;
+}
+.trash-controls-card {
+  display: none;
+}
+.trash-cards-mobile {
+  display: none;
+}
+
+/* Mobile Stitch Design System (<= 767px) */
+@media (max-width: 767px) {
+  /* Hide generic base page-header on mobile */
+  .page-header {
+    display: none !important;
+  }
+
+  .page--narrow {
+    gap: 14px !important;
+    padding-bottom: 96px !important;
+  }
+
+  /* Stitch Mobile Title */
+  .trash-mobile-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-top: -4px;
+    margin-bottom: 2px;
+  }
+
+  .trash-mobile-header__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .trash-mobile-header__title {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 2px 0 !important;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .trash-mobile-header__subtitle {
+    font-size: 12.5px !important;
+    color: #8b95a5 !important;
+    margin: 0 !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .trash-retention-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 4px 10px !important;
+    border-radius: 9999px !important;
+    background: rgba(148, 163, 184, 0.12) !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Admin Sub-Navigation Capsule Bar on Mobile */
+  .admin-subnav {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #0b1320 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 0 !important;
+    scrollbar-width: none;
+  }
+  .admin-subnav::-webkit-scrollbar {
+    display: none;
+  }
+  .admin-subnav__item {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+  }
+  .admin-subnav__item.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Controls Card: Search & Filter toggle */
+  .trash-controls-card {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .trash-search-row {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .trash-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .trash-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 11px;
+    width: 15px;
+    height: 15px;
+    color: #64748b;
+    pointer-events: none;
+  }
+
+  .trash-search-input {
+    width: 100%;
+    background: #090e17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+    padding-left: 36px !important;
+    padding-right: 30px !important;
+    outline: none;
+  }
+
+  .trash-search-input::placeholder {
+    color: #8b95a5 !important;
+  }
+
+  .trash-search-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+  }
+
+  .trash-search-clear {
+    position: absolute;
+    right: 10px;
+    top: 9px;
+    background: none;
+    border: none;
+    color: #8b95a5;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-trash-filter-toggle {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    height: 38px !important;
+    padding: 0 12px !important;
+    color: #e2e8f0 !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+  .btn-trash-filter-toggle.active {
+    background: #1e293b !important;
+    border-color: #2563eb !important;
+    color: #60a5fa !important;
+  }
+
+  /* Collapsible Filter Panel */
+  .trash-filters-panel {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .trash-filters-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .trash-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .trash-filter-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .trash-filter-select {
+    background-color: #090e17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+    color: #e2e8f0 !important;
+    padding: 0 24px 0 10px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+    width: 100% !important;
+  }
+
+  .trash-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .btn-trash-reset {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 11.5px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  /* Hide Desktop Table */
+  .trash-table-desktop {
+    display: none !important;
+  }
+
+  /* Mobile Trash Cards Stack */
+  .trash-cards-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .trash-card-item {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 15px 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .trash-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .trash-card-identifiers {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .trash-ticket-id {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    background: #1e293b;
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .trash-hostel-badge {
+    font-size: 11px;
+    color: #60a5fa;
+    background: rgba(37, 99, 235, 0.12);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 600;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+  }
+
+  .trash-timestamp-badge {
+    font-size: 11px;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .trash-card-title {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 0 10px 0 !important;
+    line-height: 1.35 !important;
+    word-break: break-word;
+  }
+
+  /* Inset Details Box */
+  .trash-card-details-box {
+    background: #090e17;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .trash-detail-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .trash-detail-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .trash-detail-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .trash-deleted-by-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .trash-deleted-by-name {
+    font-size: 12px;
+    color: #e2e8f0;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .trash-deleted-at-val {
+    font-size: 12px;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .trash-reason-block {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 8px;
+  }
+
+  .trash-reason-text {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  /* Footer */
+  .trash-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .trash-status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  .trash-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #64748b;
+  }
+
+  .btn-restore-mobile {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 7px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35) !important;
+    transition: transform var(--duration-fast), background-color var(--duration-fast);
+  }
+  .btn-restore-mobile:active {
+    transform: scale(0.96);
+    background: #1d4ed8 !important;
+  }
+
+  .empty-state-mobile {
+    text-align: center;
+    padding: 36px 16px;
+    background: #0f172a;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+  .empty-state-mobile h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 10px 0 4px 0;
+  }
+  .empty-state-mobile p {
+    font-size: 12.5px;
+    color: #8b95a5;
+    margin: 0;
+  }
+}
+</style>
+{% endblock %}

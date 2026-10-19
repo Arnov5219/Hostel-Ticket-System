@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static ui %}
+
+{% block title %}Notices | Hostel Ticket System{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <span class="current">Notices</span>
+{% endblock %}
+
+{% block page_title %}Notices{% endblock %}
+{% block page_subtitle %}Updates from your wardens and the hostel office{% endblock %}
+
+{% block page_actions %}
+  {% if can_manage %}
+    <a href="{% url 'announcements:manage_list' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+      <i data-lucide="settings" style="width: 15px; height: 15px;"></i>
+      <span>Manage notices</span>
+    </a>
+    <a href="{% url 'announcements:manage_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+      <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+      <span>Publish notice</span>
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 780px; margin: 0 auto;">
+
+  {# Segmented Tabs (All · Unread · Pinned) #}
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+    <nav class="segmented-nav">
+      <a href="{% url 'announcements:list' %}?tab=all" class="segmented-nav__item {% if current_tab == 'all' %}active{% endif %}">
+        All
+      </a>
+      <a href="{% url 'announcements:list' %}?tab=unread" class="segmented-nav__item {% if current_tab == 'unread' %}active{% endif %}">
+        Unread {% if unread_total > 0 %}<span class="badge" style="background-color: var(--primary); color: var(--white); font-size: 10px; padding: 1px 5px; margin-left: 4px;">{{ unread_total }}</span>{% endif %}
+      </a>
+      <a href="{% url 'announcements:list' %}?tab=pinned" class="segmented-nav__item {% if current_tab == 'pinned' %}active{% endif %}">
+        Pinned
+      </a>
+    </nav>
+  </div>
+
+  {# Announcements List #}
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    {% for ann in announcements %}
+      <div class="card notice-card {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% endif %}" id="notice-card-{{ ann.id }}">
+        
+        {# 1. Header: Notice icon and title + Badges #}
+        <div class="notice-card-header">
+          <div class="notice-card-header-main">
+            <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">
+              {% if ann.kind == "MAINTENANCE" %}
+                <i data-lucide="wrench" style="width: 16px; height: 16px;"></i>
+              {% elif ann.kind == "EMERGENCY" %}
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+              {% elif ann.kind == "EVENT" %}
+                <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+              {% elif ann.kind == "POLICY" %}
+                <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+              {% else %}
+                <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
+              {% endif %}
+            </div>
+
+            <div class="notice-card-title-row">
+              <a href="{% url 'announcements:detail' ann.id %}" class="notice-card-title-link">
+                <h3 class="notice-card-title">{{ ann.title }}</h3>
+              </a>
+              {% if ann.id not in read_ids %}
+                <span class="notice-unread-dot" id="notice-unread-{{ ann.id }}" title="Unread notice" aria-label="Unread"></span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# 3. Badges: Pinned and priority indicators #}
+          <div class="notice-card-badges">
+            {% if ann.is_pinned %}
+              <span class="notice-pinned-pill" title="Pinned notice">
+                <i data-lucide="pin" style="width: 12px; height: 12px;"></i>
+                <span>Pinned</span>
+              </span>
+            {% endif %}
+            {% if ann.severity == "URGENT" %}
+              <span class="badge badge-urgent-pill">Urgent</span>
+            {% elif ann.severity == "IMPORTANT" %}
+              <span class="badge badge-important-pill">Important</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {# 2. Metadata: Author, designation, publication date/time, and audience #}
+        <div class="notice-card-meta">
+          <span class="notice-meta-author">{{ ann.author.full_name|default:ann.author.login_id }} <span style="font-weight: 400; color: var(--text-muted);">({{ ann.author.get_role_display|default:"Staff" }})</span></span>
+          <span class="notice-meta-sep">·</span>
+          <span class="notice-meta-time" title="{{ ann.published_at|default:ann.created_at|date:'d F Y, h:i A' }}">{{ ann.published_at|default:ann.created_at|timesince }} ago</span>
+          <span class="notice-meta-sep">·</span>
+          <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary); font-size: 11px; border: 1px solid var(--border); padding: 2px 8px; border-radius: var(--radius-sm);">
+            {% if ann.all_hostels %}All Hostels{% else %}{{ ann.hostels.all|join:", "|default:"Targeted" }}{% endif %}
+          </span>
+        </div>
+
+        {# 4. Description: Notice preview with comfortable line spacing #}
+        <div class="notice-card-desc">
+          {{ ann.body|linebreaksbr }}
+        </div>
+
+        {# 5. Footer: Divider and the existing 'Read full notice →' link #}
+        <div class="notice-card-footer">
+          <a href="{% url 'announcements:detail' ann.id %}" class="btn btn-ghost btn-sm notice-read-link">
+            <span>Read full notice →</span>
+          </a>
+
+          {% if ann.attachment or ann.related_ticket %}
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              {% if ann.attachment %}
+                <a href="{{ ann.attachment.url }}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;">
+                  <i data-lucide="paperclip" style="width: 12px; height: 12px;"></i>
+                  <span>Attachment</span>
+                </a>
+              {% endif %}
+              {% if ann.related_ticket %}
+                <a href="{% url 'tickets:detail' ann.related_ticket.ticket_no %}" class="chip" style="font-size: 11px; text-decoration: none; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid var(--border);">
+                  <i data-lucide="link" style="width: 11px; height: 11px;"></i>
+                  <span>{{ ann.related_ticket.ticket_no }}</span>
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="card" style="text-align: center; padding: 48px 24px; background: var(--bg-surface-glass);">
+        <i data-lucide="megaphone" style="width: 36px; height: 36px; color: var(--text-muted); margin-bottom: 12px;"></i>
+        <h3 style="font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); margin: 0 0 6px;">
+          No notices yet
+        </h3>
+        <p style="font-size: var(--fs-base); color: var(--text-muted); margin: 0;">
+          There are currently no active notices in this view.
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.paginator.num_pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;">
+      {% if page_obj.has_previous %}
+        <a href="?tab={{ current_tab }}&page={{ page_obj.previous_page_number }}" class="btn btn-secondary btn-sm">Previous</a>
+      {% endif %}
+      <span style="font-size: var(--fs-xs); color: var(--text-muted); display: inline-flex; align-items: center; padding: 0 10px;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+        <a href="?tab={{ current_tab }}&page={{ page_obj.next_page_number }}" class="btn btn-secondary btn-sm">Next</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

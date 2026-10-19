@@ -33,19 +33,55 @@ def get_kpis(user):
 
 
 def get_hosteler_kpis(user):
-    """KPIs for hosteler home view."""
+    """KPIs for hosteler home view (Plan Section 6.2)."""
     qs = Ticket.objects.filter(reporter=user)
-    my_open = qs.filter(
-        status__in=[Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD]
-    ).count()
-    my_resolved = qs.filter(status=Status.RESOLVED).count()
-    my_closed = qs.filter(status=Status.CLOSED).count()
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    my_total = qs.count()
+    this_month_count = qs.filter(created_at__gte=month_start).count()
+
+    open_qs = qs.filter(status__in=[Status.OPEN, Status.ASSIGNED])
+    my_open = open_qs.count()
+    urgent_open_count = open_qs.filter(priority="URGENT").count()
+
+    in_progress_qs = qs.filter(status__in=[Status.IN_PROGRESS, Status.ON_HOLD])
+    my_in_progress = in_progress_qs.count()
+
+    # Average days in progress
+    avg_days_str = ""
+    if in_progress_qs.exists():
+        total_seconds = sum((now - t.created_at).total_seconds() for t in in_progress_qs)
+        avg_days = max(1, round(total_seconds / (in_progress_qs.count() * 86400)))
+        avg_days_str = f"Avg. {avg_days}d"
+
+    resolved_qs = qs.filter(status__in=[Status.RESOLVED, Status.CLOSED])
+    my_resolved = resolved_qs.count()
+
+    # Satisfaction percentage (if >= 5 ratings exist)
+    ratings_qs = qs.filter(rating__isnull=False)
+    satisfaction_str = ""
+    if ratings_qs.count() >= 5:
+        good_ratings = ratings_qs.filter(rating__gte=4).count()
+        satisfaction_pct = round((good_ratings / ratings_qs.count()) * 100)
+        satisfaction_str = f"{satisfaction_pct}% satisfaction"
+
+    # Backward-compatible keys
+    legacy_open = qs.filter(status__in=[Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD]).count()
 
     return {
-        "my_open": my_open,
+        "my_total": my_total,
+        "this_month_count": this_month_count,
+        "my_open": legacy_open,
+        "open_unassigned": my_open,
+        "urgent_open_count": urgent_open_count,
+        "my_in_progress": my_in_progress,
+        "avg_days_str": avg_days_str,
         "my_resolved": my_resolved,
-        "my_closed": my_closed,
+        "satisfaction_str": satisfaction_str,
+        "my_closed": qs.filter(status=Status.CLOSED).count(),
     }
+
 
 
 def get_category_data(user):
@@ -138,7 +174,7 @@ def get_top_staff(user, limit=5):
     """Top staff members by resolved tickets."""
     return (
         User.objects.filter(
-            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.ADMIN],
+            role__in=[Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN],
             is_active=True,
         )
         .annotate(
@@ -163,3 +199,26 @@ def get_overdue_tickets(user, limit=5):
         .select_related("hostel", "category", "assigned_to")
         .order_by("due_at")[:limit]
     )
+
+
+
+
+def get_latest_announcements_staff(user, limit=3):
+    """Returns latest announcements with read stats for staff dashboard."""
+    from apps.announcements.models import Announcement, AnnouncementRead
+    from apps.announcements.services import audience_users
+    qs = Announcement.objects.all().order_by("-published_at", "-created_at")
+    if getattr(user, "is_warden", False) and user.hostel:
+        qs = qs.filter(Q(all_hostels=True) | Q(hostels=user.hostel))
+    items = []
+    for ann in qs[:limit]:
+        total = audience_users(ann).count()
+        read = AnnouncementRead.objects.filter(announcement=ann).count()
+        items.append({
+            "announcement": ann,
+            "total": total,
+            "read": read,
+            "read_pct": int((read / total) * 100) if total > 0 else 0,
+        })
+    return items
+

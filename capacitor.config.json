@@ -1,0 +1,31 @@
+{
+  "appId": "com.hostelflow.tickets",
+  "appName": "HostelFlow",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://10.0.2.2:4000",
+    "cleartext": true,
+    "androidScheme": "https",
+    "allowNavigation": [
+      "10.0.2.2",
+      "localhost",
+      "127.0.0.1",
+      "*.example.com"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": true,
+      "backgroundColor": "#0b1220",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b1220"
+    }
+  }
+}

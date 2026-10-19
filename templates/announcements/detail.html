@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static ui %}
+
+{% block title %}{{ announcement.title }} | Hostel Ticket System{% endblock %}
+
+{% block mobile_back_fallback %}{% url 'announcements:list' %}{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{% url 'core:home' %}">Home</a>
+  <span class="separator">/</span>
+  <a href="{% url 'announcements:list' %}">Announcements</a>
+  <span class="separator">/</span>
+  <span class="current">{{ announcement.title|truncatechars:35 }}</span>
+{% endblock %}
+
+{% block page_title %}{{ announcement.title }}{% endblock %}
+{% block page_subtitle %}
+  Published {{ announcement.published_at|default:announcement.created_at|date:"M d, Y H:i" }} by {{ announcement.author.full_name|default:announcement.author.login_id }} ({{ announcement.author.get_role_display|default:"Staff" }})
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'announcements:list' %}" class="btn btn-secondary">
+    <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+    <span>Back to notices</span>
+  </a>
+  {% if can_manage %}
+    <a href="{% url 'announcements:manage_edit' announcement.id %}" class="btn btn-secondary">
+      <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i>
+      <span>Edit notice</span>
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 780px; margin: 0 auto;">
+
+  <div class="card" style="padding: 24px; background: var(--bg-surface-glass); {% if announcement.severity == 'URGENT' %}border-left: 4px solid var(--danger);{% endif %}">
+    
+    {# Metadata badges row #}
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-primary); font-size: 11.5px; font-weight: 600;">
+          {{ announcement.get_kind_display }}
+        </span>
+        {% if announcement.severity == "URGENT" %}
+          <span class="badge badge-urgent-pill">Urgent Alert</span>
+        {% elif announcement.severity == "IMPORTANT" %}
+          <span class="badge badge-important-pill">Important</span>
+        {% else %}
+          <span class="badge badge-info-pill">Information</span>
+        {% endif %}
+        {% if announcement.is_pinned %}
+          <span class="notice-pinned-pill">
+            <i data-lucide="pin" style="width: 12px; height: 12px;"></i>
+            <span>Pinned</span>
+          </span>
+        {% endif %}
+      </div>
+
+      <div style="font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+        <span>
+          Audience: {% if announcement.all_hostels %}All Hostels{% else %}{{ announcement.hostels.all|join:", "|default:"Targeted" }}{% endif %}
+        </span>
+      </div>
+    </div>
+
+    {# Prominent Publication Date, Time & Author Grid (Section 4) #}
+    <div class="notice-meta-grid">
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Posted on</span>
+          <span class="notice-meta-tile-value">{{ announcement.published_at|default:announcement.created_at|date:"d F Y" }}</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Time</span>
+          <span class="notice-meta-tile-value">{{ announcement.published_at|default:announcement.created_at|time:"h:i A" }}</span>
+          <span class="notice-meta-tile-sub">({{ announcement.published_at|default:announcement.created_at|timesince }} ago)</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Posted by</span>
+          <span class="notice-meta-tile-value">{{ announcement.author.full_name|default:announcement.author.login_id }}</span>
+          <span class="notice-meta-tile-sub">{{ announcement.author.get_role_display|default:"Staff" }}</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="building" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Target Audience</span>
+          <span class="notice-meta-tile-value">
+            {% if announcement.all_hostels %}All Hostels{% else %}{{ announcement.hostels.all|join:", "|default:"Targeted" }}{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {# Body content with autoescape, urlizetrunc, linebreaks #}
+    <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.65; margin-bottom: 24px; word-break: break-word;">
+      {{ announcement.body|urlizetrunc:50|linebreaks }}
+    </div>
+
+    {# Attachment Preview / Download #}
+    {% if announcement.attachment %}
+      <div class="card" style="margin-bottom: 20px; padding: 14px; background-color: var(--bg-subtle); border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i data-lucide="file" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <div>
+              <div style="font-weight: 600; font-size: var(--fs-base); color: var(--text-primary);">Attachment file</div>
+              <div style="font-size: var(--fs-xs); color: var(--text-muted);">{{ announcement.attachment.name }}</div>
+            </div>
+          </div>
+          <a href="{{ announcement.attachment.url }}" target="_blank" class="btn btn-secondary btn-sm" download>
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+            <span>Download</span>
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    {# Related Ticket Link #}
+    {% if announcement.related_ticket %}
+      <div style="padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: var(--fs-xs); color: var(--text-muted);">
+          Related maintenance ticket:
+        </div>
+        <a href="{% url 'tickets:detail' announcement.related_ticket.ticket_no %}" class="btn btn-ghost btn-sm" style="color: var(--primary);">
+          <span>{{ announcement.related_ticket.ticket_no }} - {{ announcement.related_ticket.title }}</span>
+          <i data-lucide="arrow-right" style="width: 13px; height: 13px;"></i>
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

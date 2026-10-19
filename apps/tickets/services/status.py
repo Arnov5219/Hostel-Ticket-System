@@ -1,10 +1,15 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.core.permissions import can_change_status
-from apps.notifications.models import Notification
+from apps.notifications.services import (
+    notify_ticket_closed,
+    notify_ticket_reopened,
+    notify_ticket_resolved,
+    notify_ticket_status_changed,
+)
 from apps.tickets.models import ActivityAction, Status, Ticket, TicketActivity
 
 # Allowed transitions map
@@ -76,15 +81,18 @@ def change_status(ticket: Ticket, new_status: str, actor, note: str = "") -> Tic
         note=note or f"Status changed from {old_status} to {new_status}",
     )
 
-    # Send notification
-    recipient = ticket.assigned_to if actor == ticket.reporter else ticket.reporter
-    if recipient:
-        Notification.objects.create(
-            recipient=recipient,
-            ticket=ticket,
-            verb=f"Status: {new_status}",
-            message=f"Ticket {ticket.ticket_no} changed status to {new_status}.",
-        )
+    # Notifications via centralized service
+    if new_status == Status.RESOLVED:
+        notify_ticket_resolved(ticket, actor)
+    elif new_status == Status.CLOSED:
+        notify_ticket_closed(ticket, actor)
+    elif new_status == Status.IN_PROGRESS and old_status in [
+        Status.RESOLVED,
+        Status.CLOSED,
+    ]:
+        notify_ticket_reopened(ticket, actor)
+    else:
+        notify_ticket_status_changed(ticket, old_status, new_status, actor)
 
     return ticket
 
@@ -110,5 +118,9 @@ def auto_close_resolved_tickets(hours_threshold: int = 72) -> int:
             to_value=Status.CLOSED,
             note=f"Automatically closed {hours_threshold}h after resolution",
         )
+
+        # Notify reporter of auto-close
+        notify_ticket_closed(ticket, actor=None)
+
         count += 1
     return count

@@ -1,8 +1,37 @@
-// Kanban Board Drag and Drop using SortableJS and HTMX
+// Kanban Board Drag and Drop using SortableJS
 
 document.addEventListener('DOMContentLoaded', function () {
   initKanban();
 });
+
+function updateColumnCounts() {
+  const columns = document.querySelectorAll('.kanban-column');
+  columns.forEach(function (col) {
+    const status = col.getAttribute('data-status');
+    const container = col.querySelector('.kanban-cards-container');
+    const cards = container ? container.querySelectorAll('.kanban-card') : [];
+    const count = cards.length;
+
+    // Update column header count
+    const colCountEl = col.querySelector('.kanban-col-count');
+    if (colCountEl) colCountEl.textContent = count;
+
+    // Toggle empty column state
+    let emptyEl = container.querySelector('.kanban-empty-col');
+    if (count === 0) {
+      if (!emptyEl) {
+        emptyEl = document.createElement('div');
+        emptyEl.className = 'kanban-empty-col';
+        emptyEl.style.gridColumn = '1 / -1';
+        emptyEl.innerHTML = `<i data-lucide="inbox" style="width: 22px; height: 22px; opacity: 0.5; margin-bottom: 6px;"></i><div style="font-size: 13px;">No tickets currently in ${col.querySelector('.kanban-col-title')?.textContent || status}</div>`;
+        container.appendChild(emptyEl);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+    } else if (emptyEl) {
+      emptyEl.remove();
+    }
+  });
+}
 
 function initKanban() {
   const containers = document.querySelectorAll('.kanban-cards-container');
@@ -12,6 +41,9 @@ function initKanban() {
     new Sortable(container, {
       group: 'kanban-board',
       animation: 150,
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
@@ -54,6 +86,7 @@ function initKanban() {
               // Update badge in card if needed
               const dot = item.querySelector('.status-indicator');
               if (dot) dot.className = `status-indicator ${newStatus.toLowerCase()}`;
+              updateColumnCounts();
             }
           })
           .catch(function () {

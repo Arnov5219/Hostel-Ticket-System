@@ -15,11 +15,25 @@ class UserFactory(factory.django.DjangoModelFactory):
     role = Role.HOSTELER
     escalation_level = None
     is_active = True
+    is_verified = True
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
         password = kwargs.pop("password", "pass1234")
+        with_residence = kwargs.pop("with_residence", True)
         user = super()._create(model_class, *args, **kwargs)
         user.set_password(password)
+
+        if user.role == Role.HOSTELER and with_residence and not user.has_residence:
+            from django.utils import timezone
+
+            from apps.hostels.factories import HostelFactory, RoomFactory
+
+            if not user.hostel:
+                user.hostel = HostelFactory()
+            if not user.room:
+                user.room = RoomFactory(hostel=user.hostel)
+            user.residence_set_at = timezone.now()
+
         user.save()
         return user
