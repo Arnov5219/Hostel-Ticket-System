@@ -47,7 +47,8 @@ db.sqlite3*
 htmlcov/
 .ruff_cache/
 
-plan/
+# Local planning documents
+/plan/
 
 # Node / Capacitor
 node_modules/
