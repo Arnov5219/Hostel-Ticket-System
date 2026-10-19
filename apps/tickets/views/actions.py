@@ -1,4 +1,4 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse, JsonResponse
@@ -11,7 +11,7 @@ from apps.core.permissions import (
     can_view_ticket,
     has_capability,
 )
-from apps.notifications.models import Notification
+from apps.notifications.services import notify_ticket_reassigned
 from apps.tickets.models import (
     ActivityAction,
     Ticket,
@@ -87,6 +87,7 @@ def reassign(request, ticket_no):
         )
         new_assignee_name = new_assignee.full_name or new_assignee.login_id
 
+        old_assignee = ticket.assigned_to
         ticket.assigned_to = new_assignee
         ticket.save()
 
@@ -99,12 +100,7 @@ def reassign(request, ticket_no):
             note=note,
         )
 
-        Notification.objects.create(
-            recipient=new_assignee,
-            ticket=ticket,
-            verb="Ticket Reassigned",
-            message=f"Ticket {ticket.ticket_no} has been reassigned to you by {request.user.full_name or request.user.login_id}.",
-        )
+        notify_ticket_reassigned(ticket, old_assignee, new_assignee, request.user)
 
         messages.success(request, f"Ticket reassigned to {new_assignee_name}.")
 

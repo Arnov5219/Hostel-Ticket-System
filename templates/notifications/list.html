@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load ui %}
 
-{% block title %}Notifications | Hostel Ticket System{% endblock %}
+{% block title %}Notifications | {{ site_name|default:"HostelFlow" }}{% endblock %}
+
+{% block mobile_back_fallback %}{% url 'dashboard:index' %}{% endblock %}
 
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
@@ -10,13 +12,13 @@
 {% endblock %}
 
 {% block page_title %}Notifications{% endblock %}
-{% block page_subtitle %}Activity logs and status updates on your tickets{% endblock %}
+{% block page_subtitle %}Activity logs, status updates, and campus announcements{% endblock %}
 
 {% block page_actions %}
   {% if unread_count > 0 %}
-    <form method="post" action="{% url 'notifications:read_all' %}" style="margin: 0;">
+    <form method="post" action="{% url 'notifications:read_all' %}" id="desktop-mark-all-form" style="margin: 0;">
       {% csrf_token %}
-      <button type="submit" class="btn btn-secondary btn-sm">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="markAllNotificationsAsRead(this)">
         <i data-lucide="check-check" style="width: 14px; height: 14px;"></i>
         <span>Mark all as read</span>
       </button>
@@ -28,60 +30,120 @@
 <div style="max-width: 760px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px;">
 
   <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
-    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
-      <span style="font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary);">All activity</span>
-      <span style="font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums;">
-        {% if unread_count > 0 %}
-          <span style="color: var(--primary); font-weight: 600;">{{ unread_count }} unread</span>
-        {% else %}
-          0 unread
-        {% endif %}
-      </span>
+    
+    {# Card Header with Prominent 'Mark all as read' Action (Section 2) #}
+    <div class="notifications-card-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="notifications-card-title">All activity</span>
+        <span id="unread-count-pill" class="unread-count-pill {% if unread_count == 0 %}hidden{% endif %}">
+          <span id="unread-count-num">{{ unread_count }}</span> unread
+        </span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button"
+                id="header-mark-all-read-btn"
+                class="btn btn-secondary btn-sm mark-all-read-btn {% if unread_count == 0 %}hidden{% endif %}"
+                onclick="markAllNotificationsAsRead(this)"
+                title="Mark all notifications as read">
+          <i data-lucide="check-check" style="width: 14px; height: 14px;"></i>
+          <span>Mark all as read</span>
+        </button>
+      </div>
     </div>
 
-    <div style="display: flex; flex-direction: column;">
+    {# Notifications List Rows (Section 3) #}
+    <div id="notifications-list-container" style="display: flex; flex-direction: column;">
       {% for notif in notifications %}
-        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: flex-start; gap: 14px; background-color: {% if not notif.is_read %}var(--primary-soft){% else %}var(--bg-surface){% endif %}; border-left: 3px solid {% if not notif.is_read %}var(--primary){% else %}transparent{% endif %}; transition: background var(--duration-fast);">
+        <div class="notification-row {% if not notif.is_read %}unread{% endif %}"
+             id="notif-row-{{ notif.id }}"
+             onclick="handleNotificationRowClick(this)"
+             data-id="{{ notif.id }}"
+             data-title="{{ notif.display_title }}"
+             data-verb="{{ notif.verb|humanize_status }}"
+             data-date="{{ notif.created_at|date:'d F Y' }}"
+             data-time="{{ notif.created_at|time:'h:i A' }}"
+             data-time-ago="{% time_ago notif.created_at %}"
+             data-is-read="{% if notif.is_read %}true{% else %}false{% endif %}"
+             {% if notif.ticket %}
+               data-ticket-no="{{ notif.ticket.ticket_no }}"
+               data-ticket-title="{{ notif.ticket.title }}"
+               data-ticket-url="{% url 'tickets:detail' notif.ticket.ticket_no %}"
+             {% endif %}
+             {% if notif.announcement %}
+               data-announcement-id="{{ notif.announcement.id }}"
+               data-announcement-title="{{ notif.announcement.title }}"
+               data-announcement-url="{% url 'announcements:detail' notif.announcement.id %}"
+             {% endif %}
+             tabindex="0"
+             role="button"
+             aria-label="View notification: {{ notif.verb|humanize_status }}">
           
           <!-- Event Icon -->
-          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; background: {% if not notif.is_read %}var(--primary-soft){% else %}var(--bg-subtle){% endif %}; color: {% if not notif.is_read %}var(--primary){% else %}var(--text-muted){% endif %};">
+          <div class="notification-row-icon">
             {% if "status" in notif.verb|lower %}
-              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
             {% elif "assign" in notif.verb|lower %}
-              <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="user-check" style="width: 15px; height: 15px;"></i>
             {% elif "escalat" in notif.verb|lower %}
-              <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="arrow-up-right" style="width: 15px; height: 15px;"></i>
             {% elif "comment" in notif.verb|lower or "note" in notif.verb|lower %}
-              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
+            {% elif "announcement" in notif.verb|lower or "notice" in notif.verb|lower %}
+              <i data-lucide="megaphone" style="width: 15px; height: 15px;"></i>
             {% else %}
-              <i data-lucide="bell" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="bell" style="width: 15px; height: 15px;"></i>
             {% endif %}
           </div>
 
-          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
-              {# Fix B-06, U-15: Humanize status/verb copy #}
-              <span style="font-weight: 600; font-size: var(--fs-sm); color: var(--text-primary);">
-                {{ notif.verb|humanize_status }}
+          <!-- Notification Content -->
+          <div class="notification-row-content">
+            <div class="notification-row-top">
+              <span class="notification-row-verb">
+                {{ notif.display_title }}
+                {% if not notif.is_read %}
+                  <span class="notice-unread-dot" id="notif-dot-{{ notif.id }}" title="Unread"></span>
+                {% endif %}
               </span>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap;">
+              <span class="notification-row-time" title="{{ notif.created_at|date:'d F Y, h:i A' }}">
                 {% time_ago notif.created_at %}
               </span>
             </div>
 
-            <div style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.45;">
+            <div class="notification-row-message">
               {{ notif.message }}
             </div>
 
-            {% if notif.ticket %}
-              <div style="margin-top: 6px;">
-                <a href="{% url 'notifications:mark_read' notif.id %}" class="btn btn-secondary btn-sm" style="padding: 2px 10px; font-size: 11px; height: 24px; font-family: var(--font-mono);">
-                  <span>View ticket {{ notif.ticket.ticket_no }}</span>
+            <!-- Direct Actions -->
+            <div class="notification-row-actions">
+              {% if notif.ticket %}
+                <a href="{% url 'notifications:mark_read' notif.id %}"
+                   class="btn btn-secondary btn-sm notif-action-btn"
+                   onclick="event.stopPropagation();"
+                   title="View ticket #{{ notif.ticket.ticket_no }}">
+                  <i data-lucide="ticket" style="width: 12px; height: 12px;"></i>
+                  <span>Ticket #{{ notif.ticket.ticket_no }}</span>
                   <i data-lucide="arrow-right" style="width: 11px; height: 11px;"></i>
                 </a>
-              </div>
-            {% endif %}
+              {% endif %}
+              {% if notif.announcement %}
+                <a href="{% url 'notifications:mark_read' notif.id %}"
+                   class="btn btn-secondary btn-sm notif-action-btn"
+                   onclick="event.stopPropagation();"
+                   title="View notice: {{ notif.announcement.title }}">
+                  <i data-lucide="megaphone" style="width: 12px; height: 12px;"></i>
+                  <span>View Notice</span>
+                  <i data-lucide="arrow-right" style="width: 11px; height: 11px;"></i>
+                </a>
+              {% endif %}
+              <span style="font-size: 11px; color: var(--primary); font-weight: 500; margin-left: 2px;">
+                Tap to view details ›
+              </span>
+            </div>
           </div>
+
+          <!-- Hidden Full Message for Modal (Zero Truncation) -->
+          <div id="notif-full-text-{{ notif.id }}" style="display: none;">{{ notif.message|linebreaks }}</div>
 
         </div>
       {% empty %}
@@ -99,4 +161,240 @@
   </div>
 
 </div>
+
+{# Full Notification Message Modal (Section 3 & 4) #}
+<div id="notification-detail-modal" class="app-modal-backdrop" onclick="if(event.target === this) closeModal('notification-detail-modal');" style="display: none;">
+  <div class="card app-modal" style="max-width: 520px; width: 100%; padding: 0; overflow: hidden;" onclick="event.stopPropagation();">
+    
+    <div class="app-modal-header" style="padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="notif-modal-icon-chip" class="ann-icon-chip info">
+          <i data-lucide="bell" id="notif-modal-icon" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div>
+          <h3 id="notif-modal-title" style="margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--text-primary);">Notification Details</h3>
+          <span class="badge" style="font-size: 10.5px; background: var(--bg-subtle); color: var(--text-secondary); margin-top: 2px;">Activity update</span>
+        </div>
+      </div>
+      <button type="button" class="app-modal-close" onclick="closeModal('notification-detail-modal');" aria-label="Close notification">✕</button>
+    </div>
+
+    <div class="app-modal-body" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+      
+      {# Exact Date and Time for Notifications (Section 4) #}
+      <div class="notice-meta-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2px;">
+        <div class="notice-meta-tile">
+          <div class="notice-meta-tile-icon">
+            <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
+          </div>
+          <div class="notice-meta-tile-body">
+            <span class="notice-meta-tile-label">Posted on</span>
+            <span class="notice-meta-tile-value" id="notif-modal-date">-</span>
+          </div>
+        </div>
+
+        <div class="notice-meta-tile">
+          <div class="notice-meta-tile-icon">
+            <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
+          </div>
+          <div class="notice-meta-tile-body">
+            <span class="notice-meta-tile-label">Time</span>
+            <span class="notice-meta-tile-value" id="notif-modal-time">-</span>
+            <span class="notice-meta-tile-sub" id="notif-modal-time-ago"></span>
+          </div>
+        </div>
+      </div>
+
+      {# Complete Message Body (Zero truncation) #}
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">Message Details</span>
+        <div id="notif-modal-message" style="font-size: 14.5px; line-height: 1.6; color: var(--text-primary); word-break: break-word; background: var(--bg-subtle); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border);"></div>
+      </div>
+
+      {# Associated Record (Ticket or Announcement) #}
+      <div id="notif-modal-record-container" style="display: none; flex-direction: column; gap: 6px;">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">Associated Record</span>
+        <div class="card" style="padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <div id="notif-modal-record-icon-box" style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="ticket" id="notif-modal-record-icon" style="width: 16px; height: 16px;"></i>
+            </div>
+            <div style="min-width: 0;">
+              <div id="notif-modal-record-title" style="font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+              <div id="notif-modal-record-sub" style="font-size: 11px; color: var(--text-muted);"></div>
+            </div>
+          </div>
+          <a id="notif-modal-record-link" href="#" class="btn btn-primary btn-sm" style="flex-shrink: 0; text-decoration: none;">
+            <span id="notif-modal-record-btn-text">Open</span>
+            <i data-lucide="arrow-right" style="width: 12px; height: 12px;"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="app-modal-footer" style="padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: var(--bg-surface);">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('notification-detail-modal');">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Global Mark All as Read (Section 2)
+  function markAllNotificationsAsRead(btn) {
+    if (btn) btn.disabled = true;
+
+    fetch("{% url 'notifications:read_all' %}", {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Network error');
+      return response.json();
+    })
+    .then(data => {
+      // 1. Visually update all unread notification rows
+      document.querySelectorAll('.notification-row.unread').forEach(row => {
+        row.classList.remove('unread');
+        row.setAttribute('data-is-read', 'true');
+      });
+
+      // 2. Remove all unread dot badges
+      document.querySelectorAll('.notice-unread-dot').forEach(dot => dot.remove());
+
+      // 3. Hide or update unread counts
+      const pill = document.getElementById('unread-count-pill');
+      if (pill) pill.classList.add('hidden');
+
+      const countNum = document.getElementById('unread-count-num');
+      if (countNum) countNum.textContent = '0';
+
+      // 4. Hide all mark-all-read buttons
+      document.querySelectorAll('.mark-all-read-btn, #desktop-mark-all-form').forEach(el => el.classList.add('hidden'));
+
+      // 5. Update header bell badge if visible
+      document.querySelectorAll('.notification-badge').forEach(badge => badge.remove());
+
+      // 6. Show success toast
+      if (typeof window.showToast === 'function') {
+        window.showToast('All notifications marked as read.', 'success');
+      }
+    })
+    .catch(err => {
+      if (btn) btn.disabled = false;
+      if (typeof window.showToast === 'function') {
+        window.showToast('Could not mark notifications as read. Please try again.', 'error');
+      }
+    });
+  }
+
+  // Global Notification Row Click Handler (Section 3 & 4)
+  function handleNotificationRowClick(row) {
+    const id = row.getAttribute('data-id');
+    const verb = row.getAttribute('data-verb');
+    const title = row.getAttribute('data-title') || verb;
+    const date = row.getAttribute('data-date');
+    const time = row.getAttribute('data-time');
+    const timeAgo = row.getAttribute('data-time-ago');
+    const isRead = row.getAttribute('data-is-read') === 'true';
+
+    const ticketNo = row.getAttribute('data-ticket-no');
+    const ticketTitle = row.getAttribute('data-ticket-title');
+    const ticketUrl = row.getAttribute('data-ticket-url');
+
+    const annId = row.getAttribute('data-announcement-id');
+    const annTitle = row.getAttribute('data-announcement-title');
+    const annUrl = row.getAttribute('data-announcement-url');
+
+    // Populate Modal
+    document.getElementById('notif-modal-title').textContent = title || verb || 'Notification Details';
+    document.getElementById('notif-modal-date').textContent = date;
+    document.getElementById('notif-modal-time').textContent = time;
+    document.getElementById('notif-modal-time-ago').textContent = timeAgo ? ('(' + timeAgo + ')') : '';
+
+    const fullTextEl = document.getElementById('notif-full-text-' + id);
+    if (fullTextEl) {
+      document.getElementById('notif-modal-message').innerHTML = fullTextEl.innerHTML;
+    }
+
+    // Associated Record
+    const recordContainer = document.getElementById('notif-modal-record-container');
+    const recordIcon = document.getElementById('notif-modal-record-icon');
+    const recordTitle = document.getElementById('notif-modal-record-title');
+    const recordSub = document.getElementById('notif-modal-record-sub');
+    const recordLink = document.getElementById('notif-modal-record-link');
+    const recordBtnText = document.getElementById('notif-modal-record-btn-text');
+
+    if (ticketNo && ticketUrl) {
+      recordTitle.textContent = 'Ticket #' + ticketNo + (ticketTitle ? (' — ' + ticketTitle) : '');
+      recordSub.textContent = 'View maintenance ticket details';
+      recordLink.href = ticketUrl;
+      recordBtnText.textContent = 'Open Ticket';
+      recordContainer.style.display = 'flex';
+      if (recordIcon) recordIcon.setAttribute('data-lucide', 'ticket');
+    } else if (annId && annUrl) {
+      recordTitle.textContent = annTitle || 'Campus Announcement';
+      recordSub.textContent = 'Read full notice and updates';
+      recordLink.href = annUrl;
+      recordBtnText.textContent = 'Open Notice';
+      recordContainer.style.display = 'flex';
+      if (recordIcon) recordIcon.setAttribute('data-lucide', 'megaphone');
+    } else {
+      recordContainer.style.display = 'none';
+    }
+
+    openModal('notification-detail-modal');
+
+    // If unread, mark this individual notification as read via API
+    if (!isRead) {
+      fetch('/notifications/read/' + id + '/?format=json', {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        row.classList.remove('unread');
+        row.setAttribute('data-is-read', 'true');
+        const dot = document.getElementById('notif-dot-' + id);
+        if (dot) dot.remove();
+
+        if (typeof data.unread_count !== 'undefined') {
+          const countNum = document.getElementById('unread-count-num');
+          if (countNum) countNum.textContent = data.unread_count;
+
+          if (data.unread_count === 0) {
+            const pill = document.getElementById('unread-count-pill');
+            if (pill) pill.classList.add('hidden');
+            document.querySelectorAll('.mark-all-read-btn, #desktop-mark-all-form').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.notification-badge').forEach(b => b.remove());
+          }
+        }
+      })
+      .catch(() => {});
+    }
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  }
+
+  // Keyboard accessibility: Enter or Space on row opens modal
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.notification-row').forEach(row => {
+      row.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleNotificationRowClick(row);
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

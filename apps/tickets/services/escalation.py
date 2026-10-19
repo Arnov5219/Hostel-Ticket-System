@@ -1,9 +1,9 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.notifications.models import Notification
+from apps.notifications.services import notify_ticket_escalated
 from apps.tickets.models import (
     ActivityAction,
     Status,
@@ -21,7 +21,15 @@ def find_escalation_assignee(ticket: Ticket, next_level: int) -> tuple[User | No
     active_staff_qs = User.objects.filter(is_active=True, archived_at__isnull=True)
 
     if next_level == 2:
-        # Hostel Warden for the same hostel
+        # 1. Primary Level 2 Warden configured on the hostel
+        if (
+            ticket.hostel
+            and ticket.hostel.responsible_warden
+            and ticket.hostel.responsible_warden.is_active
+            and not getattr(ticket.hostel.responsible_warden, "archived_at", None)
+        ):
+            return ticket.hostel.responsible_warden, False
+        # 2. Hostel Warden assigned to the same hostel
         warden = active_staff_qs.filter(hostel=ticket.hostel, role=Role.WARDEN).first()
         if warden:
             return warden, False
@@ -100,32 +108,8 @@ def escalate(ticket: Ticket, actor=None, reason: str = "") -> Ticket:
             note="No active Dean found; ticket escalated to Admin as fallback.",
         )
 
-    # Notify new assignee
-    if new_assignee:
-        Notification.objects.create(
-            recipient=new_assignee,
-            ticket=ticket,
-            verb=f"Escalated to Level {next_level}",
-            message=f"Ticket {ticket.ticket_no} has escalated to you: {ticket.title}.",
-        )
-
-    # Notify old assignee
-    if old_assignee and old_assignee != new_assignee:
-        Notification.objects.create(
-            recipient=old_assignee,
-            ticket=ticket,
-            verb="Ticket Escalated",
-            message=f"Ticket {ticket.ticket_no} has been escalated to L{next_level}.",
-        )
-
-    # Notify reporter
-    if ticket.reporter:
-        Notification.objects.create(
-            recipient=ticket.reporter,
-            ticket=ticket,
-            verb="Ticket Escalated",
-            message=f"Your ticket {ticket.ticket_no} was escalated to Level {next_level} ({new_assignee.get_role_display() if new_assignee else 'Higher Authority'}).",
-        )
+    # Notifications via centralized service
+    notify_ticket_escalated(ticket, old_assignee, new_assignee, next_level, actor=actor)
 
     return ticket
 

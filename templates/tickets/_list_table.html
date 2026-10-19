@@ -46,6 +46,9 @@
             <td style="white-space: nowrap; font-size: var(--fs-xs);">
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <span>{{ ticket.hostel.name }}</span>
+                {% if ticket.room_number %}
+                  <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Room {{ ticket.room_number }}</span>
+                {% endif %}
                 {% if ticket.outside_own_hostel %}
                   <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 10px; padding: 1px 4px; align-self: flex-start;">Outside</span>
                 {% endif %}
@@ -104,10 +107,14 @@
       </span>
 
       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 6px; margin-top: 2px;">
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span>{{ ticket.category.name }}</span>
           <span>·</span>
           <span>{{ ticket.hostel.code|default:ticket.hostel.name }}</span>
+          {% if ticket.room_number %}
+            <span>·</span>
+            <span>Rm {{ ticket.room_number }}</span>
+          {% endif %}
           {% if ticket.outside_own_hostel %}
             <span class="badge" style="background-color: var(--st-progress-bg); color: var(--st-progress-fg); font-size: 10px; padding: 1px 4px;">Outside</span>
           {% endif %}

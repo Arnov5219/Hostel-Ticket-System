@@ -3,6 +3,8 @@
 
 {% block title %}Create Account | Hostel Ticket System{% endblock %}
 
+{% block default_theme_pref %}light{% endblock %}
+
 {% block body_layout %}
 <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; z-index: 1;">
 
@@ -142,4 +144,22 @@
 
   </div>
 </div>
+
+<script>
+// Security: Prevent Back button from exposing authenticated pages
+try {
+  sessionStorage.removeItem('hf_nav_stack');
+  Object.keys(sessionStorage).forEach(function(key) {
+    if (key.startsWith('hf_scroll_') || key.startsWith('hf_tab_state_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+} catch (e) {}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted && window.location.pathname.startsWith('/accounts/register')) {
+    window.location.reload();
+  }
+});
+</script>
 {% endblock %}

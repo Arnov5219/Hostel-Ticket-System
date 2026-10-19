@@ -1,29 +1,14 @@
 from django.contrib import admin
 
 from apps.tickets.models import (
-    Category,
     RoutingRule,
     SavedFilter,
     SLAPolicy,
-    Tag,
     Ticket,
     TicketActivity,
     TicketAttachment,
     TicketComment,
 )
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "icon", "default_priority", "is_active"]
-    list_filter = ["is_active", "default_priority"]
-    search_fields = ["name"]
-
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ["name", "color"]
-    search_fields = ["name"]
 
 
 @admin.register(SLAPolicy)
@@ -50,13 +35,14 @@ class TicketAdmin(admin.ModelAdmin):
         "ticket_no",
         "title",
         "hostel",
+        "room_number",
         "category",
         "priority",
         "status",
         "created_at",
     ]
     list_filter = ["status", "priority", "hostel", "category"]
-    search_fields = ["ticket_no", "title", "description", "reporter__login_id"]
+    search_fields = ["ticket_no", "title", "description", "reporter__login_id", "room_number"]
 
 
 @admin.register(TicketAttachment)

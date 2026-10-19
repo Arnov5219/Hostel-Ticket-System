@@ -135,17 +135,6 @@ def nav_for(user) -> dict:
                 section="manage_responsibility",
             )
         )
-    if user.can(Capability.MANAGE_TICKET_SETTINGS):
-        sidebar_items.append(
-            NavItem(
-                key="manage_settings",
-                label="Ticket settings",
-                icon="sliders-horizontal",
-                url_name="tickets:manage_settings",
-                section="manage_settings",
-            )
-        )
-
     # 6. Trash (Admin only per Section 2 & 6)
     if user.can(Capability.VIEW_TRASH_ALL):
         sidebar_items.append(
@@ -196,7 +185,6 @@ def nav_for(user) -> dict:
         mobile_more_items = [
             NavItem(key="manage_hostels", label="Hostels", icon="building-2", url_name="hostels:manage_hostels", section="manage_hostels"),
             NavItem(key="manage_responsibility", label="Assignments", icon="user-check", url_name="hostels:manage_responsibility", section="manage_responsibility"),
-            NavItem(key="manage_settings", label="Ticket settings", icon="sliders-horizontal", url_name="tickets:manage_settings", section="manage_settings"),
             NavItem(key="trash", label="Trash", icon="trash-2", url_name="tickets:trash", section="trash"),
             NavItem(key="profile", label="Profile Settings", icon="user", url_name="accounts:profile", section="profile"),
         ]

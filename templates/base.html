@@ -1,6 +1,6 @@
 {% load static ui %}
 <!DOCTYPE html>
-<html lang="en" data-theme-pref="{% if request.user.is_authenticated %}{{ request.user.theme|lower }}{% else %}system{% endif %}" data-user-theme="{% if request.user.is_authenticated %}{{ request.user.theme }}{% endif %}">
+<html lang="en" data-theme-pref="{% if request.user.is_authenticated %}{{ request.user.theme|lower }}{% else %}{% block default_theme_pref %}system{% endblock %}{% endif %}" data-user-theme="{% if request.user.is_authenticated %}{{ request.user.theme }}{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -12,8 +12,14 @@
   <script>
     (function () {
       try {
-        var pref = document.documentElement.getAttribute('data-theme-pref') || localStorage.getItem('theme') || 'system';
-        pref = pref.toLowerCase();
+        var userTheme = document.documentElement.getAttribute('data-user-theme') || '';
+        var stored = '';
+        try { stored = localStorage.getItem('theme') || ''; } catch (err) {}
+        var defaultPref = document.documentElement.getAttribute('data-theme-pref') || 'system';
+        var pref = (userTheme || stored || defaultPref).toLowerCase();
+        if (pref !== 'dark' && pref !== 'light' && pref !== 'system') {
+          pref = defaultPref.toLowerCase();
+        }
         var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.setAttribute('data-theme-pref', pref);
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -51,6 +57,43 @@
 <body>
   <!-- Fixed Layered Background (Off-white + dot mesh + subtle glows) -->
   <div class="app-background" aria-hidden="true"></div>
+
+  <!-- App Launch / Initialization Screen (Mobile & App) -->
+  <div id="app-launch-screen" class="app-launch-screen" aria-live="polite">
+    <div class="launch-screen-card">
+      <div class="launch-logo-badge">
+        <svg viewBox="0 0 36 36" fill="none" class="launch-logo-svg" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 10V26M26 10V26M10 18H26" stroke="var(--primary-text)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="launch-brand-name">HostelFlow</div>
+      <div class="launch-tagline">Campus Living &amp; Facility Operations</div>
+      
+      <div class="launch-progress-track">
+        <div class="launch-progress-bar" id="launch-progress-bar"></div>
+      </div>
+      
+      <div class="launch-status-text" id="launch-status-text">Starting HostelFlow...</div>
+
+      <div class="launch-fallback-box" id="launch-fallback-box" style="display: none;">
+        <p class="launch-fallback-text" id="launch-fallback-msg">Connection is taking longer than expected.</p>
+        <button type="button" class="launch-retry-btn" onclick="retryAppLaunch()">
+          <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+          <span>Retry</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      try {
+        if (sessionStorage.getItem('hf_app_launched') === 'true') {
+          var ls = document.getElementById('app-launch-screen');
+          if (ls) ls.style.display = 'none';
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   {% block body_layout %}
   <div class="app-container">
@@ -137,7 +180,7 @@
       <!-- Page Header (Unified 56-64px Header on Phone; Page Header on Desktop) -->
       <div class="page-header">
         <div class="page-header-title">
-          <!-- Mobile Brand Header (Home on phone: Mockup 1) -->
+          <!-- Mobile Brand Header (Home on phone) vs Mobile Back Button (Inner pages on phone) -->
           {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}
             <div class="mobile-brand-title">
               <div class="sidebar-brand-logo" style="width: 32px; height: 32px; font-size: 15px; border-radius: var(--radius-sm);">
@@ -150,11 +193,11 @@
                 </span>
               {% endif %}
             </div>
-          {% elif request.resolver_match.url_name == 'detail' %}
-            <div class="mobile-detail-nav">
-              <a href="javascript:history.back()" class="top-bar-btn" aria-label="Go back" style="padding: 4px; margin-left: -6px;">
+          {% else %}
+            <div class="mobile-back-nav">
+              <button type="button" class="mobile-back-btn" onclick="handleMobileBack(this)" data-fallback="{% block mobile_back_fallback %}{% if request.resolver_match.url_name == 'detail' %}{% url 'tickets:list' %}{% elif current_section == 'tickets_create' or current_section == 'tickets' %}{% url 'tickets:list' %}{% else %}{% url 'dashboard:index' %}{% endif %}{% endblock %}" aria-label="Go back">
                 <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
-              </a>
+              </button>
             </div>
           {% endif %}
 

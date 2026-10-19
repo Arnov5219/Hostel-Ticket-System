@@ -3,6 +3,8 @@
 
 {% block title %}Routing & SLA Configuration | Hostel Ticket System{% endblock %}
 
+{% block mobile_back_fallback %}{% url 'tickets:list' %}{% endblock %}
+
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>

@@ -156,6 +156,7 @@ class TestLocationValidationAndTicketForm:
 
         post_data = {
             "title": "Broken desk in other hostel",
+            "room_number": "201",
             "category": cat.id,
             "priority": Priority.LOW,
             "description": "Desk leg cracked during visit in room 201.",

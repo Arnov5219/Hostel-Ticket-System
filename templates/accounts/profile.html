@@ -3,6 +3,8 @@
 
 {% block title %}User Profile | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
+{% block mobile_back_fallback %}{% url 'dashboard:index' %}{% endblock %}
+
 {% block breadcrumbs %}
   <div style="display: flex; align-items: center; gap: 6px;">
     <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>
@@ -15,151 +17,327 @@
 {% block page_actions %}{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; max-width: 960px; margin: 0 auto;">
+<style>
+  [x-cloak] { display: none !important; }
+  .transition-fade-down {
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .transition-fade-up {
+    transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .transition-hidden {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  .transition-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
 
-  <!-- 1. Profile Information Card -->
-  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
-      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Profile information</h2>
-      <span class="role-badge" style="font-size: 11px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 3px 10px; border-radius: var(--r-chip);">
-        {{ request.user.get_role_display }}
-      </span>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; max-width: 960px; margin: 0 auto; align-items: start;">
+
+  <!-- Column 1: Profile Information & Collapsible Change Password Card -->
+  <div style="display: flex; flex-direction: column; gap: 20px;" x-data="{
+    passwordOpen: {% if password_form.errors %}true{% else %}false{% endif %},
+    showOld: false,
+    showNew1: false,
+    showNew2: false,
+    togglePasswordForm() {
+      if (this.passwordOpen) {
+        this.cancelPasswordChange();
+      } else {
+        this.passwordOpen = true;
+        this.$nextTick(() => {
+          if (window.lucide) { window.lucide.createIcons(); }
+          const firstInput = this.$refs.passwordChangeForm?.querySelector('input[name=\'old_password\']');
+          if (firstInput) firstInput.focus();
+        });
+      }
+    },
+    cancelPasswordChange() {
+      this.passwordOpen = false;
+      const form = this.$refs.passwordChangeForm;
+      if (form) {
+        form.reset();
+        const inputs = form.querySelectorAll('input[type=\'password\'], input[type=\'text\']');
+        inputs.forEach(input => {
+          if (input.name !== 'csrfmiddlewaretoken' && input.name !== 'action') {
+            input.value = '';
+          }
+        });
+      }
+      this.showOld = false;
+      this.showNew1 = false;
+      this.showNew2 = false;
+    }
+  }">
+
+    <!-- 1. Profile Information Card -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Profile information</h2>
+        <span class="role-badge" style="font-size: 11px; font-weight: 700; background: var(--primary-soft); color: var(--primary-ink); padding: 3px 10px; border-radius: var(--r-chip);">
+          {{ request.user.get_role_display }}
+        </span>
+      </div>
+
+      <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+
+        <div style="display: flex; align-items: center; gap: 14px; background: var(--bg-subtle); padding: 12px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
+          {% user_avatar request.user size="lg" is_self=True %}
+          <div style="display: flex; flex-direction: column; min-width: 0;">
+            <div style="font-weight: 700; font-size: 16px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ request.user.full_name|default:request.user.login_id }}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
+              ID: {{ request.user.login_id }}
+            </div>
+            {% if request.user.hostel %}
+              <div style="font-size: 12px; font-weight: 500; color: var(--primary); margin-top: 2px;">
+                {{ request.user.hostel.name }} ({{ request.user.hostel.code }})
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Full Name</label>
+          {{ profile_form.full_name }}
+        </div>
+
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Email Address</label>
+          {{ profile_form.email }}
+        </div>
+
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Phone Number</label>
+          {{ profile_form.phone }}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--primary); color: var(--white); border: none; align-self: flex-start; cursor: pointer;">
+          Save profile
+        </button>
+      </form>
     </div>
 
-    <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="update_profile">
+    <!-- Toggle Option for Change Password below Profile Information -->
+    <div>
+      <button type="button"
+              id="btn-toggle-password"
+              @click="togglePasswordForm()"
+              class="btn"
+              :class="passwordOpen ? 'btn-secondary' : 'btn-soft'"
+              style="width: 100%; height: 46px; border-radius: var(--r-control); font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border);"
+              :aria-expanded="passwordOpen.toString()"
+              aria-controls="change-password-card">
+        <i data-lucide="key-round" x-show="!passwordOpen" style="width: 16px; height: 16px;"></i>
+        <i data-lucide="x" x-show="passwordOpen" style="width: 16px; height: 16px;"></i>
+        <span x-text="passwordOpen ? 'Cancel Password Change' : 'Change Password'">Change Password</span>
+      </button>
+    </div>
 
-      <div style="display: flex; align-items: center; gap: 14px; background: var(--bg-subtle); padding: 12px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
-        {% user_avatar request.user size="lg" is_self=True %}
-        <div style="display: flex; flex-direction: column; min-width: 0;">
-          <div style="font-weight: 700; font-size: 16px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            {{ request.user.full_name|default:request.user.login_id }}
-          </div>
-          <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
-            ID: {{ request.user.login_id }}
-          </div>
-          {% if request.user.hostel %}
-            <div style="font-size: 12px; font-weight: 500; color: var(--primary); margin-top: 2px;">
-              {{ request.user.hostel.name }} ({{ request.user.hostel.code }})
-            </div>
-          {% endif %}
+    <!-- 2. Change Password Card (Separate card, hidden by default, collapsible) -->
+    <div id="change-password-card"
+         class="card"
+         x-show="passwordOpen"
+         x-transition:enter="transition-fade-down"
+         x-transition:enter-start="transition-hidden"
+         x-transition:enter-end="transition-visible"
+         x-transition:leave="transition-fade-up"
+         x-transition:leave-start="transition-visible"
+         x-transition:leave-end="transition-hidden"
+         x-cloak
+         style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+        <div>
+          <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Change password</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Update your account password securely.</p>
+        </div>
+        <button type="button" 
+                @click="cancelPasswordChange()" 
+                style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: var(--radius-sm); display: flex; align-items: center;"
+                aria-label="Close change password section">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <!-- Password Requirements Message -->
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--r-card-sm); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;">
+        <i data-lucide="shield-alert" style="width: 16px; height: 16px; color: var(--primary); margin-top: 2px; flex-shrink: 0;"></i>
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--text-primary); display: block; margin-bottom: 2px; font-size: 12.5px;">Password requirements:</strong>
+          Must be at least 8 characters long and cannot be entirely numeric or commonly used.
         </div>
       </div>
 
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Full Name</label>
-        {{ profile_form.full_name }}
-      </div>
+      {% if password_form.non_field_errors %}
+        <div style="background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger); padding: 10px 14px; border-radius: var(--r-control); font-size: 13px; display: flex; flex-direction: column; gap: 4px;">
+          {% for error in password_form.non_field_errors %}
+            <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
 
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Email Address</label>
-        {{ profile_form.email }}
-      </div>
+      <form method="post" x-ref="passwordChangeForm" style="display: flex; flex-direction: column; gap: 16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
 
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-        <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Phone Number</label>
-        {{ profile_form.phone }}
-      </div>
-
-      <button type="submit" class="btn btn-primary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--primary); color: var(--white); border: none; align-self: flex-start; cursor: pointer;">
-        Save profile
-      </button>
-    </form>
-  </div>
-
-  <!-- 2. Change Password Card -->
-  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
-    <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px;">
-      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Change password</h2>
-      <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Ensure password is at least 8 characters and not too common.</p>
-    </div>
-
-    <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="change_password">
-
-      {% for field in password_form %}
-        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;" x-data="{ show: false }">
-          <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">{{ field.label }}</label>
+        <!-- Current Password -->
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="id_old_password" class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Current Password</label>
           <div style="position: relative; display: flex; align-items: center;">
-            <input :type="show ? 'text' : 'password'" name="{{ field.name }}" class="form-control" required
-                   style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 40px 0 14px; font-size: 14px; color: var(--text-primary); width: 100%;">
-            <button type="button" @click="show = !show" style="position: absolute; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center;" :aria-label="show ? 'Hide password' : 'Show password'">
-              <i data-lucide="eye" x-show="!show" style="width: 16px; height: 16px;"></i>
-              <i data-lucide="eye-off" x-show="show" style="width: 16px; height: 16px;"></i>
+            <input :type="showOld ? 'text' : 'password'"
+                   id="id_old_password"
+                   name="old_password"
+                   class="form-control"
+                   required
+                   autocomplete="current-password"
+                   placeholder="••••••••"
+                   style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 42px 0 14px; font-size: 14px; color: var(--text-primary); width: 100%;">
+            <button type="button"
+                    @click="showOld = !showOld"
+                    style="position: absolute; right: 8px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: var(--radius-sm);"
+                    :aria-label="showOld ? 'Hide current password' : 'Show current password'">
+              <i data-lucide="eye" x-show="!showOld" style="width: 16px; height: 16px;"></i>
+              <i data-lucide="eye-off" x-show="showOld" style="width: 16px; height: 16px;"></i>
             </button>
           </div>
-          {% if field.help_text %}
-            <span style="font-size: 11.5px; color: var(--text-muted);">{{ field.help_text }}</span>
-          {% endif %}
-          {% if field.errors %}
-            <span class="form-error" style="font-size: 12px; color: var(--st-open-fg);">{{ field.errors.0 }}</span>
+          {% if password_form.old_password.errors %}
+            <span class="form-error" style="font-size: 12px; color: var(--danger); font-weight: 500;">{{ password_form.old_password.errors.0 }}</span>
           {% endif %}
         </div>
-      {% endfor %}
 
-      <button type="submit" class="btn btn-secondary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-strong); align-self: flex-start; cursor: pointer;">
-        Update password
-      </button>
-    </form>
-  </div>
-
-  <!-- 3. Residence Details Card -->
-  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
-      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Residence details</h2>
-      <span class="badge" style="background: var(--bg-subtle); color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--r-chip); border: 1px solid var(--border);">
-        Managed by Admin
-      </span>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 14px;">
-      <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-subtle); padding: 14px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
-        <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <i data-lucide="home" style="width: 20px; height: 20px;"></i>
-        </div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">
-            {{ request.user.hostel.name|default:"Campus Scope (All Hostels)" }}
+        <!-- New Password -->
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="id_new_password1" class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">New Password</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input :type="showNew1 ? 'text' : 'password'"
+                   id="id_new_password1"
+                   name="new_password1"
+                   class="form-control"
+                   required
+                   minlength="8"
+                   autocomplete="new-password"
+                   placeholder="At least 8 characters"
+                   style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 42px 0 14px; font-size: 14px; color: var(--text-primary); width: 100%;">
+            <button type="button"
+                    @click="showNew1 = !showNew1"
+                    style="position: absolute; right: 8px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: var(--radius-sm);"
+                    :aria-label="showNew1 ? 'Hide new password' : 'Show new password'">
+              <i data-lucide="eye" x-show="!showNew1" style="width: 16px; height: 16px;"></i>
+              <i data-lucide="eye-off" x-show="showNew1" style="width: 16px; height: 16px;"></i>
+            </button>
           </div>
-          {% if request.user.hostel %}
-            <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
-              Code: {{ request.user.hostel.code }}
-            </div>
-          {% else %}
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Authority across all campus residential facilities
-            </div>
+          {% if password_form.new_password1.errors %}
+            <span class="form-error" style="font-size: 12px; color: var(--danger); font-weight: 500;">{{ password_form.new_password1.errors.0 }}</span>
           {% endif %}
         </div>
-      </div>
-      {% if request.user.is_hosteler %}
-        <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-          <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
-          <span>Hostel assignment is managed by the hostel office and warden administration.</span>
+
+        <!-- Confirm New Password -->
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="id_new_password2" class="form-label" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Confirm New Password</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input :type="showNew2 ? 'text' : 'password'"
+                   id="id_new_password2"
+                   name="new_password2"
+                   class="form-control"
+                   required
+                   minlength="8"
+                   autocomplete="new-password"
+                   placeholder="Re-enter new password"
+                   style="height: 46px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); padding: 0 42px 0 14px; font-size: 14px; color: var(--text-primary); width: 100%;">
+            <button type="button"
+                    @click="showNew2 = !showNew2"
+                    style="position: absolute; right: 8px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: var(--radius-sm);"
+                    :aria-label="showNew2 ? 'Hide confirm password' : 'Show confirm password'">
+              <i data-lucide="eye" x-show="!showNew2" style="width: 16px; height: 16px;"></i>
+              <i data-lucide="eye-off" x-show="showNew2" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+          {% if password_form.new_password2.errors %}
+            <span class="form-error" style="font-size: 12px; color: var(--danger); font-weight: 500;">{{ password_form.new_password2.errors.0 }}</span>
+          {% endif %}
         </div>
-      {% endif %}
-      {% if request.user.residence_set_at %}
-        <div style="font-size: 11px; color: var(--text-muted); padding-top: 2px;">
-          Assigned on: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
+
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+          <button type="submit" class="btn btn-secondary" style="height: 44px; padding: 0 20px; font-weight: 600; font-size: 14px; border-radius: var(--r-control); background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-strong); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+            <span>Update password</span>
+          </button>
+
+          <button type="button" @click="cancelPasswordChange()" class="btn btn-ghost" style="height: 44px; padding: 0 16px; font-weight: 500; font-size: 14px; border-radius: var(--r-control); background: transparent; color: var(--text-muted); border: 1px solid var(--border); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+            <span>Cancel</span>
+          </button>
         </div>
-      {% endif %}
+      </form>
     </div>
+
   </div>
 
-  <!-- 4. Appearance & Theme Card -->
-  <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
-    <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px;">
-      <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Appearance</h2>
-      <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Select your visual interface theme</p>
+  <!-- Column 2: Residence Details & Appearance -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- 3. Residence Details Card -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Residence details</h2>
+        <span class="badge" style="background: var(--bg-subtle); color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--r-chip); border: 1px solid var(--border);">
+          Managed by Admin
+        </span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-subtle); padding: 14px 16px; border-radius: var(--r-card-sm); border: 1px solid var(--border);">
+          <div style="width: 40px; height: 40px; border-radius: var(--r-tile); background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="home" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">
+              {{ request.user.hostel.name|default:"Campus Scope (All Hostels)" }}
+            </div>
+            {% if request.user.hostel %}
+              <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
+                Code: {{ request.user.hostel.code }}
+              </div>
+            {% else %}
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                Authority across all campus residential facilities
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% if request.user.is_hosteler %}
+          <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+            <span>Hostel assignment is managed by the hostel office and warden administration.</span>
+          </div>
+        {% endif %}
+        {% if request.user.residence_set_at %}
+          <div style="font-size: 11px; color: var(--text-muted); padding-top: 2px;">
+            Assigned on: {{ request.user.residence_set_at|date:"M d, Y · H:i" }}
+          </div>
+        {% endif %}
+      </div>
     </div>
 
-    {% include 'components/theme_switcher.html' %}
+    <!-- 4. Appearance & Theme Card -->
+    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Appearance</h2>
+        <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0;">Select your visual interface theme</p>
+      </div>
+
+      {% include 'components/theme_switcher.html' %}
+    </div>
   </div>
 
   <!-- 5. Log Out Action (Plan Section 5.5) -->
-  <div style="grid-column: 1 / -1; margin-top: 8px; margin-bottom: 24px;">
+  <div style="grid-column: 1 / -1; margin-top: 8px; margin-bottom: 32px;">
     <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0;">
       {% csrf_token %}
       <button type="submit" class="btn btn-ghost danger" style="width: 100%; height: 48px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--bg-surface); color: var(--danger); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">

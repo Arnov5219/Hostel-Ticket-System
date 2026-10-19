@@ -152,6 +152,17 @@
 
   /* Dot Grid background */
   --bg-dot:            rgba(15, 23, 42, 0.04);
+
+  /* Launch / Splash Screen (Mobile & App) */
+  --launch-bg:         #0B1220;
+  --launch-card-bg:    #111A2E;
+  --launch-border:     #243049;
+  --launch-text:       #FFFFFF;
+  --launch-muted:      #94A3B8;
+  --launch-track-bg:   rgba(255, 255, 255, 0.08);
+  --launch-bar-start:  #3B82F6;
+  --launch-bar-end:    #60A5FA;
+  --launch-glow:       rgba(59, 130, 246, 0.45);
 }
 
 :root[data-theme="dark"] {
@@ -264,4 +275,15 @@
   --sla-red:           #FDA4AF;
 
   --bg-dot:            rgba(255, 255, 255, 0.04);
+
+  /* Launch / Splash Screen (Mobile & App) */
+  --launch-bg:         #0B1220;
+  --launch-card-bg:    #111A2E;
+  --launch-border:     #243049;
+  --launch-text:       #FFFFFF;
+  --launch-muted:      #94A3B8;
+  --launch-track-bg:   rgba(255, 255, 255, 0.08);
+  --launch-bar-start:  #3B82F6;
+  --launch-bar-end:    #60A5FA;
+  --launch-glow:       rgba(59, 130, 246, 0.45);
 }

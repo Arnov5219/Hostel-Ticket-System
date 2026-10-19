@@ -3,6 +3,8 @@
 
 {% block title %}Manage Rooms | Hostel Ticket System{% endblock %}
 
+{% block mobile_back_fallback %}{% url 'hostels:manage_hostels' %}{% endblock %}
+
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>

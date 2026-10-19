@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load ui %}
+
 {% block title %}Manage Hostels | Hostel Ticket System{% endblock %}
 
 {% block breadcrumbs %}
@@ -21,11 +23,55 @@
 {% block content %}
 <div class="page--narrow" style="display: flex; flex-direction: column; gap: 16px;">
 
+  <!-- Mobile Header (Visible on Mobile <= 767px, matches Stitch) -->
+  <div class="manage-hostels-mobile-header">
+    <button type="button" class="mobile-back-btn" onclick="handleMobileBack(this)" data-fallback="{% url 'dashboard:index' %}" aria-label="Go back">
+      <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+    </button>
+    <div class="manage-hostels-mobile-header__text">
+      <h1 class="manage-hostels-mobile-header__title">Hostels Management</h1>
+      <p class="manage-hostels-mobile-header__subtitle">Configure residences &amp; L1 caretakers</p>
+    </div>
+    <button type="button" class="btn-add-hostel-mobile" onclick="openModal('add-hostel-modal');">
+      <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+      <span>Add hostel</span>
+    </button>
+  </div>
+
   <!-- Admin Sub-Navigation (Fix U-09) -->
   {% include 'components/_admin_subnav.html' %}
 
-  <!-- Hostels List Table (Fix B-03, U-11) -->
-  <div class="card" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+  <!-- Summary Statistic Cards (Reference 1) -->
+  <div class="hostels-summary-grid">
+    <div class="hostel-summary-card">
+      <div class="hostel-summary-card__header">
+        <span class="hostel-summary-card__label">TOTAL HOSTELS</span>
+        <i data-lucide="building-2" class="hostel-summary-card__icon"></i>
+      </div>
+      <div class="hostel-summary-card__value">{{ total_hostels|default:hostels|length }}</div>
+      <div class="hostel-summary-card__hint">Active buildings on campus</div>
+    </div>
+    <div class="hostel-summary-card">
+      <div class="hostel-summary-card__header">
+        <span class="hostel-summary-card__label">ACTIVE RESIDENTS</span>
+        <i data-lucide="users" class="hostel-summary-card__icon"></i>
+      </div>
+      <div class="hostel-summary-card__value">{{ total_residents|default:0 }}</div>
+      <div class="hostel-summary-card__hint">Registered hostelers</div>
+    </div>
+  </div>
+
+  <!-- Search Bar (Full-width, instant client-side filter) -->
+  <div class="hostels-search-card">
+    <div class="hostels-search-wrapper">
+      <i data-lucide="search" class="hostels-search-icon"></i>
+      <input type="text" id="hostel-search-input" class="hostels-search-input" placeholder="Search by hostel name, code, or caretaker..." oninput="filterHostels(this.value);">
+      <button type="button" id="hostel-search-clear" class="hostels-search-clear" onclick="clearHostelSearch();" style="display: none;">✕</button>
+    </div>
+  </div>
+
+  <!-- Hostels List Table (Desktop >= 768px) -->
+  <div class="card hostels-table-desktop" style="padding: 0; overflow: hidden; background: var(--bg-surface-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
     <div class="table-container" style="border: none;">
       <table class="app-table">
         <thead>
@@ -77,7 +123,7 @@
               </td>
               <td style="text-align: right;">
                 <div style="display: inline-flex; gap: 4px; align-items: center;">
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="openEditModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.code|escapejs }}', '{{ hostel.gender_type }}', '{{ hostel.address|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}', {{ hostel.is_active|yesno:'true,false' }});">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="openEditModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.code|escapejs }}', '{{ hostel.gender_type }}', '{{ hostel.responsible_staff.id|default:'' }}', {{ hostel.is_active|yesno:'true,false' }});">
                     <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
                     <span>Edit</span>
                   </button>
@@ -120,6 +166,107 @@
     </div>
   </div>
 
+  <!-- Mobile Hostels Cards (Mobile <= 767px, Reference 1 Stack) -->
+  <div class="hostels-cards-mobile" id="hostels-cards-container">
+    {% for hostel in hostels %}
+      <div class="hostel-card-item"
+           data-hostel-name="{{ hostel.name|lower }}"
+           data-hostel-code="{{ hostel.code|lower }}"
+           data-hostel-staff="{% if hostel.responsible_staff %}{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id|lower }}{% endif %}"
+           data-gender="{{ hostel.gender_type|lower }}">
+        
+        <!-- Top Row: Name, Badges, Status -->
+        <div class="hostel-card-header">
+          <div class="hostel-card-title-group">
+            <h4 class="hostel-card-name">{{ hostel.name }}</h4>
+            <div class="hostel-card-badges">
+              <span class="hostel-code-pill">{{ hostel.code }}</span>
+              <span class="hostel-type-pill">{{ hostel.get_gender_type_display }}</span>
+            </div>
+          </div>
+          <div class="hostel-card-status">
+            {% if hostel.is_active %}
+              <span class="hostel-status-pill active">
+                <span class="status-dot"></span> Active
+              </span>
+            {% else %}
+              <span class="hostel-status-pill inactive">
+                <span class="status-dot"></span> Inactive
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Inset Details Box: Level 1 Caretaker -->
+        <div class="hostel-card-details-box">
+          <div class="hostel-card-col">
+            <div class="hostel-card-col-label">LEVEL 1 CARETAKER</div>
+            <div class="hostel-card-caretaker-info">
+              {% if hostel.responsible_staff %}
+                {% user_avatar hostel.responsible_staff size="sm" %}
+                <div class="hostel-card-staff-text">
+                  <div class="hostel-card-staff-name">{{ hostel.responsible_staff.full_name|default:hostel.responsible_staff.login_id }}</div>
+                  <div class="hostel-card-staff-role">L1 Caretaker</div>
+                </div>
+              {% else %}
+                <span class="hostel-unassigned-staff">
+                  <span class="unassigned-dot"></span> Unassigned
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Row: Active tickets count on left | Actions on right -->
+        <div class="hostel-card-footer">
+          <div class="hostel-card-tickets">
+            <span class="ticket-dot {% if hostel.active_ticket_count >= 3 %}ticket-dot--warn{% elif hostel.active_ticket_count > 0 %}ticket-dot--info{% else %}ticket-dot--zero{% endif %}"></span>
+            <span class="ticket-text {% if hostel.active_ticket_count >= 3 %}ticket-text--warn{% elif hostel.active_ticket_count > 0 %}ticket-text--info{% else %}ticket-text--zero{% endif %}">
+              {{ hostel.active_ticket_count|default:0 }} active ticket{{ hostel.active_ticket_count|default:0|pluralize }}
+            </span>
+          </div>
+
+          <div class="hostel-card-actions">
+            <button type="button" class="btn-card-action"
+                    onclick="openEditModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.code|escapejs }}', '{{ hostel.gender_type }}', '{{ hostel.responsible_staff.id|default:'' }}', {{ hostel.is_active|yesno:'true,false' }});">
+              <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+              <span>Edit</span>
+            </button>
+            <button type="button" class="btn-card-action"
+                    onclick="openStaffModal('{{ hostel.id }}', '{{ hostel.name|escapejs }}', '{{ hostel.responsible_staff.id|default:'' }}');">
+              <i data-lucide="user-plus" style="width: 12px; height: 12px;"></i>
+              <span>Staff</span>
+            </button>
+            <form method="post" action="{% url 'hostels:toggle_hostel_status' hostel.id %}" style="display: inline; margin: 0;" onsubmit="return confirmStatusToggle({{ hostel.is_active|yesno:'true,false' }}, '{{ hostel.name|escapejs }}', {{ hostel.active_ticket_count|default:0 }});">
+              {% csrf_token %}
+              {% if hostel.is_active %}
+                <button type="submit" class="btn-card-action btn-card-action--deactivate">
+                  <span>Deactivate</span>
+                </button>
+              {% else %}
+                <button type="submit" class="btn-card-action btn-card-action--reactivate">
+                  <span>Activate</span>
+                </button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state-mobile">
+        <i data-lucide="building-2" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+        <h4>No hostels configured yet</h4>
+        <p>Tap "+ Add hostel" above to register your first hostel building.</p>
+      </div>
+    {% endfor %}
+
+    <div id="hostels-no-results" class="empty-state-mobile" style="display: none;">
+      <i data-lucide="search-x" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+      <h4>No matching hostels found</h4>
+      <p>Try searching for a different hostel name, code, or staff member.</p>
+    </div>
+  </div>
+
 </div>
 
 <!-- Add Hostel Modal -->
@@ -151,11 +298,6 @@
           <option value="GIRLS">Girls</option>
           <option value="COED">Co-ed</option>
         </select>
-      </div>
-
-      <div class="form-group" style="margin: 0;">
-        <label class="form-label">Address</label>
-        <textarea name="address" class="form-textarea" rows="2" placeholder="Hostel location/address..."></textarea>
       </div>
 
       <div class="form-group" style="margin: 0;">
@@ -217,11 +359,6 @@
       </div>
 
       <div class="form-group" style="margin: 0;">
-        <label class="form-label">Address</label>
-        <textarea name="address" id="edit-hostel-address" class="form-textarea" rows="2"></textarea>
-      </div>
-
-      <div class="form-group" style="margin: 0;">
         <label class="form-label">Level 1 Responsible Staff</label>
         <select name="responsible_staff" id="edit-hostel-staff" class="form-select">
           <option value="">-- Select Responsible Caretaker --</option>
@@ -280,13 +417,11 @@
 </div>
 
 <script>
-
-function openEditModal(id, name, code, gender, address, staffId, isActive) {
+function openEditModal(id, name, code, gender, staffId, isActive) {
   document.getElementById('edit-hostel-id').value = id;
   document.getElementById('edit-hostel-name').value = name;
   document.getElementById('edit-hostel-code').value = code;
   document.getElementById('edit-hostel-type').value = gender;
-  document.getElementById('edit-hostel-address').value = address;
   document.getElementById('edit-hostel-staff').value = staffId;
   document.getElementById('edit-hostel-active').checked = isActive;
   openModal('edit-hostel-modal');
@@ -308,5 +443,539 @@ function confirmStatusToggle(isActive, name, activeCount) {
   }
   return confirm('Are you sure you want to activate "' + name + '"?');
 }
+
+function filterHostels(query) {
+  query = (query || '').toLowerCase().trim();
+  const clearBtn = document.getElementById('hostel-search-clear');
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  const cards = document.querySelectorAll('.hostel-card-item');
+  let visibleCount = 0;
+  cards.forEach(card => {
+    const name = card.getAttribute('data-hostel-name') || '';
+    const code = card.getAttribute('data-hostel-code') || '';
+    const staff = card.getAttribute('data-hostel-staff') || '';
+    const match = !query || name.includes(query) || code.includes(query) || staff.includes(query);
+    card.style.display = match ? 'flex' : 'none';
+    if (match) visibleCount++;
+  });
+
+  const noResults = document.getElementById('hostels-no-results');
+  if (noResults) {
+    noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+  }
+
+  // Also filter desktop table rows
+  const rows = document.querySelectorAll('.hostels-table-desktop tbody tr');
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = (!query || text.includes(query)) ? '' : 'none';
+  });
+}
+
+function clearHostelSearch() {
+  const input = document.getElementById('hostel-search-input');
+  if (input) {
+    input.value = '';
+    filterHostels('');
+    input.focus();
+  }
+}
 </script>
+
+<style>
+/* Base Desktop Defaults */
+.manage-hostels-mobile-header {
+  display: none;
+}
+.hostels-summary-grid {
+  display: none;
+}
+.hostels-search-card {
+  display: none;
+}
+.hostels-cards-mobile {
+  display: none;
+}
+
+/* Mobile Stitch Design System (<= 767px) */
+@media (max-width: 767px) {
+  /* Hide the generic base page-header on mobile */
+  .page-header {
+    display: none !important;
+  }
+
+  .page--narrow {
+    gap: 14px !important;
+    padding-bottom: 96px !important;
+  }
+
+  /* Stitch Mobile Title & Add Hostel Row */
+  .manage-hostels-mobile-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin-top: -4px;
+    margin-bottom: 2px;
+  }
+
+  .manage-hostels-mobile-header__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .manage-hostels-mobile-header__title {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 2px 0 !important;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .manage-hostels-mobile-header__subtitle {
+    font-size: 12.5px !important;
+    color: #8b95a5 !important;
+    margin: 0 !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-add-hostel-mobile {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    padding: 7px 14px !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+    transition: transform var(--duration-fast), background-color var(--duration-fast);
+  }
+  .btn-add-hostel-mobile:active {
+    transform: scale(0.96);
+    background-color: #1d4ed8 !important;
+  }
+
+  /* Admin Sub-Navigation Capsule Bar on Mobile */
+  .admin-subnav {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #0b1320 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 0 !important;
+    scrollbar-width: none;
+  }
+  .admin-subnav::-webkit-scrollbar {
+    display: none;
+  }
+  .admin-subnav__item {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+  }
+  .admin-subnav__item.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Summary Statistic Cards (Reference 1) */
+  .hostels-summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .hostel-summary-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hostel-summary-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .hostel-summary-card__label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .hostel-summary-card__icon {
+    width: 15px;
+    height: 15px;
+    color: #60a5fa;
+  }
+
+  .hostel-summary-card__value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.1;
+    margin-bottom: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hostel-summary-card__hint {
+    font-size: 11px;
+    color: #8b95a5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Search Card & Input */
+  .hostels-search-card {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .hostels-search-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .hostels-search-icon {
+    position: absolute;
+    left: 12px;
+    width: 15px;
+    height: 15px;
+    color: #64748b;
+    pointer-events: none;
+  }
+
+  .hostels-search-input {
+    width: 100%;
+    background: #090e17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+    padding-left: 36px !important;
+    padding-right: 32px !important;
+    outline: none;
+    transition: border-color var(--duration-fast);
+  }
+
+  .hostels-search-input::placeholder {
+    color: #8b95a5 !important;
+  }
+
+  .hostels-search-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+  }
+
+  .hostels-search-clear {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #8b95a5;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* Hide Desktop Table */
+  .hostels-table-desktop {
+    display: none !important;
+  }
+
+  /* Show Mobile Cards Stack */
+  .hostels-cards-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .hostel-card-item {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 15px 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hostel-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .hostel-card-title-group {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .hostel-card-name {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hostel-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .hostel-code-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: #1e293b;
+    color: #93c5fd;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 600;
+    border: 1px solid rgba(147, 197, 253, 0.2);
+  }
+
+  .hostel-type-pill {
+    font-size: 11px;
+    color: #8b95a5;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+
+  /* Status Pill (Green dot + Active) */
+  .hostel-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .hostel-status-pill.active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .hostel-status-pill.inactive {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+  .hostel-status-pill .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .hostel-status-pill.active .status-dot {
+    background: #10b981;
+  }
+  .hostel-status-pill.inactive .status-dot {
+    background: #f59e0b;
+  }
+
+  /* Inset Details Box */
+  .hostel-card-details-box {
+    background: #090e17;
+    border-radius: 10px;
+    padding: 11px 14px;
+    margin: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hostel-card-col-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+  }
+
+  .hostel-card-caretaker-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .hostel-card-caretaker-info .avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 11px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hostel-card-staff-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .hostel-card-staff-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hostel-card-staff-role {
+    font-size: 10.5px;
+    color: #60a5fa;
+    font-weight: 500;
+  }
+
+  .hostel-unassigned-staff {
+    font-size: 12px;
+    color: #f59e0b;
+    font-style: italic;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hostel-unassigned-staff .unassigned-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+  }
+
+
+
+  /* Footer */
+  .hostel-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .hostel-card-tickets {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ticket-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .ticket-dot--zero { background: #64748b; }
+  .ticket-dot--info { background: #3b82f6; }
+  .ticket-dot--warn { background: #f59e0b; }
+
+  .ticket-text {
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .ticket-text--zero { color: #64748b; }
+  .ticket-text--info { color: #60a5fa; }
+  .ticket-text--warn { color: #fbbf24; }
+
+  .hostel-card-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-card-action {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background var(--duration-fast);
+  }
+  .btn-card-action:active {
+    background: #334155;
+  }
+  .btn-card-action--deactivate {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+  .btn-card-action--deactivate:active {
+    background: rgba(245, 158, 11, 0.25);
+  }
+  .btn-card-action--reactivate {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+  .btn-card-action--reactivate:active {
+    background: rgba(16, 185, 129, 0.25);
+  }
+
+  .empty-state-mobile {
+    text-align: center;
+    padding: 36px 16px;
+    background: #0f172a;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+  .empty-state-mobile h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 10px 0 4px 0;
+  }
+  .empty-state-mobile p {
+    font-size: 12.5px;
+    color: #8b95a5;
+    margin: 0;
+  }
+}
+</style>
 {% endblock %}

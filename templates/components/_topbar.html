@@ -15,7 +15,7 @@
       <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
       <span id="notification-badge-target">
         {% if unread_notifications_count > 0 %}
-        <span class="notification-badge"></span>
+        <span class="notification-badge notification-badge-count" title="{{ unread_notifications_count }} unread">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
         {% endif %}
       </span>
     </a>

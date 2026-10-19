@@ -51,7 +51,7 @@
       <div class="sidebar-group">
         <div class="sidebar-group-title">Management</div>
         {% for item in navigation.sidebar_items %}
-          {% if item.key in 'announcements,manage_hostels,manage_staff,manage_responsibility,manage_settings' %}
+          {% if item.key in 'announcements,manage_hostels,manage_staff,manage_responsibility' %}
             <a href="{{ item.url }}"
                class="sidebar-item {% if current_section == item.section %}active{% endif %}"
                title="{{ item.label }}">

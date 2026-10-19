@@ -185,27 +185,43 @@
           </a>
         </div>
 
-        <!-- Filter Chips Row (Mockup 1) -->
-        <div class="filter-chips-scroll" style="display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
-          <button type="button" @click="currentTab = 'all'"
-                  :style="currentTab === 'all' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
-                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
-            All ({{ chip_counts.all|default:recent_tickets|length }})
+        <!-- Filter Chips Row -->
+        <div class="recent-filter-chips-row filter-chips-scroll" role="tablist" aria-label="Filter recent tickets">
+          <button type="button"
+                  role="tab"
+                  :aria-selected="currentTab === 'all'"
+                  @click="currentTab = 'all'"
+                  class="recent-filter-btn"
+                  :class="{ 'active': currentTab === 'all' }">
+            <span class="recent-filter-label">All</span>
+            <span class="recent-filter-count">{{ chip_counts.all|default:recent_tickets|length }}</span>
           </button>
-          <button type="button" @click="currentTab = 'open'"
-                  :style="currentTab === 'open' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
-                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
-            Open ({{ chip_counts.open|default:0 }})
+          <button type="button"
+                  role="tab"
+                  :aria-selected="currentTab === 'open'"
+                  @click="currentTab = 'open'"
+                  class="recent-filter-btn"
+                  :class="{ 'active': currentTab === 'open' }">
+            <span class="recent-filter-label">Open</span>
+            <span class="recent-filter-count">{{ chip_counts.open|default:0 }}</span>
           </button>
-          <button type="button" @click="currentTab = 'progress'"
-                  :style="currentTab === 'progress' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
-                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
-            In progress ({{ chip_counts.progress|default:0 }})
+          <button type="button"
+                  role="tab"
+                  :aria-selected="currentTab === 'progress'"
+                  @click="currentTab = 'progress'"
+                  class="recent-filter-btn"
+                  :class="{ 'active': currentTab === 'progress' }">
+            <span class="recent-filter-label">In progress</span>
+            <span class="recent-filter-count">{{ chip_counts.progress|default:0 }}</span>
           </button>
-          <button type="button" @click="currentTab = 'resolved'"
-                  :style="currentTab === 'resolved' ? 'background: var(--ink); color: var(--white); border-color: var(--ink);' : 'background: var(--bg-surface); color: var(--text-2); border-color: var(--border);'"
-                  style="border: 1px solid; height: 36px; padding: 0 16px; border-radius: var(--r-chip); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all var(--t-fast) var(--ease);">
-            Resolved ({{ chip_counts.resolved|default:0 }})
+          <button type="button"
+                  role="tab"
+                  :aria-selected="currentTab === 'resolved'"
+                  @click="currentTab = 'resolved'"
+                  class="recent-filter-btn"
+                  :class="{ 'active': currentTab === 'resolved' }">
+            <span class="recent-filter-label">Resolved</span>
+            <span class="recent-filter-count">{{ chip_counts.resolved|default:0 }}</span>
           </button>
         </div>
 
@@ -333,6 +349,91 @@
 </div>
 
 <style>
+/* Recent Tickets Pill Filter Bar */
+.recent-filter-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  padding-top: 2px;
+  scrollbar-width: none;
+}
+.recent-filter-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.recent-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: #131d31;
+  border: 1px solid #263449;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.recent-filter-btn:hover:not(.active) {
+  background: #1a263f;
+  border-color: #3b4d6b;
+  color: #e2e8f0;
+}
+
+.recent-filter-btn:active {
+  transform: scale(0.97);
+}
+
+.recent-filter-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.45);
+}
+
+.recent-filter-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+.recent-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.recent-filter-btn:hover:not(.active) .recent-filter-count {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.recent-filter-btn.active .recent-filter-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
 @media (min-width: 900px) {
   .hosteler-desktop-split {
     grid-template-columns: minmax(0, 1fr) 340px !important;

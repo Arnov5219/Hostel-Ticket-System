@@ -39,6 +39,15 @@ def test_dashboard_access_for_hosteler(client):
     assert my_ticket in response.context["recent_tickets"]
     assert len(response.context["recent_tickets"]) == 1
 
+    content = response.content.decode("utf-8")
+    assert "recent-filter-chips-row" in content
+    assert "recent-filter-btn" in content
+    assert "recent-filter-count" in content
+    assert "All" in content
+    assert "Open" in content
+    assert "In progress" in content
+    assert "Resolved" in content
+
 
 @pytest.mark.django_db
 def test_dashboard_access_for_staff(client):

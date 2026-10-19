@@ -29,7 +29,6 @@ def test_create_hostel_validation():
         name="Boys Hostel A",
         code="BH-A",
         gender_type=GenderType.BOYS,
-        address="North Campus",
         responsible_staff=caretaker,
     )
     assert hostel.pk is not None

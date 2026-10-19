@@ -87,7 +87,7 @@ def test_ticket_list_renders_both_desktop_and_mobile_views(client):
 
 @pytest.mark.django_db
 def test_kanban_renders_mobile_tab_strip_and_move_fallback(client):
-    """Kanban board includes status tab strip and card action fallback for mobile."""
+    """Kanban board removes status tab strip and retains card action fallback for mobile."""
     hostel = Hostel.objects.create(name="Hostel One", code="H1", gender_type=GenderType.BOYS)
     caretaker = UserFactory(role=Role.CARETAKER, hostel=hostel, password="password123")
     TicketFactory(hostel=hostel, assigned_to=caretaker, status="ASSIGNED", title="Leaking tap")
@@ -97,8 +97,9 @@ def test_kanban_renders_mobile_tab_strip_and_move_fallback(client):
     assert response.status_code == 200
     content = response.content.decode("utf-8")
 
-    assert "kanban-tab-strip" in content
+    assert "kanban-tab-strip" not in content
     assert "MOVE TO" in content
+    assert "kanban-stage-header" in content
 
 
 @pytest.mark.django_db

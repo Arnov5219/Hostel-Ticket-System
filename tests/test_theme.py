@@ -78,3 +78,17 @@ class TestThemeFeatures:
         assert 'data-theme-option="light"' in content
         assert 'data-theme-option="dark"' in content
         assert 'data-theme-option="system"' in content
+
+    def test_login_page_defaults_to_light_mode_when_no_saved_preference(self, client):
+        res = client.get(reverse("accounts:login"))
+        assert res.status_code == 200
+        content = res.content.decode()
+        # Initial data-theme-pref on login page is light
+        assert 'data-theme-pref="light"' in content
+        # Card portal uses design token classes and variables, not hardcoded dark colors
+        assert "auth-card-portal" in content
+        assert "var(--bg-surface)" in content
+        assert "var(--text-primary)" in content
+        assert "#070c16" not in content
+        assert "#0d1527" not in content
+

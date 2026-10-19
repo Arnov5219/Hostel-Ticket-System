@@ -40,6 +40,13 @@ class TicketFactory(factory.django.DjangoModelFactory):
     reporter = factory.SubFactory(UserFactory)
     hostel = factory.LazyAttribute(lambda o: o.reporter.hostel if (o.reporter and o.reporter.hostel) else HostelFactory())
     room = factory.LazyAttribute(lambda o: o.reporter.room if (o.reporter and o.reporter.room) else None)
+    room_number = factory.LazyAttribute(
+        lambda o: (
+            o.room.room_number
+            if o.room
+            else (o.reporter.room.room_number if (o.reporter and o.reporter.room) else "101")
+        )
+    )
     current_level = 1
 
 

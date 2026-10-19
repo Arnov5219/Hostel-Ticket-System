@@ -1,59 +1,8 @@
-// Kanban Board Drag and Drop using SortableJS and 2-way IntersectionObserver sync
+// Kanban Board Drag and Drop using SortableJS
 
 document.addEventListener('DOMContentLoaded', function () {
   initKanban();
-  initKanbanTabSync();
 });
-
-function initKanbanTabSync() {
-  const tabStrip = document.getElementById('kanban-tab-strip');
-  const board = document.getElementById('kanban-board');
-  const columns = document.querySelectorAll('.kanban-column');
-  if (!tabStrip || !board || !columns.length) return;
-
-  const tabButtons = tabStrip.querySelectorAll('.kanban-tab-btn');
-
-  function setActiveTab(status) {
-    tabButtons.forEach(function (btn) {
-      const isActive = btn.getAttribute('data-status') === status;
-      btn.classList.toggle('active', isActive);
-      if (isActive) {
-        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
-    });
-  }
-
-  tabButtons.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      const status = btn.getAttribute('data-status');
-      const targetCol = document.querySelector(`.kanban-column[data-status="${status}"]`);
-      if (targetCol) {
-        targetCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setActiveTab(status);
-      }
-    });
-  });
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-          const status = entry.target.getAttribute('data-status');
-          if (status) {
-            setActiveTab(status);
-          }
-        }
-      });
-    }, {
-      root: board,
-      threshold: 0.5,
-    });
-
-    columns.forEach(function (col) {
-      observer.observe(col);
-    });
-  }
-}
 
 function updateColumnCounts() {
   const columns = document.querySelectorAll('.kanban-column');
@@ -66,13 +15,6 @@ function updateColumnCounts() {
     // Update column header count
     const colCountEl = col.querySelector('.kanban-col-count');
     if (colCountEl) colCountEl.textContent = count;
-
-    // Update tab strip count
-    const tabBtn = document.getElementById(`tab-btn-${status}`);
-    if (tabBtn) {
-      const tabCountEl = tabBtn.querySelector('.tab-count');
-      if (tabCountEl) tabCountEl.textContent = `(${count})`;
-    }
 
     // Toggle empty column state
     let emptyEl = container.querySelector('.kanban-empty-col');

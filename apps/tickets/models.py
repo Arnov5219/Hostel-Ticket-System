@@ -176,6 +176,11 @@ class Ticket(TimeStampedModel):
         blank=True,
         related_name="tickets",
     )
+    room_number = models.CharField(
+        max_length=50,
+        default="",
+        help_text="Room number where maintenance/issue is reported",
+    )
     location_detail = models.CharField(max_length=120, blank=True, default="")
     outside_own_hostel = models.BooleanField(default=False)
     assigned_to = models.ForeignKey(

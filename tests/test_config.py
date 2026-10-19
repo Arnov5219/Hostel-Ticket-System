@@ -37,7 +37,6 @@ def test_manage_hostels_view(client):
             "name": "Girls Hostel C",
             "code": "GIRLS_C",
             "gender_type": "GIRLS",
-            "address": "Sector 4",
             "is_active": True,
         },
     )
@@ -62,8 +61,8 @@ def test_manage_settings_view(client):
     admin = UserFactory(role=Role.ADMIN, password="admin_password")
     client.login(username=admin.login_id, password="admin_password")
 
-    response = client.get(reverse("tickets:manage_settings"))
-    assert response.status_code == 200
+    response = client.get("/manage/settings/")
+    assert response.status_code == 404
 
     # Ensure /manage/routing/ is 404
     routing_res = client.get("/manage/routing/")
@@ -78,6 +77,6 @@ def test_unauthorized_hosteler_access_denied(client):
     res1 = client.get(reverse("hostels:manage_hostels"))
     assert res1.status_code == 403
 
-    res2 = client.get(reverse("tickets:manage_settings"))
-    assert res2.status_code == 403
+    res2 = client.get("/manage/settings/")
+    assert res2.status_code == 404
 

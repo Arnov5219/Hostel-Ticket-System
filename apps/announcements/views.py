@@ -14,6 +14,7 @@ from apps.announcements.models import (
     AnnouncementRead,
     AnnouncementStatus,
 )
+from apps.notifications.services import notify_announcement_updated
 from apps.announcements.services import (
     archive,
     audience_users,
@@ -221,6 +222,9 @@ def manage_edit(request, announcement_id):
             else:
                 ann.save()
                 form.save_m2m()
+                if ann.status == AnnouncementStatus.PUBLISHED:
+                    audience_ids = list(audience_users(ann).values_list("id", flat=True))
+                    notify_announcement_updated(ann, audience_ids)
                 messages.success(request, f"Announcement '{ann.title}' updated.")
 
             return redirect("announcements:manage_list")

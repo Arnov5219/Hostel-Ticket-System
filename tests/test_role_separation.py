@@ -253,7 +253,7 @@ class TestNavigationMatrix:
         assert "manage_hostels" in admin_keys
         assert "manage_staff" in admin_keys
         assert "manage_responsibility" in admin_keys
-        assert "manage_settings" in admin_keys
+        assert "manage_settings" not in admin_keys
         assert "trash" in admin_keys
         assert "kanban" not in admin_keys
 
@@ -279,7 +279,6 @@ class TestManageRouteSecurity:
             "/manage/hostels/",
             "/manage/staff/",
             "/manage/responsibility/",
-            "/manage/settings/",
             "/manage/trash/",
         ]
 

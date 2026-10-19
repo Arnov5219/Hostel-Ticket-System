@@ -67,6 +67,8 @@ class TestRemovedRoutesReturn404:
             "/manage/rooms/",
             "/manage/residents/",
             "/manage/routing/",
+            "/manage/settings/",
+            "/tickets/manage/settings/",
             "/hostels/options/floors/",
             "/hostels/options/rooms/",
         ]
@@ -87,14 +89,12 @@ class TestChiefWardenAdministrativeParity:
         assert not has_capability(cw, Capability.MANAGE_HOSTELS)
         assert not has_capability(cw, Capability.MANAGE_STAFF)
         assert not has_capability(cw, Capability.MANAGE_RESPONSIBILITY)
-        assert not has_capability(cw, Capability.MANAGE_TICKET_SETTINGS)
         assert has_capability(cw, Capability.VIEW_ALL_TICKETS)
 
         # Admin holds the admin capabilities
         assert has_capability(admin, Capability.MANAGE_HOSTELS)
         assert has_capability(admin, Capability.MANAGE_STAFF)
         assert has_capability(admin, Capability.MANAGE_RESPONSIBILITY)
-        assert has_capability(admin, Capability.MANAGE_TICKET_SETTINGS)
 
         # Role identity preserved
         assert cw.role == Role.CHIEF_WARDEN
@@ -111,14 +111,12 @@ class TestChiefWardenAdministrativeParity:
         assert client.get(reverse("hostels:manage_hostels")).status_code == 403
         assert client.get(reverse("hostels:manage_staff")).status_code == 403
         assert client.get(reverse("hostels:manage_responsibility")).status_code == 403
-        assert client.get(reverse("tickets:manage_settings")).status_code == 403
 
         # Admin has 200 on /manage/*
         client.force_login(admin)
         assert client.get(reverse("hostels:manage_hostels")).status_code == 200
         assert client.get(reverse("hostels:manage_staff")).status_code == 200
         assert client.get(reverse("hostels:manage_responsibility")).status_code == 200
-        assert client.get(reverse("tickets:manage_settings")).status_code == 200
 
     def test_chief_warden_cannot_manage_admin_users(self, client, hostel_environment):
         cw = hostel_environment["chief_warden"]
@@ -245,24 +243,19 @@ class TestStaffManagementLifecycle:
 
 
 # ==============================================================================
-# 5. Ticket Settings Page
+# 5. Ticket Settings Page Removed
 # ==============================================================================
 @pytest.mark.django_db
 class TestTicketSettingsPage:
-    def test_ticket_settings_crud_actions(self, client, hostel_environment):
+    def test_ticket_settings_removed_returns_404(self, client, hostel_environment):
         admin = hostel_environment["admin"]
         client.force_login(admin)
 
-        # GET settings page
-        resp = client.get(reverse("tickets:manage_settings"))
-        assert resp.status_code == 200
+        resp = client.get("/manage/settings/")
+        assert resp.status_code == 404
 
-        # POST add tag
-        tag_post = {"action": "add_tag", "name": "UrgentWater", "color": "#ff0000"}
-        resp_tag = client.post(reverse("tickets:manage_settings"), tag_post)
-        assert resp_tag.status_code == 302
-        from apps.tickets.models import Tag
-        assert Tag.objects.filter(name="UrgentWater").exists()
+        resp_tickets = client.get("/tickets/manage/settings/")
+        assert resp_tickets.status_code == 404
 
 
 # ==============================================================================
@@ -317,7 +310,7 @@ class TestUnifiedNavigation:
         assert "manage_hostels" in sidebar_keys
         assert "manage_staff" in sidebar_keys
         assert "manage_responsibility" in sidebar_keys
-        assert "manage_settings" in sidebar_keys
+        assert "manage_settings" not in sidebar_keys
 
         # Ensure obsolete subnavs are gone
         assert "manage_rooms" not in sidebar_keys

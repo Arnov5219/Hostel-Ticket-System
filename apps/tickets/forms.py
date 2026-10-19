@@ -16,20 +16,6 @@ from apps.tickets.models import (
 )
 
 
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ["name", "icon", "default_priority", "is_active"]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "icon": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "e.g. zap, droplet"}
-            ),
-            "default_priority": forms.Select(attrs={"class": "form-select"}),
-            "is_active": forms.CheckboxInput(),
-        }
-
-
 class SLAPolicyForm(forms.ModelForm):
     class Meta:
         model = SLAPolicy
@@ -59,16 +45,6 @@ class RoutingRuleForm(forms.ModelForm):
         )
 
 
-class TagForm(forms.ModelForm):
-    class Meta:
-        model = Tag
-        fields = ["name", "color"]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "color": forms.TextInput(attrs={"class": "form-control", "type": "color"}),
-        }
-
-
 class TicketCreateForm(forms.ModelForm):
     different_hostel = forms.BooleanField(
         required=False,
@@ -81,6 +57,7 @@ class TicketCreateForm(forms.ModelForm):
         model = Ticket
         fields = [
             "title",
+            "room_number",
             "category",
             "priority",
             "description",
@@ -92,6 +69,13 @@ class TicketCreateForm(forms.ModelForm):
                     "class": "form-control",
                     "placeholder": "Brief summary of the issue...",
                     "autofocus": True,
+                }
+            ),
+            "room_number": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "e.g. Room 204",
+                    "id": "id_room_number",
                 }
             ),
             "category": forms.Select(attrs={"class": "form-select", "id": "id_category"}),
@@ -112,12 +96,25 @@ class TicketCreateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["hostel"].queryset = Hostel.objects.filter(is_active=True)
         self.fields["hostel"].required = True
+        self.fields["room_number"].required = True
+        self.fields["room_number"].error_messages["required"] = (
+            "Room number is required. Please specify your room (e.g. Room 204)."
+        )
 
         if user and user.is_authenticated and user.hostel:
             self.fields["hostel"].initial = user.hostel
 
+        if user and user.is_authenticated and getattr(user, "room", None) and not self.initial.get("room_number"):
+            self.fields["room_number"].initial = user.room.room_number
+
         if not self.initial.get("priority"):
             self.initial["priority"] = Priority.MEDIUM
+
+    def clean_room_number(self):
+        val = self.cleaned_data.get("room_number", "")
+        if not val or not val.strip():
+            raise ValidationError("Room number is required. Please specify your room (e.g. Room 204).")
+        return val.strip()
 
     def clean_hostel(self):
         # Server-side enforcement: If the user is an authenticated hosteler with an assigned hostel,
@@ -158,11 +155,23 @@ class TicketCreateForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.visibility = TicketVisibility.PRIVATE
-        instance.room = None
+        instance.room_number = self.cleaned_data.get("room_number", "").strip()
         instance.location_detail = ""
         instance.outside_own_hostel = self.cleaned_data.get("outside_own_hostel", False)
         instance.show_reporter_name = False
         instance.base_priority = instance.priority
+
+        if instance.hostel and instance.room_number:
+            from apps.hostels.models import Room
+            clean_rn = instance.room_number.replace("Room", "").replace("room", "").strip()
+            matched_room = Room.objects.filter(
+                hostel=instance.hostel,
+                room_number__in=[instance.room_number, clean_rn],
+            ).first()
+            instance.room = matched_room
+        else:
+            instance.room = None
+
         if commit:
             instance.save()
         return instance

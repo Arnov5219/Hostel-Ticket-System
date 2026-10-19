@@ -1,7 +1,6 @@
 from django.urls import path
 
 from apps.tickets import views
-from apps.tickets.views.settings import manage_settings
 
 app_name = "tickets"
 
@@ -14,7 +13,6 @@ urlpatterns = [
     path("bulk-action/", views.bulk_action, name="bulk_action"),
     path("filter/save/", views.save_filter, name="save_filter"),
     path("filter/<int:filter_id>/delete/", views.delete_filter, name="delete_filter"),
-    path("manage/settings/", manage_settings, name="manage_settings"),
     path("trash/", views.trash_list_view, name="trash"),
     path("<str:ticket_no>/", views.ticket_detail, name="detail"),
     path("<str:ticket_no>/status/", views.change_status, name="change_status"),

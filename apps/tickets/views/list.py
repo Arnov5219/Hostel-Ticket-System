@@ -33,6 +33,7 @@ def get_filtered_tickets(request):
             | Q(description__icontains=search)
             | Q(reporter__login_id__icontains=search)
             | Q(reporter__full_name__icontains=search)
+            | Q(room_number__icontains=search)
         )
 
     # 2. Sidebar Filters
@@ -150,6 +151,7 @@ def export_tickets_csv(request):
             "Priority",
             "Category",
             "Hostel",
+            "Room",
             "Reporter Roll ID",
             "Reporter Name",
             "Assigned To",
@@ -170,6 +172,7 @@ def export_tickets_csv(request):
                 t.get_priority_display(),
                 t.category.name if t.category else "",
                 t.hostel.name if t.hostel else "",
+                t.room_number,
                 t.reporter.login_id if t.reporter else "",
                 t.reporter.full_name if t.reporter else "",
                 (
@@ -202,6 +205,7 @@ def search_quick(request):
             | Q(title__icontains=query)
             | Q(reporter__login_id__icontains=query)
             | Q(reporter__full_name__icontains=query)
+            | Q(room_number__icontains=query)
         )
         .select_related("category", "hostel")[:6]
     )
@@ -210,6 +214,7 @@ def search_quick(request):
         {
             "ticket_no": t.ticket_no,
             "title": t.title,
+            "room_number": t.room_number,
             "status": t.status,
             "status_display": t.get_status_display(),
             "category": t.category.name if t.category else "",

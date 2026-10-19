@@ -104,6 +104,7 @@ def test_raise_ticket_and_comment_flow(client):
         reverse("tickets:create"),
         {
             "category": category.id,
+            "room_number": "201",
             "title": "Water heater not functioning",
             "description": "Geyser does not heat water in room 201",
             "priority": "MEDIUM",

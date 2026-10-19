@@ -5,7 +5,7 @@ from apps.hostels.models import Hostel, Room
 
 @admin.register(Hostel)
 class HostelAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "gender_type", "responsible_staff", "is_active")
+    list_display = ("code", "name", "gender_type", "responsible_staff", "responsible_warden", "is_active")
     search_fields = ("code", "name")
     list_filter = ("gender_type", "is_active")
 

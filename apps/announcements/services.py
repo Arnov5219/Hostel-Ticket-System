@@ -11,6 +11,7 @@ from apps.announcements.models import (
     AnnouncementStatus,
 )
 from apps.notifications.models import Notification, NotificationVerb
+from apps.notifications.services import notify_announcement_published
 
 
 def audience_users(announcement: Announcement):
@@ -55,30 +56,10 @@ def publish(announcement: Announcement, actor: User) -> Announcement:
     announcement.published_at = now
     announcement.save(update_fields=["status", "published_at"])
 
-    # Determine notification verb
-    is_urgent = announcement.severity == AnnouncementSeverity.URGENT
-    verb = NotificationVerb.ANNOUNCEMENT_URGENT if is_urgent else NotificationVerb.ANNOUNCEMENT
-    msg_prefix = "[URGENT] " if is_urgent else ""
-    msg = f"{msg_prefix}{announcement.title}: {announcement.body[:120]}"
-
-    # Fetch audience hostelers
+    # Fetch audience hostelers and dispatch notifications via centralized service
     audience = audience_users(announcement)
     recipient_ids = list(audience.values_list("id", flat=True))
-
-    # Bulk create notifications in batches of 500
-    batch_size = 500
-    for i in range(0, len(recipient_ids), batch_size):
-        batch = recipient_ids[i:i + batch_size]
-        notifs = [
-            Notification(
-                recipient_id=uid,
-                announcement=announcement,
-                verb=verb,
-                message=msg,
-            )
-            for uid in batch
-        ]
-        Notification.objects.bulk_create(notifs)
+    notify_announcement_published(announcement, recipient_ids)
 
     return announcement
 

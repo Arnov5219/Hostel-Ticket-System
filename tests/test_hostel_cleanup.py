@@ -118,6 +118,7 @@ class TestHostelerHostelChangePrevention:
             reverse("tickets:create"),
             {
                 "title": "Broken window latch",
+                "room_number": "102",
                 "description": "Room 102 window doesn't close properly",
                 "category": cleanup_data["cat"].id,
                 "priority": "MEDIUM",

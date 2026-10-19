@@ -1,4 +1,4 @@
-from django.conf import settings
+﻿from django.conf import settings
 from django.db import models
 
 
@@ -10,6 +10,8 @@ class NotificationVerb:
     RESOLVED = "RESOLVED"
     CLOSED = "CLOSED"
     COMMENTED = "COMMENTED"
+    REOPENED = "REOPENED"
+    REASSIGNED = "REASSIGNED"
     # DEPRECATED: Community removed, kept for historical data, no UI
     REPOSTED = "REPOSTED"
     COMMUNITY_COMMENT = "COMMUNITY_COMMENT"
@@ -17,6 +19,7 @@ class NotificationVerb:
     CRITICAL_ISSUE = "CRITICAL_ISSUE"
     ANNOUNCEMENT = "ANNOUNCEMENT"
     ANNOUNCEMENT_URGENT = "ANNOUNCEMENT_URGENT"
+    ANNOUNCEMENT_UPDATED = "ANNOUNCEMENT_UPDATED"
 
 
 DEPRECATED_COMMUNITY_VERBS = [
@@ -25,6 +28,12 @@ DEPRECATED_COMMUNITY_VERBS = [
     NotificationVerb.PRIORITY_RAISED,
     NotificationVerb.CRITICAL_ISSUE,
 ]
+
+
+class NotificationType(models.TextChoices):
+    TICKET = "TICKET", "Ticket"
+    ANNOUNCEMENT = "ANNOUNCEMENT", "Announcement"
+    SYSTEM = "SYSTEM", "System"
 
 
 class ActiveNotificationManager(models.Manager):
@@ -54,9 +63,17 @@ class Notification(models.Model):
         related_name="notifications",
     )
     verb = models.CharField(max_length=100)
+    title = models.CharField(max_length=200, blank=True, default="")
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NotificationType.choices,
+        default=NotificationType.SYSTEM,
+    )
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Idempotency key to prevent duplicates from the same event
+    event_key = models.CharField(max_length=255, blank=True, default="", db_index=True)
 
     objects = ActiveNotificationManager()
     all_objects = models.Manager()
@@ -66,3 +83,23 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.login_id}: {self.verb}"
+
+    @classmethod
+    def create_once(cls, *, event_key="", **kwargs):
+        """Create notification only if event_key doesn't already exist for this recipient.
+
+        If event_key is empty, always creates (no dedup).
+        Returns the created Notification or None if duplicate.
+        """
+        if event_key:
+            if cls.all_objects.filter(
+                recipient=kwargs["recipient"], event_key=event_key
+            ).exists():
+                return None
+        kwargs["event_key"] = event_key
+        return cls.objects.create(**kwargs)
+
+    @property
+    def display_title(self):
+        """Returns title if set, otherwise falls back to verb."""
+        return self.title or self.verb

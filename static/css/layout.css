@@ -590,6 +590,26 @@
   border: 1.5px solid var(--bg-surface);
 }
 
+.notification-badge.notification-badge-count {
+  top: -4px;
+  right: -6px;
+  width: auto;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: var(--danger, #ef4444);
+  border-radius: 9999px;
+  border: 1.5px solid var(--bg-surface, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
 /* Page Header (64px, Fix U-01) */
 .page-header {
   min-height: 64px;
@@ -830,6 +850,7 @@ input:-webkit-autofill:active {
   }
   .app-content {
     padding: var(--space-4);
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -888,7 +909,9 @@ input:-webkit-autofill:active {
 .mobile-bottom-nav,
 .mobile-brand-title,
 .mobile-detail-nav,
-.mobile-header-actions {
+.mobile-header-actions,
+.mobile-back-nav,
+.mobile-back-btn {
   display: none;
 }
 
@@ -951,6 +974,54 @@ input:-webkit-autofill:active {
   .mobile-detail-nav {
     display: flex !important;
     align-items: center !important;
+  }
+
+  .mobile-back-nav {
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-back-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--bg-subtle) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard) !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-back-btn:hover {
+    background: var(--bg-subtle-hover) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .mobile-back-btn:active {
+    transform: scale(0.95) !important;
+  }
+
+  .mobile-back-btn:focus-visible {
+    outline: 2px solid var(--primary) !important;
+    outline-offset: 2px !important;
+  }
+
+  .mobile-back-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+    stroke: currentColor !important;
+    stroke-width: 2.2 !important;
+    display: block !important;
   }
 
   .mobile-header-actions {
@@ -1270,6 +1341,147 @@ input:-webkit-autofill:active {
 .htmx-request .htmx-indicator,
 .htmx-request.htmx-indicator {
   opacity: 1;
+}
+
+/* ==========================================================================
+   App Launch / Initialization Screen (Mobile & App)
+   ========================================================================== */
+#app-launch-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--launch-bg);
+  padding: 24px;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#app-launch-screen.launch-screen-fadeout {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.launch-screen-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--launch-card-bg);
+  border: 1px solid var(--launch-border);
+  border-radius: var(--radius-xl, 24px);
+  padding: 38px 24px 30px;
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.launch-logo-badge {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--launch-bar-start) 0%, var(--primary-hover) 100%);
+  border-radius: var(--radius-lg, 16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 26px 4px var(--launch-glow);
+  margin-bottom: 4px;
+}
+
+.launch-logo-svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.launch-brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--launch-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.launch-tagline {
+  font-size: 13px;
+  color: var(--launch-muted);
+  line-height: 1.4;
+  margin-top: -4px;
+}
+
+.launch-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--launch-track-bg);
+  border-radius: var(--r-full, 999px);
+  overflow: hidden;
+  margin-top: 8px;
+  position: relative;
+}
+
+.launch-progress-bar {
+  height: 100%;
+  width: 10%;
+  background: linear-gradient(90deg, var(--launch-bar-start), var(--launch-bar-end));
+  border-radius: var(--r-full, 999px);
+  transition: width 0.25s ease-out;
+}
+
+.launch-status-text {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--launch-muted);
+  min-height: 18px;
+  margin-top: 2px;
+}
+
+.launch-fallback-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.launch-fallback-text {
+  font-size: 13px;
+  color: var(--danger);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.launch-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-text);
+  background-color: var(--primary);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast);
+}
+
+.launch-retry-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.launch-retry-btn:active {
+  background-color: var(--primary-active);
 }
 
 /* Prefers Reduced Motion */

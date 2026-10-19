@@ -26,10 +26,10 @@
   }
 
   function getThemePreference() {
-    const elPref = document.documentElement.getAttribute('data-theme-pref');
     const userTheme = document.documentElement.getAttribute('data-user-theme');
     const stored = localStorage.getItem('theme');
-    const raw = (elPref || stored || userTheme || 'system').toLowerCase();
+    const elPref = document.documentElement.getAttribute('data-theme-pref');
+    const raw = (userTheme || stored || elPref || 'system').toLowerCase();
     if (raw === 'dark' || raw === 'light' || raw === 'system') {
       return raw;
     }

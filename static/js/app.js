@@ -318,6 +318,352 @@ document.addEventListener('focusout', function(e) {
   }
 });
 
+// ==========================================================================
+// Mobile In-App Navigation, Overlays, Unsaved Form Changes & History Tracker
+// ==========================================================================
+
+// 1. Overlay & Dialog dismissal utility (Modals, Drawers, Sheets, Dropdowns)
+window.dismissOpenOverlays = function() {
+  // A. Mobile bottom sheet modal (e.g. "More" bottom sheet)
+  const bottomSheetBackdrop = document.querySelector('.bottom-sheet-backdrop:not([style*="display: none"])');
+  if (bottomSheetBackdrop) {
+    const closeBtn = bottomSheetBackdrop.querySelector('button[aria-label="Close sheet"], button.btn-ghost');
+    if (closeBtn) {
+      closeBtn.click();
+    } else {
+      bottomSheetBackdrop.click();
+    }
+    return true;
+  }
+
+  // B. Standard modals, dialogs, drawers, command palette
+  const openModals = Array.from(document.querySelectorAll('.app-modal-backdrop, .command-palette-backdrop, [data-modal], dialog[open]'))
+    .filter(function(el) {
+      if (el.classList.contains('active') || el.classList.contains('show') || el.hasAttribute('open')) return true;
+      try {
+        const style = window.getComputedStyle(el);
+        return style.display === 'flex' || style.display === 'block';
+      } catch (e) {
+        return false;
+      }
+    });
+
+  if (openModals.length > 0) {
+    let closedAny = false;
+    openModals.forEach(function(modal) {
+      if (modal.id && typeof window.closeModal === 'function') {
+        window.closeModal(modal.id);
+        closedAny = true;
+      } else {
+        const closeBtn = modal.querySelector('.app-modal-close, [data-modal-close], button[aria-label="Close"], button.close');
+        if (closeBtn) {
+          closeBtn.click();
+          closedAny = true;
+        } else {
+          modal.style.display = 'none';
+          closedAny = true;
+        }
+      }
+    });
+    document.body.classList.remove('modal-open');
+    if (closedAny) return true;
+  }
+
+  // C. Active dropdown menus, popovers, or open Alpine state menus
+  const activeDropdowns = Array.from(document.querySelectorAll('.dropdown-menu.show, [x-show="dropdownOpen"]:not([style*="display: none"]), [x-show="open"]:not([style*="display: none"])'));
+  if (activeDropdowns.length > 0) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+    return true;
+  }
+
+  return false;
+};
+
+// 2. Unsaved form changes confirmation utility
+window.hasUnsavedChanges = function() {
+  const forms = document.querySelectorAll('form:not([method="get"]):not([data-no-unsaved-check])');
+  for (let i = 0; i < forms.length; i++) {
+    const form = forms[i];
+    if (form.dataset.hfSubmitted === 'true') continue;
+
+    const elements = form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select');
+    for (let j = 0; j < elements.length; j++) {
+      const el = elements[j];
+      if (el.disabled || el.dataset.ignoreDirty) continue;
+
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        if (el.checked !== el.defaultChecked) return true;
+      } else if (el.tagName === 'SELECT') {
+        for (let k = 0; k < el.options.length; k++) {
+          if (el.options[k].selected !== el.options[k].defaultSelected) return true;
+        }
+      } else {
+        // text, textarea, password, email, number, etc.
+        if (el.value !== el.defaultValue && el.value.trim().length > 0) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+window.confirmDiscardChanges = function() {
+  if (window.hasUnsavedChanges()) {
+    return window.confirm('You have unsaved changes. Are you sure you want to discard them and leave?');
+  }
+  return true;
+};
+
+document.addEventListener('submit', function(e) {
+  if (e.target && e.target.tagName === 'FORM') {
+    e.target.dataset.hfSubmitted = 'true';
+  }
+}, true);
+
+// 3. Scroll position and list filter preservation
+function saveCurrentScroll() {
+  try {
+    const key = 'hf_scroll_' + window.location.pathname;
+    sessionStorage.setItem(key, String(window.scrollY || window.pageYOffset || 0));
+  } catch (e) {}
+}
+
+window.addEventListener('beforeunload', saveCurrentScroll);
+window.addEventListener('pagehide', saveCurrentScroll);
+
+function restoreScrollPosition() {
+  try {
+    const key = 'hf_scroll_' + window.location.pathname;
+    const saved = sessionStorage.getItem(key);
+    if (saved !== null) {
+      const top = parseInt(saved, 10);
+      if (!isNaN(top) && top > 0) {
+        setTimeout(function() {
+          window.scrollTo({ top: top, behavior: 'instant' });
+        }, 50);
+      }
+    }
+  } catch (e) {}
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', restoreScrollPosition);
+} else {
+  restoreScrollPosition();
+}
+
+// 4. In-app session navigation stack & bottom-nav deduplication
+(function() {
+  function recordNavigation() {
+    const path = window.location.pathname + window.location.search;
+    if (path.startsWith('/accounts/login') || path.startsWith('/accounts/logout') || path.startsWith('/health')) {
+      return;
+    }
+    try {
+      let stack = JSON.parse(sessionStorage.getItem('hf_nav_stack') || '[]');
+      if (!Array.isArray(stack)) stack = [];
+
+      // Avoid consecutive duplicate entries
+      if (stack.length === 0 || stack[stack.length - 1] !== path) {
+        if (stack.length >= 2 && stack[stack.length - 2] === path) {
+          stack.pop();
+        } else {
+          stack.push(path);
+          if (stack.length > 30) stack.shift();
+        }
+        sessionStorage.setItem('hf_nav_stack', JSON.stringify(stack));
+      }
+    } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', recordNavigation);
+  } else {
+    recordNavigation();
+  }
+
+  // Prevent bottom nav tab cycling / duplicate history loops
+  document.addEventListener('click', function(e) {
+    const navItem = e.target.closest('.mobile-bottom-nav .bottom-nav-item:not(.raise-center-btn)');
+    if (!navItem || !navItem.getAttribute('href')) return;
+
+    const targetHref = navItem.getAttribute('href');
+    if (targetHref.startsWith('#') || targetHref.startsWith('javascript:')) return;
+
+    try {
+      const url = new URL(targetHref, window.location.origin);
+      const targetPath = url.pathname;
+
+      // When tapping Home / Dashboard: Reset stack to Dashboard root
+      if (targetPath === '/' || targetPath === '/dashboard/') {
+        sessionStorage.setItem('hf_nav_stack', JSON.stringify(['/dashboard/']));
+      } else {
+        // Root tabs (Tickets, Kanban, Notices, Profile):
+        // Reset stack to [Dashboard, Target] so Back always goes to Dashboard without ping-pong
+        sessionStorage.setItem('hf_nav_stack', JSON.stringify(['/dashboard/', targetPath]));
+      }
+    } catch (err) {}
+  });
+})();
+
+// 5. Global handler for mobile back button in headers
+window.handleMobileBack = function(btn) {
+  // Priority 1: Check and dismiss any open modals, drawers, bottom sheets, or overlays
+  if (window.dismissOpenOverlays && window.dismissOpenOverlays()) {
+    return;
+  }
+
+  // Priority 2: Confirm discarding unsaved changes in forms
+  if (window.confirmDiscardChanges && !window.confirmDiscardChanges()) {
+    return;
+  }
+
+  // Priority 3: Navigate back using in-app session navigation history
+  const currentPath = window.location.pathname + window.location.search;
+  try {
+    let stack = JSON.parse(sessionStorage.getItem('hf_nav_stack') || '[]');
+    if (Array.isArray(stack) && stack.length > 0) {
+      // Pop current page if on top of stack
+      while (stack.length > 0 && (stack[stack.length - 1] === currentPath || stack[stack.length - 1] === window.location.pathname)) {
+        stack.pop();
+      }
+      if (stack.length > 0) {
+        const targetUrl = stack.pop();
+        sessionStorage.setItem('hf_nav_stack', JSON.stringify(stack));
+        window.location.href = targetUrl;
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // Priority 4: Safe same-origin referrer check
+  if (document.referrer && document.referrer.indexOf(window.location.origin) === 0) {
+    try {
+      const refUrl = new URL(document.referrer);
+      const refPath = refUrl.pathname + refUrl.search;
+      if (refPath !== currentPath &&
+          !refPath.startsWith('/accounts/login') &&
+          !refPath.startsWith('/accounts/logout') &&
+          !refPath.startsWith('/accounts/register') &&
+          !refPath.startsWith('/health')) {
+        window.location.href = document.referrer;
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // Priority 5: Fallback to context-specific parent URL or dashboard
+  let fallback = btn ? btn.getAttribute('data-fallback') : null;
+  if (!fallback) {
+    fallback = '/dashboard/';
+  }
+  window.location.href = fallback;
+};
+
+// ==========================================================================
+// App Launch / Initialization Screen Controller
+// ==========================================================================
+window.initAppLaunchScreen = function() {
+  const launchScreen = document.getElementById('app-launch-screen');
+  if (!launchScreen) return;
+
+  let alreadyLaunched = false;
+  try {
+    alreadyLaunched = sessionStorage.getItem('hf_app_launched') === 'true';
+  } catch (e) {}
+
+  if (alreadyLaunched) {
+    launchScreen.style.display = 'none';
+    return;
+  }
+
+  const progressBar = document.getElementById('launch-progress-bar');
+  const statusText = document.getElementById('launch-status-text');
+  const fallbackBox = document.getElementById('launch-fallback-box');
+  const fallbackMsg = document.getElementById('launch-fallback-msg');
+
+  let currentPercent = 15;
+  if (progressBar) progressBar.style.width = currentPercent + '%';
+
+  const progressTimer = setInterval(function() {
+    if (currentPercent < 85) {
+      currentPercent += Math.floor(Math.random() * 10) + 6;
+      if (currentPercent > 85) currentPercent = 85;
+      if (progressBar) progressBar.style.width = currentPercent + '%';
+    }
+  }, 160);
+
+  const safetyTimeout = setTimeout(function() {
+    clearInterval(progressTimer);
+    if (fallbackBox) {
+      fallbackBox.style.display = 'flex';
+      if (!navigator.onLine && fallbackMsg) {
+        fallbackMsg.textContent = 'You appear to be offline. Please check your connection.';
+      }
+    }
+    if (statusText) statusText.style.display = 'none';
+  }, 7500);
+
+  function completeLaunch() {
+    clearTimeout(safetyTimeout);
+    clearInterval(progressTimer);
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (statusText) statusText.textContent = 'Ready';
+
+    try {
+      sessionStorage.setItem('hf_app_launched', 'true');
+    } catch (e) {}
+
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
+      try {
+        window.Capacitor.Plugins.SplashScreen.hide().catch(function() {});
+      } catch (e) {}
+    }
+
+    setTimeout(function() {
+      launchScreen.classList.add('launch-screen-fadeout');
+      setTimeout(function() {
+        launchScreen.style.display = 'none';
+      }, 320);
+    }, 180);
+  }
+
+  if (document.readyState === 'complete') {
+    completeLaunch();
+  } else {
+    window.addEventListener('load', completeLaunch);
+  }
+};
+
+window.retryAppLaunch = function() {
+  const fallbackBox = document.getElementById('launch-fallback-box');
+  const statusText = document.getElementById('launch-status-text');
+  if (fallbackBox) fallbackBox.style.display = 'none';
+  if (statusText) {
+    statusText.style.display = 'block';
+    statusText.textContent = 'Retrying connection...';
+  }
+  fetch('/health/', { method: 'GET', cache: 'no-store' })
+    .then(function(res) {
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        throw new Error('Service status ' + res.status);
+      }
+    })
+    .catch(function() {
+      window.location.reload();
+    });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initAppLaunchScreen);
+} else {
+  window.initAppLaunchScreen();
+}
+
 // Android Native / Capacitor Integration (Phases 3, 4, 7, 8)
 (function() {
   function initCapacitorBridge() {
@@ -332,47 +678,55 @@ document.addEventListener('focusout', function(e) {
       }, 350);
     }
 
-    // 2. Hardware Back Button Handling
+    // 2. Hardware Back Button Handling (Capacitor App plugin)
     let lastBackPressTime = 0;
     if (App) {
       App.addListener('backButton', function(state) {
-        // A. Priority 1: Close open modals
-        const activeModal = document.querySelector('.modal.active, .app-modal-backdrop.active, [x-show="open"]:not([style*="display: none"])');
-        if (activeModal) {
-          const closeBtn = activeModal.querySelector('.app-modal-close, [data-modal-close], button[aria-label="Close"]');
-          if (closeBtn) {
-            closeBtn.click();
-            return;
-          }
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+        // Priority 1: Dismiss open overlays, modals, bottom sheets, or menus first
+        if (window.dismissOpenOverlays && window.dismissOpenOverlays()) {
           return;
         }
 
-        // B. Priority 2: Close active dropdowns / popovers
-        const activeDropdown = document.querySelector('[x-show="dropdownOpen"]:not([style*="display: none"])');
-        if (activeDropdown) {
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+        // Priority 2: Confirm discarding unsaved form changes before navigating
+        if (window.confirmDiscardChanges && !window.confirmDiscardChanges()) {
           return;
         }
 
-        // C. Priority 3: Navigate back in history if not at root
         const pathname = window.location.pathname;
-        const isRoot = pathname === '/' || pathname === '/dashboard/' || pathname === '/accounts/login/';
 
-        if (state && state.canGoBack && !isRoot && window.history.length > 1) {
-          window.history.back();
+        // Priority 3: On auth pages (login/register), double-tap to exit and NEVER return to authenticated pages
+        if (pathname.startsWith('/accounts/login') || pathname.startsWith('/accounts/register')) {
+          const now = Date.now();
+          if (now - lastBackPressTime < 2000) {
+            App.exitApp();
+          } else {
+            lastBackPressTime = now;
+            if (window.showToast) {
+              window.showToast('Press back again to exit', 'info');
+            }
+          }
           return;
         }
 
-        // D. Priority 4: Double-tap to exit on root or no history
-        const now = Date.now();
-        if (now - lastBackPressTime < 2000) {
-          App.exitApp();
-        } else {
-          lastBackPressTime = now;
-          if (window.showToast) {
-            window.showToast('Press back again to exit', 'info');
+        // Priority 4: Root / Dashboard: Double-tap to exit
+        if (pathname === '/' || pathname === '/dashboard/') {
+          const now = Date.now();
+          if (now - lastBackPressTime < 2000) {
+            App.exitApp();
+          } else {
+            lastBackPressTime = now;
+            if (window.showToast) {
+              window.showToast('Press back again to exit', 'info');
+            }
           }
+          return;
+        }
+
+        // Priority 5: Inner pages - navigate backward through meaningful screens
+        if (typeof window.handleMobileBack === 'function') {
+          window.handleMobileBack();
+        } else {
+          window.location.href = '/dashboard/';
         }
       });
     }

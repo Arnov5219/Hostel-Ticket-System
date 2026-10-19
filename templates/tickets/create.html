@@ -3,6 +3,8 @@
 
 {% block title %}Raise Ticket | {{ site_name|default:"HostelFlow" }}{% endblock %}
 
+{% block mobile_back_fallback %}{% url 'tickets:list' %}{% endblock %}
+
 {% block breadcrumbs %}
   <div style="display: flex; align-items: center; gap: 6px;">
     <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>
@@ -35,12 +37,23 @@
     <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 20px;"
           x-data="{
             title: '{{ form.title.value|default:''|escapejs }}',
+            roomNumber: '{{ form.room_number.value|default:''|escapejs }}',
+            roomError: '',
             desc: '{{ form.description.value|default:''|escapejs }}',
             selectedPriority: '{{ form.priority.value|default:'MEDIUM' }}',
             selectedCategory: '{{ form.category.value|default:'' }}',
             userHostelId: '{{ request.user.hostel_id|default:'' }}',
             filesCount: 0
-          }">
+          }"
+          @submit="
+            if (!roomNumber || !roomNumber.trim()) {
+              $event.preventDefault();
+              roomError = 'Please enter a valid room number (e.g. Room 204).';
+              const inputEl = document.getElementById('{{ form.room_number.id_for_label }}');
+              if (inputEl) inputEl.focus();
+              return false;
+            }
+          ">
       {% csrf_token %}
       <input type="hidden" name="priority" id="id_priority" :value="selectedPriority">
 
@@ -63,7 +76,35 @@
         <input type="hidden" name="hostel" value="{{ request.user.hostel_id }}">
       </div>
 
-      <!-- 2. Category Selection: Accessible Responsive Grid -->
+      <!-- 2. Room Number Input (Mandatory, directly below Assigned Hostel) -->
+      <div style="display: flex; flex-direction: column; gap: 6px;" id="room-number-group">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label class="form-label" for="{{ form.room_number.id_for_label }}" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Room Number *</label>
+          <span style="font-size: 12px; color: var(--text-muted);">Required</span>
+        </div>
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="text"
+                 name="room_number"
+                 id="{{ form.room_number.id_for_label }}"
+                 maxlength="50"
+                 required
+                 x-model="roomNumber"
+                 @input="roomError = ''"
+                 class="form-control"
+                 placeholder="e.g. Room 204"
+                 style="width: 100%; height: 50px; padding: 0 36px 0 14px; border-radius: var(--r-control); background: var(--bg-input); border: 1px solid var(--border); font-size: 15px; color: var(--text-primary); outline: none; transition: all var(--t-fast) var(--ease);"
+                 :style="roomError ? 'border-color: var(--st-open-fg);' : ''"
+                 onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='var(--ring)';"
+                 onblur="if(this.value.trim() === '') { this.style.borderColor='var(--st-open-fg)'; } else { this.style.borderColor='var(--border)'; } this.style.boxShadow='none';">
+          <button type="button" x-show="roomNumber && roomNumber.length > 0" @click="roomNumber = ''; document.getElementById('{{ form.room_number.id_for_label }}').focus();" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 14px;" aria-label="Clear room number">✕</button>
+        </div>
+        <span x-show="roomError" x-text="roomError" class="form-error" style="color: var(--st-open-fg); font-size: 12px; font-weight: 600; display: none;"></span>
+        {% if form.room_number.errors %}
+          <span class="form-error" style="color: var(--st-open-fg); font-size: 12px; font-weight: 600;">{{ form.room_number.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <!-- 3. Category Selection: Accessible Responsive Grid -->
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <label class="form-label" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">Category *</label>

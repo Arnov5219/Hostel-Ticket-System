@@ -44,86 +44,91 @@
   </div>
 
   {# Announcements List #}
-  <div style="display: flex; flex-direction: column; gap: 14px;">
+  <div style="display: flex; flex-direction: column; gap: 16px;">
     {% for ann in announcements %}
-      <div class="card" style="padding: 18px 20px; background: var(--bg-surface-glass); {% if ann.severity == 'URGENT' %}border-left: 4px solid var(--danger); background-color: var(--notice-urg-bg);{% endif %}">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="card notice-card {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% endif %}" id="notice-card-{{ ann.id }}">
+        
+        {# 1. Header: Notice icon and title + Badges #}
+        <div class="notice-card-header">
+          <div class="notice-card-header-main">
             <div class="ann-icon-chip {% if ann.severity == 'URGENT' %}urgent{% elif ann.severity == 'IMPORTANT' %}important{% else %}info{% endif %}">
               {% if ann.kind == "MAINTENANCE" %}
-                <i data-lucide="wrench" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="wrench" style="width: 16px; height: 16px;"></i>
               {% elif ann.kind == "EMERGENCY" %}
-                <i data-lucide="alert-triangle" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
               {% elif ann.kind == "EVENT" %}
-                <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
               {% elif ann.kind == "POLICY" %}
-                <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
               {% else %}
-                <i data-lucide="bell" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
               {% endif %}
             </div>
 
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h3 style="font-size: var(--fs-md); font-weight: 700; margin: 0; color: var(--text-primary);">
-                  {{ ann.title }}
-                </h3>
-                {% if ann.id not in read_ids %}
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--primary); display: inline-block;" title="Unread"></span>
-                {% endif %}
-              </div>
-              <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span>{{ ann.author.full_name|default:ann.author.login_id }} ({{ ann.author.get_role_display|default:"Staff" }})</span>
-                <span>·</span>
-                <span>{{ ann.published_at|timesince }} ago</span>
-                <span>·</span>
-                <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary); font-size: 11px;">
-                  {% if ann.all_hostels %}All Hostels{% else %}{{ ann.hostels.all|join:", "|default:"Targeted" }}{% endif %}
-                </span>
-              </div>
+            <div class="notice-card-title-row">
+              <a href="{% url 'announcements:detail' ann.id %}" class="notice-card-title-link">
+                <h3 class="notice-card-title">{{ ann.title }}</h3>
+              </a>
+              {% if ann.id not in read_ids %}
+                <span class="notice-unread-dot" id="notice-unread-{{ ann.id }}" title="Unread notice" aria-label="Unread"></span>
+              {% endif %}
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 6px;">
+          {# 3. Badges: Pinned and priority indicators #}
+          <div class="notice-card-badges">
             {% if ann.is_pinned %}
-              <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary); font-size: 11px;">
-                <i data-lucide="pin" style="width: 11px; height: 11px; margin-right: 2px;"></i>
-                Pinned
+              <span class="notice-pinned-pill" title="Pinned notice">
+                <i data-lucide="pin" style="width: 12px; height: 12px;"></i>
+                <span>Pinned</span>
               </span>
             {% endif %}
             {% if ann.severity == "URGENT" %}
-              <span class="badge" style="background-color: var(--notice-urg-bg); color: var(--notice-urg-fg); font-weight: 700; font-size: 11px;">Urgent</span>
+              <span class="badge badge-urgent-pill">Urgent</span>
             {% elif ann.severity == "IMPORTANT" %}
-              <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700; font-size: 11px;">Important</span>
+              <span class="badge badge-important-pill">Important</span>
             {% endif %}
           </div>
         </div>
 
-        {# Body Preview #}
-        <div style="font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.5; margin: 12px 0 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+        {# 2. Metadata: Author, designation, publication date/time, and audience #}
+        <div class="notice-card-meta">
+          <span class="notice-meta-author">{{ ann.author.full_name|default:ann.author.login_id }} <span style="font-weight: 400; color: var(--text-muted);">({{ ann.author.get_role_display|default:"Staff" }})</span></span>
+          <span class="notice-meta-sep">·</span>
+          <span class="notice-meta-time" title="{{ ann.published_at|default:ann.created_at|date:'d F Y, h:i A' }}">{{ ann.published_at|default:ann.created_at|timesince }} ago</span>
+          <span class="notice-meta-sep">·</span>
+          <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary); font-size: 11px; border: 1px solid var(--border); padding: 2px 8px; border-radius: var(--radius-sm);">
+            {% if ann.all_hostels %}All Hostels{% else %}{{ ann.hostels.all|join:", "|default:"Targeted" }}{% endif %}
+          </span>
+        </div>
+
+        {# 4. Description: Notice preview with comfortable line spacing #}
+        <div class="notice-card-desc">
           {{ ann.body|linebreaksbr }}
         </div>
 
-        {# Footer row: Read more, attachment, related ticket #}
-        <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            {% if ann.attachment %}
-              <a href="{{ ann.attachment.url }}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 11.5px;">
-                <i data-lucide="paperclip" style="width: 12px; height: 12px;"></i>
-                <span>Attachment</span>
-              </a>
-            {% endif %}
-            {% if ann.related_ticket %}
-              <a href="{% url 'tickets:detail' ann.related_ticket.ticket_no %}" class="chip" style="font-size: 11px; text-decoration: none; color: var(--text-secondary);">
-                <i data-lucide="link" style="width: 11px; height: 11px;"></i>
-                <span>{{ ann.related_ticket.ticket_no }}</span>
-              </a>
-            {% endif %}
-          </div>
-
-          <a href="{% url 'announcements:detail' ann.id %}" class="btn btn-ghost btn-sm" style="color: var(--primary); font-weight: 600;">
+        {# 5. Footer: Divider and the existing 'Read full notice →' link #}
+        <div class="notice-card-footer">
+          <a href="{% url 'announcements:detail' ann.id %}" class="btn btn-ghost btn-sm notice-read-link">
             <span>Read full notice →</span>
           </a>
+
+          {% if ann.attachment or ann.related_ticket %}
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              {% if ann.attachment %}
+                <a href="{{ ann.attachment.url }}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;">
+                  <i data-lucide="paperclip" style="width: 12px; height: 12px;"></i>
+                  <span>Attachment</span>
+                </a>
+              {% endif %}
+              {% if ann.related_ticket %}
+                <a href="{% url 'tickets:detail' ann.related_ticket.ticket_no %}" class="chip" style="font-size: 11px; text-decoration: none; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid var(--border);">
+                  <i data-lucide="link" style="width: 11px; height: 11px;"></i>
+                  <span>{{ ann.related_ticket.ticket_no }}</span>
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
         </div>
       </div>
     {% empty %}
@@ -155,4 +160,5 @@
   {% endif %}
 
 </div>
+
 {% endblock %}

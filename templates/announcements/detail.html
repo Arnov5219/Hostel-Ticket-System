@@ -3,6 +3,8 @@
 
 {% block title %}{{ announcement.title }} | Hostel Ticket System{% endblock %}
 
+{% block mobile_back_fallback %}{% url 'announcements:list' %}{% endblock %}
+
 {% block breadcrumbs %}
   <a href="{% url 'core:home' %}">Home</a>
   <span class="separator">/</span>
@@ -35,22 +37,22 @@
   <div class="card" style="padding: 24px; background: var(--bg-surface-glass); {% if announcement.severity == 'URGENT' %}border-left: 4px solid var(--danger);{% endif %}">
     
     {# Metadata badges row #}
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
         <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-primary); font-size: 11.5px; font-weight: 600;">
           {{ announcement.get_kind_display }}
         </span>
         {% if announcement.severity == "URGENT" %}
-          <span class="badge" style="background-color: var(--notice-urg-bg); color: var(--notice-urg-fg); font-weight: 700;">Urgent Alert</span>
+          <span class="badge badge-urgent-pill">Urgent Alert</span>
         {% elif announcement.severity == "IMPORTANT" %}
-          <span class="badge" style="background-color: var(--notice-imp-bg); color: var(--notice-imp-fg); font-weight: 700;">Important</span>
+          <span class="badge badge-important-pill">Important</span>
         {% else %}
-          <span class="badge" style="background-color: var(--notice-info-bg); color: var(--notice-info-fg);">Information</span>
+          <span class="badge badge-info-pill">Information</span>
         {% endif %}
         {% if announcement.is_pinned %}
-          <span class="badge" style="background-color: var(--bg-subtle); color: var(--text-secondary);">
-            <i data-lucide="pin" style="width: 11px; height: 11px; margin-right: 2px;"></i>
-            Pinned
+          <span class="notice-pinned-pill">
+            <i data-lucide="pin" style="width: 12px; height: 12px;"></i>
+            <span>Pinned</span>
           </span>
         {% endif %}
       </div>
@@ -60,6 +62,53 @@
         <span>
           Audience: {% if announcement.all_hostels %}All Hostels{% else %}{{ announcement.hostels.all|join:", "|default:"Targeted" }}{% endif %}
         </span>
+      </div>
+    </div>
+
+    {# Prominent Publication Date, Time & Author Grid (Section 4) #}
+    <div class="notice-meta-grid">
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Posted on</span>
+          <span class="notice-meta-tile-value">{{ announcement.published_at|default:announcement.created_at|date:"d F Y" }}</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Time</span>
+          <span class="notice-meta-tile-value">{{ announcement.published_at|default:announcement.created_at|time:"h:i A" }}</span>
+          <span class="notice-meta-tile-sub">({{ announcement.published_at|default:announcement.created_at|timesince }} ago)</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Posted by</span>
+          <span class="notice-meta-tile-value">{{ announcement.author.full_name|default:announcement.author.login_id }}</span>
+          <span class="notice-meta-tile-sub">{{ announcement.author.get_role_display|default:"Staff" }}</span>
+        </div>
+      </div>
+
+      <div class="notice-meta-tile">
+        <div class="notice-meta-tile-icon">
+          <i data-lucide="building" style="width: 16px; height: 16px;"></i>
+        </div>
+        <div class="notice-meta-tile-body">
+          <span class="notice-meta-tile-label">Target Audience</span>
+          <span class="notice-meta-tile-value">
+            {% if announcement.all_hostels %}All Hostels{% else %}{{ announcement.hostels.all|join:", "|default:"Targeted" }}{% endif %}
+          </span>
+        </div>
       </div>
     </div>
 

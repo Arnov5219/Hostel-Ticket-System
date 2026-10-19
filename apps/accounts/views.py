@@ -116,8 +116,10 @@ def profile_view(request):
             if password_form.is_valid():
                 user = password_form.save()
                 update_session_auth_hash(request, user)
-                messages.success(request, "Your password has been changed.")
+                messages.success(request, "Your password has been changed successfully.")
                 return redirect("accounts:profile")
+            else:
+                messages.error(request, "Unable to change password. Please check the errors below.")
 
     residence_form = None
     if request.user.is_hosteler:

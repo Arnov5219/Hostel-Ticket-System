@@ -66,17 +66,50 @@ class ProfileUpdateForm(forms.ModelForm):
 
 class StyledPasswordChangeForm(forms.Form):
     old_password = forms.CharField(
-        label="Current password",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+        label="Current Password",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "••••••••",
+                "autocomplete": "current-password",
+            }
+        ),
+        error_messages={
+            "required": "Current password is required.",
+        },
     )
     new_password1 = forms.CharField(
-        label="New password",
-        help_text="At least 8 characters, not too common",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+        label="New Password",
+        min_length=8,
+        help_text="At least 8 characters, not too common.",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "At least 8 characters",
+                "autocomplete": "new-password",
+                "minlength": "8",
+            }
+        ),
+        error_messages={
+            "min_length": "Password must be at least 8 characters long.",
+            "required": "New password is required.",
+        },
     )
     new_password2 = forms.CharField(
-        label="Confirm new password",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "••••••••"}),
+        label="Confirm New Password",
+        min_length=8,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Re-enter new password",
+                "autocomplete": "new-password",
+                "minlength": "8",
+            }
+        ),
+        error_messages={
+            "min_length": "Password must be at least 8 characters long.",
+            "required": "Please confirm your new password.",
+        },
     )
 
     def __init__(self, user, *args, **kwargs):
@@ -85,8 +118,8 @@ class StyledPasswordChangeForm(forms.Form):
 
     def clean_old_password(self):
         old_password = self.cleaned_data.get("old_password")
-        if not self.user.check_password(old_password):
-            raise forms.ValidationError("Your old password was entered incorrectly. Please enter it again.")
+        if not old_password or not self.user.check_password(old_password):
+            raise forms.ValidationError("Invalid current password. Please enter it again.")
         return old_password
 
     def clean(self):
@@ -97,13 +130,17 @@ class StyledPasswordChangeForm(forms.Form):
         p2 = cleaned_data.get("new_password2")
         if p1 and p2:
             if p1 != p2:
-                self.add_error("new_password2", "The two password fields didn't match.")
+                self.add_error("new_password2", "The new passwords do not match.")
             else:
-                validate_password(p1, self.user)
+                try:
+                    validate_password(p1, self.user)
+                except forms.ValidationError as error:
+                    self.add_error("new_password1", error)
         return cleaned_data
 
     def save(self, commit=True):
         self.user.set_password(self.cleaned_data["new_password1"])
+        self.user.must_change_password = False
         if commit:
             self.user.save()
         return self.user
@@ -131,7 +168,7 @@ class HostelerRegistrationForm(forms.Form):
     full_name = forms.CharField(
         label="Full Name",
         max_length=150,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Oyaan Ahmed ", "autofocus": True}),
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "", "autofocus": True}),
     )
     login_id = forms.CharField(
         label="Regd Number",
@@ -140,20 +177,20 @@ class HostelerRegistrationForm(forms.Form):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "e.g. 24E118B08 (optional)",
+                "placeholder": "",
             }
         ),
     )
     email = forms.EmailField(
         label="Email Address",
         required=False,
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "e.g. chandanho222@gmail.com (optional)"}),
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": ""}),
     )
     phone = forms.CharField(
         label="Phone Number",
         max_length=20,
         required=False,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. 7608088181 (optional)"}),
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": ""}),
     )
     hostel = forms.ModelChoiceField(
         label="Hostel",

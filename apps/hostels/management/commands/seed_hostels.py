@@ -45,7 +45,6 @@ class Command(BaseCommand):
                 defaults={
                     "name": name,
                     "gender_type": GenderType.BOYS,
-                    "address": f"Campus Hall of Residence {i}",
                     "is_active": True,
                 },
             )

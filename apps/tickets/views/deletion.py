@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.core.permissions import Capability, has_capability
+from apps.hostels.models import Hostel
 from apps.tickets.models import Ticket
 from apps.tickets.services.deletion import (
     can_delete,
@@ -143,11 +144,14 @@ def trash_list_view(request):
         .order_by("-deleted_at")
     )
 
+    hostels = Hostel.objects.filter(is_active=True).order_by("name")
+
     return render(
         request,
         "tickets/trash.html",
         {
             "tickets": deleted_tickets,
+            "hostels": hostels,
             "can_restore": True,
             "current_section": "trash",
         },

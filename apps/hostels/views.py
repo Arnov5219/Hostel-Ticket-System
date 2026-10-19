@@ -10,6 +10,7 @@ from apps.hostels.forms import HostelForm
 from apps.hostels.models import Hostel, Room
 from apps.hostels.services import (
     assign_staff_to_hostel,
+    change_hostel_assignments,
     change_hostel_responsible_staff,
     create_hostel,
     deactivate_hostel,
@@ -42,10 +43,13 @@ def manage_hostels(request):
         )
         .all()
     )
-    # Annotate or calculate active ticket counts
+    # Annotate active ticket counts
     active_statuses = [Status.OPEN, Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD]
     for h in hostels:
         h.active_ticket_count = h.tickets.filter(status__in=active_statuses).count()
+
+    total_hostels = len(hostels)
+    total_residents = sum(h.hosteler_count or 0 for h in hostels)
 
     form = HostelForm()
 
@@ -59,7 +63,6 @@ def manage_hostels(request):
                         name=form.cleaned_data["name"],
                         code=form.cleaned_data["code"],
                         gender_type=form.cleaned_data["gender_type"],
-                        address=form.cleaned_data.get("address", ""),
                         responsible_staff=form.cleaned_data.get("responsible_staff"),
                         is_active=form.cleaned_data.get("is_active", True),
                     )
@@ -81,7 +84,6 @@ def manage_hostels(request):
                         name=form.cleaned_data["name"],
                         code=form.cleaned_data["code"],
                         gender_type=form.cleaned_data["gender_type"],
-                        address=form.cleaned_data.get("address", ""),
                         responsible_staff=form.cleaned_data.get("responsible_staff"),
                         is_active=form.cleaned_data.get("is_active", True),
                     )
@@ -99,6 +101,8 @@ def manage_hostels(request):
         "hostels/manage_hostels.html",
         {
             "hostels": hostels,
+            "total_hostels": total_hostels,
+            "total_residents": total_residents,
             "form": form,
             "available_caretakers": available_caretakers,
             "current_section": "manage_hostels",
@@ -150,20 +154,20 @@ def manage_staff(request):
 def manage_responsibility(request):
     """
     Dedicated Hostel Responsibility screen.
-    Each hostel has one Level 1 responsible staff member.
+    Each hostel has a Level 1 Caretaker and Level 2 Warden.
     All ticket categories for that hostel route to this staff member.
     """
     if not can_manage_config(request.user):
         raise PermissionDenied("Only administrators can manage hostel responsibilities.")
 
-    hostels = list(Hostel.objects.select_related("responsible_staff").all())
+    hostels = list(Hostel.objects.select_related("responsible_staff", "responsible_warden").all())
     hostels = sorted(hostels, key=natural_sort_key)
 
     wardens = User.objects.filter(role=Role.WARDEN, is_active=True, hostel__isnull=False).select_related("hostel")
     wardens_by_hostel = {w.hostel_id: w for w in wardens}
 
     for h in hostels:
-        h.warden = wardens_by_hostel.get(h.id)
+        h.warden = h.responsible_warden or wardens_by_hostel.get(h.id)
 
     available_caretakers = User.objects.filter(role=Role.CARETAKER, is_active=True).order_by("full_name")
     available_wardens = User.objects.filter(role=Role.WARDEN, is_active=True).order_by("full_name")
@@ -182,24 +186,42 @@ def manage_responsibility(request):
 
 @login_required
 def change_responsible_staff_view(request, hostel_id):
-    """Action to change Level 1 responsible staff for a hostel."""
+    """Action to change Level 1 Caretaker and/or Level 2 Warden for a hostel."""
     if not can_manage_config(request.user):
-        raise PermissionDenied()
+        raise PermissionDenied("Only administrators can manage hostel responsibilities.")
 
     hostel = get_object_or_404(Hostel, id=hostel_id)
     if request.method == "POST":
-        staff_id = request.POST.get("responsible_staff")
-        staff = get_object_or_404(User, id=staff_id)
+        update_caretaker = "responsible_staff" in request.POST
+        update_warden = "responsible_warden" in request.POST
+
+        caretaker = None
+        caretaker_id = request.POST.get("responsible_staff")
+        if update_caretaker and caretaker_id:
+            caretaker = get_object_or_404(User, id=caretaker_id)
+
+        warden = None
+        warden_id = request.POST.get("responsible_warden")
+        if update_warden and warden_id:
+            warden = get_object_or_404(User, id=warden_id)
+
         try:
-            change_hostel_responsible_staff(hostel, staff, actor=request.user)
+            change_hostel_assignments(
+                hostel,
+                caretaker=caretaker,
+                warden=warden,
+                update_caretaker=update_caretaker,
+                update_warden=update_warden,
+                actor=request.user,
+            )
             messages.success(
                 request,
-                f"Assigned {staff.full_name or staff.login_id} as Level 1 responsible staff for {hostel.name}."
+                f"Successfully updated staff assignments for {hostel.name}."
             )
         except ValidationError as e:
             messages.error(request, str(e.message if hasattr(e, "message") else e))
 
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "hostels:manage_hostels"
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "hostels:manage_responsibility"
     return redirect(next_url)
 
 

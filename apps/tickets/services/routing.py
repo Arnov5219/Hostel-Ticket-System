@@ -1,12 +1,18 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.notifications.models import Notification
+from apps.notifications.services import (
+    notify_ticket_assigned,
+    notify_ticket_created,
+    notify_ticket_escalated,
+    notify_urgent_ticket,
+)
 from apps.tickets.models import (
     ActivityAction,
+    Priority,
     Status,
     Ticket,
     TicketActivity,
@@ -84,13 +90,13 @@ def assign_initial(ticket: Ticket, actor: User | None = None) -> Ticket:
         note=f"Automatically routed to Level 1 ({assignee_name})",
     )
 
-    # In-app notification for the assignee
+    # Notifications via centralized service
     if assignee:
-        Notification.objects.create(
-            recipient=assignee,
-            ticket=ticket,
-            verb="New Ticket Assigned",
-            message=f"Ticket {ticket.ticket_no} ({ticket.title}) has been assigned to you.",
-        )
+        notify_ticket_assigned(ticket, assignee, actor=actor)
+    notify_ticket_created(ticket, actor=actor)
+
+    # Urgent ticket notification for URGENT/CRITICAL priority
+    if ticket.priority == Priority.URGENT:
+        notify_urgent_ticket(ticket)
 
     return ticket

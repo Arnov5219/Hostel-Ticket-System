@@ -4,7 +4,6 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.tickets.views import trash_list_view
-from apps.tickets.views.settings import manage_settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -14,7 +13,6 @@ urlpatterns = [
     path("announcements/", include("apps.announcements.urls", namespace="announcements")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),
-    path("manage/settings/", manage_settings, name="manage_settings"),
     path("manage/trash/", trash_list_view, name="manage_trash"),
     path("manage/", include("apps.hostels.urls", namespace="hostels")),
 ]

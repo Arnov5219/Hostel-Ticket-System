@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.permissions import can_manage_config
-from apps.tickets.forms import CategoryForm, RoutingRuleForm, TagForm
+from apps.tickets.forms import RoutingRuleForm
 from apps.tickets.models import (
     Category,
     RoutingRule,
@@ -48,24 +48,6 @@ def manage_routing(request):
                 messages.success(request, f"Updated {policy} to {hours}h.")
             return redirect(f"{request.path}?tab=sla")
 
-        elif action == "add_category":
-            form = CategoryForm(request.POST)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "Category added.")
-            else:
-                messages.error(request, "Error adding category.")
-            return redirect(f"{request.path}?tab=categories")
-
-        elif action == "add_tag":
-            form = TagForm(request.POST)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "Tag added.")
-            else:
-                messages.error(request, "Error adding tag.")
-            return redirect(f"{request.path}?tab=tags")
-
     context = {
         "current_section": "manage_config",
         "tab": tab,
@@ -74,8 +56,6 @@ def manage_routing(request):
         "categories": Category.objects.all(),
         "tags": Tag.objects.all(),
         "rule_form": RoutingRuleForm(),
-        "category_form": CategoryForm(),
-        "tag_form": TagForm(),
     }
     return render(request, "tickets/manage_routing.html", context)
 

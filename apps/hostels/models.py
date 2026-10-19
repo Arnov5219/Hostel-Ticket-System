@@ -18,7 +18,6 @@ class Hostel(TimeStampedModel):
         choices=GenderType.choices,
         default=GenderType.BOYS,
     )
-    address = models.TextField(blank=True, default="")
     responsible_staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -26,6 +25,14 @@ class Hostel(TimeStampedModel):
         blank=True,
         related_name="responsible_hostels",
         help_text="Primary Level 1 staff member responsible for all tickets in this hostel",
+    )
+    responsible_warden = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="warden_hostels",
+        help_text="Primary Level 2 staff member (Warden) responsible for this hostel",
     )
     is_active = models.BooleanField(default=True)
 

@@ -29,7 +29,6 @@ class Command(BaseCommand):
                 defaults={
                     "name": "Bhabha Bhavan",
                     "gender_type": GenderType.BOYS,
-                    "address": "Campus Hall of Residence, North Wing",
                     "is_active": True,
                 },
             )

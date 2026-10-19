@@ -256,6 +256,7 @@ class TestPriorityHandling:
             reverse("tickets:create"),
             {
                 "title": "Broken window hinge",
+                "room_number": "101",
                 "description": "Window rattles in heavy wind.",
                 "category": category.id,
                 "hostel": hosteler.hostel.id,
