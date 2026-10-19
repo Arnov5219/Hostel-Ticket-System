@@ -1,4 +1,4 @@
-﻿"""
+"""
 Centralized notification service layer for HostelFlow.
 
 All notification creation logic lives here. Ticket services, announcement
@@ -319,8 +319,10 @@ def notify_announcement_published(announcement, audience_user_ids):
                     is_active=True,
                 ).values_list("id", flat=True)
             )
-            # Add staff IDs that aren't already in the audience
+            # Add staff IDs that aren't already in the audience (and exclude author)
             existing_ids = set(all_recipient_ids)
+            if announcement.author_id:
+                existing_ids.add(announcement.author_id)
             for sid in staff_ids:
                 if sid not in existing_ids:
                     all_recipient_ids.append(sid)

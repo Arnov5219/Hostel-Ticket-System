@@ -598,11 +598,10 @@
   height: 17px;
   padding: 0 4px;
   font-size: 10px;
-  font-weight: 700;
-  color: #ffffff;
-  background-color: var(--danger, #ef4444);
+  color: var(--white);
+  background-color: var(--danger);
   border-radius: 9999px;
-  border: 1.5px solid var(--bg-surface, #ffffff);
+  border: 1.5px solid var(--bg-surface);
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -1,3 +1,8 @@
+[project]
+name = "hostel-ticket-system"
+version = "1.0.0"
+requires-python = ">=3.12"
+
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
 python_files = ["test_*.py", "*_test.py"]

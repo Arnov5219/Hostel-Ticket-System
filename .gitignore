@@ -30,6 +30,12 @@ local_settings.py
 db.sqlite3*
 *.bak
 /media/
+/staticfiles/
+*.dump.json
+*.data.json
+
+# Vercel
+.vercel/
 
 # Environment
 .env
