@@ -107,12 +107,12 @@ class TestCapabilitySeparation:
             assert has_capability(cw, cap) is False, f"Chief Warden must NOT have {cap}"
             assert has_capability(warden, cap) is False, f"Warden must NOT have {cap}"
 
-    def test_admin_cannot_escalate_or_change_status(self, role_users):
+    def test_admin_escalate_and_change_status_capabilities(self, role_users):
         admin = role_users["admin"]
         dean = role_users["dean"]
 
-        # Admin cannot perform operational ticket workflow
-        assert has_capability(admin, Capability.CHANGE_STATUS) is False
+        # Admin has status change capability, but does not escalate
+        assert has_capability(admin, Capability.CHANGE_STATUS) is True
         assert has_capability(admin, Capability.ESCALATE) is False
 
         # Dean CAN change status & reassign, but does not escalate (already top of chain L4)
@@ -193,19 +193,21 @@ class TestAdminOperationalRestrictions:
             category=category,
             hostel=role_users["hostel"],
             reporter=role_users["hosteler"],
-            status="OPEN",
+            status="ASSIGNED",
         )
 
         client.force_login(admin)
 
-        # Status change forbidden
+        # Status change is allowed for authority Admin
         res = client.post(
             reverse("tickets:change_status", kwargs={"ticket_no": ticket.ticket_no}),
             {"status": "IN_PROGRESS"},
         )
-        assert res.status_code == 403
+        assert res.status_code == 302
+        ticket.refresh_from_db()
+        assert ticket.status == "IN_PROGRESS"
 
-        # Comment forbidden
+        # Comment disabled/forbidden
         res = client.post(
             reverse("tickets:comment", kwargs={"ticket_no": ticket.ticket_no}),
             {"content": "Admin commenting here"},

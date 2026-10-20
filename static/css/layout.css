@@ -611,6 +611,8 @@
 
 /* Page Header (64px, Fix U-01) */
 .page-header {
+  position: relative;
+  z-index: 40;
   min-height: 64px;
   display: flex;
   align-items: center;
@@ -1216,10 +1218,10 @@ input:-webkit-autofill:active {
 @media (max-width: 1023px) {
   .ticket-detail-grid {
     grid-template-columns: 1fr !important;
-    gap: 16px !important;
+    gap: 20px !important;
   }
   .ticket-detail-side {
-    order: -1;
+    order: 2;
   }
   .hosteler-home-grid {
     grid-template-columns: 1fr !important;

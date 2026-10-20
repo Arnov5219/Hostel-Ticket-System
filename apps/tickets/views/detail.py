@@ -87,6 +87,10 @@ def ticket_detail(request, ticket_no):
         activities_qs = activities_qs.exclude(note__icontains="internal")
 
     user_can_delete, delete_block_reason = can_delete(request.user, ticket)
+    user_can_change_status = (
+        request.user.is_authenticated
+        and request.user.role in [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
+    )
 
     context = {
         "ticket": ticket,
@@ -103,5 +107,6 @@ def ticket_detail(request, ticket_no):
         "statuses": Status.choices,
         "user_can_delete": user_can_delete,
         "delete_block_reason": delete_block_reason,
+        "user_can_change_status": user_can_change_status,
     }
     return render(request, "tickets/detail.html", context)

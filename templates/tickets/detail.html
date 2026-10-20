@@ -37,28 +37,8 @@
       <span>Share</span>
     </button>
 
-    <!-- Staff Actions (Status, Reassign, Escalate) -->
+    <!-- Staff Actions (Reassign, Escalate, Status) -->
     {% if not request.user.is_hosteler %}
-      <div class="dropdown">
-        <button type="button" class="btn btn-secondary btn-sm" data-dropdown-toggle style="border-radius: var(--r-control);">
-          <span>Change status</span>
-          <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
-        </button>
-        <div class="dropdown-menu">
-          {% for st_code, st_label in statuses %}
-            {% if st_code != ticket.status %}
-            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
-              {% csrf_token %}
-              <input type="hidden" name="status" value="{{ st_code }}">
-              <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left; cursor: pointer;">
-                {% status_pill st_code %}
-              </button>
-            </form>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-
       <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('reassign-modal');" style="border-radius: var(--r-control);">
         <i data-lucide="user-check" style="width: 13px; height: 13px;"></i>
         <span>Reassign</span>
@@ -68,6 +48,31 @@
         <i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i>
         <span>Escalate</span>
       </button>
+
+      <div class="dropdown">
+        <button type="button" class="btn btn-secondary btn-sm" data-dropdown-toggle style="border-radius: var(--r-control);">
+          <span>Change status</span>
+          <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
+        </button>
+        <div class="dropdown-menu" style="right: 0; left: auto;">
+          {% for st_code, st_label in statuses %}
+            {% if st_code != ticket.status %}
+            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="{{ st_code }}">
+              {% if st_code == 'ON_HOLD' %}
+                <input type="hidden" name="note" value="Waiting for spare parts or approval.">
+              {% elif st_code == 'RESOLVED' %}
+                <input type="hidden" name="note" value="Repair completed and the issue has been tested.">
+              {% endif %}
+              <button type="submit" class="dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left; cursor: pointer; padding: 6px 10px;">
+                {% status_pill st_code %}
+              </button>
+            </form>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
     {% endif %}
 
     <!-- Hosteler close / reopen actions -->
@@ -110,10 +115,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="ticket-detail-grid" style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start;">
+<div class="ticket-detail-grid">
 
   <!-- LEFT COLUMN: Main Ticket Content, Evidence & Discussion -->
-  <div class="ticket-detail-main" style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+  <div class="ticket-detail-main">
     
     <!-- 1. Ticket Summary & Header Card (Mockup 6) -->
     <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
@@ -163,147 +168,14 @@
       {% endif %}
     </div>
 
+    <!-- 1.5. Authority Ticket Status Controls (Feature: Update Status) -->
+    {% include 'tickets/_status_update_panel.html' %}
+
     <!-- 2. Lifecycle Status Card (Mockup 6 Stepper) -->
-    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
-      
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Lifecycle status</h2>
-        <span style="font-size: 12px; font-weight: 600; color: var(--primary);">
-          {% if ticket.status == 'CLOSED' %}Step 4 of 4 (Closed)
-          {% elif ticket.status == 'RESOLVED' %}Step 4 of 4 (Awaiting confirmation)
-          {% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}Step 3 of 4 (In progress)
-          {% elif ticket.status == 'ASSIGNED' %}Step 2 of 4 (Assigned)
-          {% else %}Step 1 of 4 (Created)
-          {% endif %}
-        </span>
-      </div>
-
-      <!-- Vertical 4-Step Stepper -->
-      <div class="lifecycle-stepper" style="display: flex; flex-direction: column; gap: 0; padding-left: 6px;">
-        
-        <!-- Step 1: Created -->
-        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--st-resolved-fg); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
-              ✓
-            </div>
-            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; background: var(--st-resolved-fg);"></div>
-          </div>
-          <div style="flex: 1; padding-top: 2px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Ticket created</span>
-              <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.created_at|date:"M d, H:i" }}</span>
-            </div>
-            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-              Logged by {{ ticket.reporter.full_name|default:ticket.reporter.login_id }} via portal
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 2: Assigned -->
-        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status != 'OPEN' %}background: var(--st-resolved-fg); color: var(--white);{% else %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
-              {% if ticket.status != 'OPEN' %}✓{% else %}●{% endif %}
-            </div>
-            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status != 'OPEN' and ticket.status != 'ASSIGNED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
-          </div>
-          <div style="flex: 1; padding-top: 2px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Assigned to caretaker</span>
-              {% if ticket.assigned_to %}
-                <span style="font-size: 12px; color: var(--text-muted);">Level 1</span>
-              {% endif %}
-            </div>
-            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-              {% if ticket.assigned_to %}Allocated to {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}{% else %}Awaiting staff assignment in {{ ticket.hostel.code }}{% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3: In Progress / Escalated -->
-        <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
-              {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'IN_PROGRESS' or ticket.status == 'ON_HOLD' %}●{% else %}3{% endif %}
-            </div>
-            <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
-          </div>
-          <div style="flex: 1; padding-top: 2px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">In progress</span>
-              {% if ticket.current_level > 1 %}
-                <span class="level-chip l{{ ticket.current_level }}" style="font-size: 11px;">Tier L{{ ticket.current_level }}</span>
-              {% endif %}
-            </div>
-            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-              {% if ticket.current_level > 1 %}
-                Escalated to Level {{ ticket.current_level }} for priority resolution
-              {% elif ticket.status == 'IN_PROGRESS' %}
-                Under active inspection and repair
-              {% elif ticket.status == 'ON_HOLD' %}
-                Temporarily on hold for replacement parts
-              {% else %}
-                Technician dispatch and triage
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 4: Resolved & Verified -->
-        <div style="display: flex; gap: 14px; position: relative;">
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'RESOLVED' %}background: var(--kpi-progress); color: var(--white); box-shadow: 0 0 0 3px var(--notice-imp-bg);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
-              {% if ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'RESOLVED' %}●{% else %}4{% endif %}
-            </div>
-          </div>
-          <div style="flex: 1; padding-top: 2px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Resolved &amp; verified</span>
-              {% if ticket.resolved_at %}
-                <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.resolved_at|date:"M d, H:i" }}</span>
-              {% endif %}
-            </div>
-            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-              {% if ticket.status == 'CLOSED' %}
-                Confirmed resolved and closed
-              {% elif ticket.status == 'RESOLVED' %}
-                <span style="color: var(--kpi-progress); font-weight: 600;">Waiting for your confirmation</span>
-              {% else %}
-                Work verification and hosteler confirmation
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Confirmation CTA if Resolved and user is reporter -->
-      {% if ticket.status == 'RESOLVED' and request.user == ticket.reporter %}
-        <div style="background: var(--st-resolved-bg); border: 1px solid var(--st-resolved-fg); border-radius: var(--r-card-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 6px;">
-          <div>
-            <div style="font-weight: 700; font-size: 14px; color: var(--st-resolved-fg);">Has your issue been resolved?</div>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Confirm the repair to close this ticket, or reopen if you need further work.</div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
-              {% csrf_token %}
-              <input type="hidden" name="status" value="CLOSED">
-              <button type="submit" class="btn btn-primary btn-sm" style="background: var(--st-resolved-fg); border-color: var(--st-resolved-fg);">Confirm &amp; close</button>
-            </form>
-            <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
-              {% csrf_token %}
-              <input type="hidden" name="status" value="IN_PROGRESS">
-              <button type="submit" class="btn btn-secondary btn-sm">Reopen</button>
-            </form>
-          </div>
-        </div>
-      {% endif %}
-
-    </div>
+    {% include 'tickets/_lifecycle_card.html' %}
 
     <!-- 3. Ticket Timeline & Audit History -->
-    <div class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+    <div id="ticket-timeline-card" class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
       <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Activity Timeline</h3>
 
       {% include 'tickets/_activity.html' %}
@@ -312,7 +184,7 @@
   </div>
 
   <!-- RIGHT COLUMN: SLA Hero Card & Assigned Personnel -->
-  <div class="ticket-detail-side" style="display: flex; flex-direction: column; gap: 20px;">
+  <div class="ticket-detail-side">
     
     <!-- 1. SLA Hero Card (Mockup 6) -->
     <div class="card sla-hero-card" style="padding: 20px; border-radius: var(--r-card); background: var(--primary-soft); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 12px;">
@@ -421,10 +293,206 @@
 
 </div>
 
+<script>
+const STATUS_SUGGESTIONS = {
+  "ASSIGNED": "Ticket assigned to the responsible authority.",
+  "IN_PROGRESS": "Technician dispatched. Inspection is underway.",
+  "ON_HOLD": "Waiting for spare parts or approval.",
+  "RESOLVED": "Repair completed and the issue has been tested."
+};
+
+function toggleStatusPanel() {
+  const body = document.getElementById("status-panel-collapsible-body");
+  const chevron = document.getElementById("status-panel-chevron");
+  const toggleBtn = document.getElementById("status-panel-toggle-btn");
+  if (!body) return;
+
+  const isCollapsed = body.style.display === "none";
+  if (isCollapsed) {
+    body.style.display = "flex";
+    if (chevron) chevron.style.transform = "rotate(0deg)";
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+    localStorage.setItem("status_panel_collapsed", "false");
+  } else {
+    body.style.display = "none";
+    if (chevron) chevron.style.transform = "rotate(180deg)";
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+    localStorage.setItem("status_panel_collapsed", "true");
+  }
+}
+
+function selectStatusCard(statusCode) {
+  const input = document.getElementById("selected_ticket_status");
+  if (input) input.value = statusCode;
+
+  // Update card visual active states
+  const cards = document.querySelectorAll(".status-option-card");
+  cards.forEach(card => {
+    if (card.getAttribute("data-status-value") === statusCode) {
+      card.classList.add("is-active");
+    } else {
+      card.classList.remove("is-active");
+    }
+  });
+
+  // Update suggestion chip
+  const suggText = document.getElementById("suggestion-text");
+  if (suggText && STATUS_SUGGESTIONS[statusCode]) {
+    suggText.textContent = STATUS_SUGGESTIONS[statusCode];
+  }
+
+  // Status Note is optional for all statuses
+  const indicator = document.getElementById("note-required-indicator");
+  const noteInput = document.getElementById("status_note_input");
+  if (indicator && noteInput) {
+    indicator.textContent = "(optional)";
+    indicator.style.color = "var(--text-muted)";
+    indicator.style.fontWeight = "400";
+    noteInput.removeAttribute("required");
+  }
+
+  // Hide feedback message on change
+  const feedback = document.getElementById("status-feedback-msg");
+  if (feedback) feedback.style.display = "none";
+}
+
+function applySuggestedNote() {
+  const suggText = document.getElementById("suggestion-text");
+  const noteInput = document.getElementById("status_note_input");
+  if (suggText && noteInput) {
+    noteInput.value = suggText.textContent.trim();
+    noteInput.focus();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  // Restore collapsed state preference if saved
+  if (localStorage.getItem("status_panel_collapsed") === "true") {
+    const body = document.getElementById("status-panel-collapsible-body");
+    const chevron = document.getElementById("status-panel-chevron");
+    const toggleBtn = document.getElementById("status-panel-toggle-btn");
+    if (body) body.style.display = "none";
+    if (chevron) chevron.style.transform = "rotate(180deg)";
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+  }
+
+  const form = document.getElementById("ticket-status-form");
+  if (!form) return;
+
+  const btn = document.getElementById("save-status-btn");
+  const spinner = btn ? btn.querySelector(".btn-spinner") : null;
+  const icon = btn ? btn.querySelector(".btn-icon") : null;
+  const text = btn ? btn.querySelector(".btn-text") : null;
+  const feedback = document.getElementById("status-feedback-msg");
+
+  // Initialize suggestion based on current status
+  const currentStatusInput = document.getElementById("selected_ticket_status");
+  if (currentStatusInput && currentStatusInput.value) {
+    selectStatusCard(currentStatusInput.value);
+  }
+
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    if (!btn) return;
+
+    // Loading state
+    btn.disabled = true;
+    if (spinner) spinner.style.display = "inline-block";
+    if (icon) icon.style.display = "none";
+    if (text) text.textContent = "Saving...";
+    if (feedback) feedback.style.display = "none";
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json, text/html"
+        }
+      });
+
+      if (response.ok) {
+        if (feedback) {
+          feedback.style.display = "block";
+          feedback.style.background = "var(--st-resolved-bg)";
+          feedback.style.color = "var(--st-resolved-fg)";
+          feedback.style.border = "1px solid var(--st-resolved-fg)";
+          feedback.textContent = "Status updated successfully! Refreshing...";
+        }
+        // Smoothly reload page to refresh timeline, lifecycle stepper, and badges immediately
+        setTimeout(() => {
+          window.location.reload();
+        }, 350);
+      } else {
+        let errorMsg = "Unable to update status.";
+        try {
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await response.json();
+            if (data.error) errorMsg = data.error;
+          } else {
+            const errorText = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(errorText, "text/html");
+            const alert = doc.querySelector(".alert, [id*='feedback'], [class*='error']");
+            if (alert) errorMsg = alert.textContent.trim();
+          }
+        } catch (parseErr) {}
+
+        if (feedback) {
+          feedback.style.display = "block";
+          feedback.style.background = "var(--st-rejected-bg, #fee2e2)";
+          feedback.style.color = "var(--st-rejected-fg, #b91c1c)";
+          feedback.style.border = "1px solid var(--st-rejected-fg, #b91c1c)";
+          feedback.textContent = errorMsg || "Failed to update ticket status.";
+        }
+        btn.disabled = false;
+        if (spinner) spinner.style.display = "none";
+        if (icon) icon.style.display = "inline-block";
+        if (text) text.textContent = "Save Status";
+      }
+    } catch (err) {
+      // Fallback: standard POST if fetch encounters network error
+      form.submit();
+    }
+  });
+});
+</script>
+
 <style>
-@media (min-width: 900px) {
+/* Robust 3-part layout: Left Navigation, Central Content, and Right Sidebar */
+.ticket-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.ticket-detail-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ticket-detail-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 1023px) {
   .ticket-detail-grid {
-    grid-template-columns: minmax(0, 1fr) 340px !important;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .ticket-detail-side {
+    order: 2;
   }
 }
 </style>

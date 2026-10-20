@@ -201,9 +201,14 @@
             </div>
           {% endif %}
 
-          <h1 class="page-title {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}hide-on-mobile{% endif %}">
-            {% block page_title %}Hostel Ticket System{% endblock %}
-          </h1>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h1 class="page-title {% if current_section == 'dashboard' or request.resolver_match.url_name == 'home' %}hide-on-mobile{% endif %}">
+              {% block page_title %}Hostel Ticket System{% endblock %}
+            </h1>
+            <div class="page-title-extra" style="display: inline-flex; align-items: center; gap: 8px;">
+              {% block page_title_extra %}{% endblock %}
+            </div>
+          </div>
           <div class="page-subtitle hide-on-mobile">{% block page_subtitle %}{% endblock %}</div>
         </div>
 

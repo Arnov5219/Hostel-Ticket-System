@@ -1,0 +1,142 @@
+{% load ui %}
+
+<div id="lifecycle-status-card" class="card" style="padding: 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;">
+  
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Lifecycle status</h2>
+    <span style="font-size: 12px; font-weight: 600; color: {% if ticket.status == 'ON_HOLD' %}var(--st-hold-fg){% else %}var(--primary){% endif %};">
+      {% if ticket.status == 'CLOSED' %}Step 4 of 4 (Closed)
+      {% elif ticket.status == 'RESOLVED' %}Step 4 of 4 (Awaiting confirmation)
+      {% elif ticket.status == 'ON_HOLD' %}Step 3 of 4 (On Hold)
+      {% elif ticket.status == 'IN_PROGRESS' %}Step 3 of 4 (In progress)
+      {% elif ticket.status == 'ASSIGNED' %}Step 2 of 4 (Assigned)
+      {% else %}Step 1 of 4 (Created)
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Vertical 4-Step Stepper -->
+  <div class="lifecycle-stepper" style="display: flex; flex-direction: column; gap: 0; padding-left: 6px;">
+    
+    <!-- Step 1: Created -->
+    <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--st-resolved-fg); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+          ✓
+        </div>
+        <div style="position: absolute; top: 26px; bottom: 0; width: 2px; background: var(--st-resolved-fg);"></div>
+      </div>
+      <div style="flex: 1; padding-top: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Ticket created</span>
+          <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.created_at|date:"M d, H:i" }}</span>
+        </div>
+        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+          Logged by {{ ticket.reporter.full_name|default:ticket.reporter.login_id }} via portal
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Assigned -->
+    <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status != 'OPEN' %}background: var(--st-resolved-fg); color: var(--white);{% else %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+          {% if ticket.status != 'OPEN' %}✓{% else %}●{% endif %}
+        </div>
+        <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status != 'OPEN' and ticket.status != 'ASSIGNED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
+      </div>
+      <div style="flex: 1; padding-top: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Assigned to caretaker</span>
+          {% if ticket.assigned_to %}
+            <span style="font-size: 12px; color: var(--text-muted);">Level 1</span>
+          {% endif %}
+        </div>
+        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+          {% if ticket.assigned_to %}Allocated to {{ ticket.assigned_to.full_name|default:ticket.assigned_to.login_id }}{% else %}Awaiting staff assignment in {{ ticket.hostel.code }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: In Progress / On Hold -->
+    <div style="display: flex; gap: 14px; position: relative; padding-bottom: 22px;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'ON_HOLD' %}background: var(--st-hold-fg); color: var(--white); box-shadow: 0 0 0 3px var(--st-hold-bg);{% elif ticket.status == 'IN_PROGRESS' %}background: var(--primary); color: var(--white); box-shadow: 0 0 0 3px var(--primary-soft);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+          {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'ON_HOLD' %}⏸{% elif ticket.status == 'IN_PROGRESS' %}●{% else %}3{% endif %}
+        </div>
+        <div style="position: absolute; top: 26px; bottom: 0; width: 2px; {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}background: var(--st-resolved-fg);{% else %}background: var(--border);{% endif %}"></div>
+      </div>
+      <div style="flex: 1; padding-top: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
+            {% if ticket.status == 'ON_HOLD' %}On Hold{% else %}In progress{% endif %}
+          </span>
+          {% if ticket.current_level > 1 %}
+            <span class="level-chip l{{ ticket.current_level }}" style="font-size: 11px;">Tier L{{ ticket.current_level }}</span>
+          {% endif %}
+        </div>
+        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+          {% if ticket.status == 'ON_HOLD' %}
+            <span style="color: var(--st-hold-fg); font-weight: 600;">Work temporarily paused (e.g., parts/materials needed)</span>
+          {% elif ticket.current_level > 1 %}
+            Escalated to Level {{ ticket.current_level }} for priority resolution
+          {% elif ticket.status == 'IN_PROGRESS' %}
+            Under active inspection and repair
+          {% else %}
+            Technician dispatch and triage
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Resolved & Verified -->
+    <div style="display: flex; gap: 14px; position: relative;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; {% if ticket.status == 'CLOSED' %}background: var(--st-resolved-fg); color: var(--white);{% elif ticket.status == 'RESOLVED' %}background: var(--kpi-progress); color: var(--white); box-shadow: 0 0 0 3px var(--notice-imp-bg);{% else %}border: 2px solid var(--border-strong); background: var(--bg-surface); color: var(--text-muted);{% endif %} display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 2;">
+          {% if ticket.status == 'CLOSED' %}✓{% elif ticket.status == 'RESOLVED' %}●{% else %}4{% endif %}
+        </div>
+      </div>
+      <div style="flex: 1; padding-top: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Resolved &amp; verified</span>
+          {% if ticket.resolved_at %}
+            <span style="font-size: 12px; color: var(--text-muted);">{{ ticket.resolved_at|date:"M d, H:i" }}</span>
+          {% endif %}
+        </div>
+        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+          {% if ticket.status == 'CLOSED' %}
+            Confirmed resolved and closed
+          {% elif ticket.status == 'RESOLVED' %}
+            <span style="color: var(--kpi-progress); font-weight: 600;">Waiting for hosteler confirmation</span>
+          {% else %}
+            Work verification and hosteler confirmation
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Confirmation CTA if Resolved and user is reporter -->
+  {% if ticket.status == 'RESOLVED' and request.user == ticket.reporter %}
+    <div style="background: var(--st-resolved-bg); border: 1px solid var(--st-resolved-fg); border-radius: var(--r-card-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 6px;">
+      <div>
+        <div style="font-weight: 700; font-size: 14px; color: var(--st-resolved-fg);">Has your issue been resolved?</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Confirm the repair to close this ticket, or reopen if you need further work.</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="CLOSED">
+          <button type="submit" class="btn btn-primary btn-sm" style="background: var(--st-resolved-fg); border-color: var(--st-resolved-fg);">Confirm &amp; close</button>
+        </form>
+        <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="IN_PROGRESS">
+          <button type="submit" class="btn btn-secondary btn-sm">Reopen</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+</div>

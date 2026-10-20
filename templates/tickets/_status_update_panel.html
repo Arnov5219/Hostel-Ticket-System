@@ -1,0 +1,450 @@
+{% load ui %}
+
+<div id="status-update-control-card" class="card" style="padding: 20px 24px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 0;">
+  <!-- Header: Title, Current Status, and Collapse Toggle -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; cursor: pointer; user-select: none;"
+       id="status-panel-toggle-btn"
+       onclick="toggleStatusPanel()"
+       role="button"
+       tabindex="0"
+       aria-expanded="true"
+       aria-controls="status-panel-collapsible-body"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleStatusPanel();}">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 34px; height: 34px; border-radius: var(--r-control); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+        <i data-lucide="sliders" style="width: 18px; height: 18px;"></i>
+      </div>
+      <div>
+        <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.2;">Update Status</h3>
+        <span style="font-size: 12px; color: var(--text-muted);">Manage ticket operational lifecycle state</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">Current Status:</span>
+        {% status_pill ticket.status %}
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding: 4px; border-radius: var(--radius-sm); color: var(--text-muted);" aria-label="Toggle status panel">
+        <i data-lucide="chevron-up" id="status-panel-chevron" style="width: 18px; height: 18px; transition: transform var(--t-fast) var(--ease);"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="status-panel-collapsible-body" style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px;">
+  {% if user_can_change_status %}
+    <form method="post"
+          action="{% url 'tickets:change_status' ticket.ticket_no %}"
+          id="ticket-status-form"
+          style="display: flex; flex-direction: column; gap: 16px; margin: 0;">
+      {% csrf_token %}
+
+      <!-- Hidden input holding selected status code -->
+      <input type="hidden" name="status" id="selected_ticket_status" value="{{ ticket.status }}">
+
+      <!-- 4 Selectable Status Cards (Example 2 Design) -->
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em;">
+          Select New Status
+        </label>
+        
+        <div class="status-cards-grid">
+          <!-- 1. ASSIGNED -->
+          <div class="status-option-card {% if ticket.status == 'ASSIGNED' %}is-active{% endif %}"
+               data-status-value="ASSIGNED"
+               role="button"
+               tabindex="0"
+               onclick="selectStatusCard('ASSIGNED')"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStatusCard('ASSIGNED');}">
+            <div class="status-card-header">
+              <div class="status-card-icon-wrap icon-neutral">
+                <i data-lucide="clipboard-check" style="width: 17px; height: 17px;"></i>
+              </div>
+              <div class="status-card-check">
+                <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+              </div>
+            </div>
+            <div class="status-card-label">Assigned</div>
+            <div class="status-card-desc">Waiting to be started</div>
+          </div>
+
+          <!-- 2. IN_PROGRESS -->
+          <div class="status-option-card {% if ticket.status == 'IN_PROGRESS' %}is-active{% endif %}"
+               data-status-value="IN_PROGRESS"
+               role="button"
+               tabindex="0"
+               onclick="selectStatusCard('IN_PROGRESS')"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStatusCard('IN_PROGRESS');}">
+            <div class="status-card-header">
+              <div class="status-card-icon-wrap icon-blue">
+                <i data-lucide="wrench" style="width: 17px; height: 17px;"></i>
+              </div>
+              <div class="status-card-check">
+                <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+              </div>
+            </div>
+            <div class="status-card-label">In Progress</div>
+            <div class="status-card-desc">Work is underway</div>
+          </div>
+
+          <!-- 3. ON_HOLD -->
+          <div class="status-option-card {% if ticket.status == 'ON_HOLD' %}is-active{% endif %}"
+               data-status-value="ON_HOLD"
+               role="button"
+               tabindex="0"
+               onclick="selectStatusCard('ON_HOLD')"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStatusCard('ON_HOLD');}">
+            <div class="status-card-header">
+              <div class="status-card-icon-wrap icon-amber">
+                <i data-lucide="pause-circle" style="width: 17px; height: 17px;"></i>
+              </div>
+              <div class="status-card-check">
+                <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+              </div>
+            </div>
+            <div class="status-card-label">On Hold</div>
+            <div class="status-card-desc">Temporarily paused</div>
+          </div>
+
+          <!-- 4. RESOLVED -->
+          <div class="status-option-card {% if ticket.status == 'RESOLVED' %}is-active{% endif %}"
+               data-status-value="RESOLVED"
+               role="button"
+               tabindex="0"
+               onclick="selectStatusCard('RESOLVED')"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStatusCard('RESOLVED');}">
+            <div class="status-card-header">
+              <div class="status-card-icon-wrap icon-green">
+                <i data-lucide="check-circle-2" style="width: 17px; height: 17px;"></i>
+              </div>
+              <div class="status-card-check">
+                <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+              </div>
+            </div>
+            <div class="status-card-label">Resolved</div>
+            <div class="status-card-desc">Issue fixed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Chip Bar -->
+      <div id="status-suggestion-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Suggestion:</span>
+        <button type="button"
+                id="status-suggestion-chip"
+                class="suggestion-pill"
+                onclick="applySuggestedNote()"
+                title="Click to apply suggested note">
+          <i data-lucide="sparkles" style="width: 12px; height: 12px; color: var(--primary);"></i>
+          <span id="suggestion-text">Ticket assigned to the responsible authority.</span>
+        </button>
+      </div>
+
+      <!-- Note Input & Save Button Group -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="status_note_input" style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary);">
+            Status Note <span id="note-required-indicator" style="font-size: 11px; font-weight: 400; color: var(--text-muted);">(optional)</span>
+          </label>
+        </div>
+        
+        <div class="status-action-row">
+          <div style="flex: 1; min-width: 0;">
+            <input type="text"
+                   name="note"
+                   id="status_note_input"
+                   class="form-control"
+                   placeholder="e.g. Technician dispatched / Parts ordered..."
+                   style="width: 100%; height: 42px; padding: 0 14px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); font-size: 13.5px; outline: none; transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);">
+          </div>
+
+          <button type="submit"
+                  id="save-status-btn"
+                  class="btn btn-primary"
+                  style="height: 42px; padding: 0 22px; font-weight: 600; font-size: 13.5px; border-radius: var(--r-control); display: inline-flex; align-items: center; gap: 8px; justify-content: center; min-width: 135px; flex-shrink: 0;">
+            <span class="btn-spinner" style="display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+            <i data-lucide="check" class="btn-icon" style="width: 15px; height: 15px;"></i>
+            <span class="btn-text">Save Status</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile / Secondary Action: Reject This Ticket -->
+      {% if ticket.status != 'REJECTED' and ticket.status != 'CLOSED' %}
+        <div class="mobile-reject-action-container" style="display: flex; justify-content: flex-end; padding-top: 4px; border-top: 1px dashed var(--border);">
+          <button type="button"
+                  id="mobile-reject-ticket-btn"
+                  class="btn btn-ghost btn-sm"
+                  onclick="openModal('reject-ticket-modal')"
+                  style="color: var(--st-open-fg, #ef4444); display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: var(--r-control);">
+            <i data-lucide="x-circle" style="width: 15px; height: 15px;"></i>
+            <span>Reject this ticket</span>
+          </button>
+        </div>
+      {% endif %}
+
+      <!-- Feedback Banner -->
+      <div id="status-feedback-msg" style="display: none; font-size: 12.5px; padding: 10px 14px; border-radius: var(--radius-sm); font-weight: 500;"></div>
+    </form>
+
+    <!-- Reject Ticket Modal -->
+    <div id="reject-ticket-modal" class="app-modal-backdrop" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; padding: 16px;">
+      <div class="card app-modal-dialog" style="max-width: 440px; width: 100%; padding: 22px; border-radius: var(--r-card); background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-xl); display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: var(--r-control); background: var(--st-open-bg, #fee2e2); color: var(--st-open-fg, #ef4444); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="x-circle" style="width: 18px; height: 18px;"></i>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Reject This Ticket</h3>
+          </div>
+          <button type="button" class="btn btn-ghost app-modal-close" onclick="closeModal('reject-ticket-modal')" style="padding: 4px; color: var(--text-muted);">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+          Are you sure you want to reject ticket <strong>{{ ticket.ticket_no }}</strong>? This marks the ticket as rejected and notifies the reporter.
+        </p>
+
+        <form method="post" action="{% url 'tickets:change_status' ticket.ticket_no %}" style="display: flex; flex-direction: column; gap: 14px; margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="REJECTED">
+          <div>
+            <label for="reject_reason_note" style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
+              Rejection Reason <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">(optional)</span>
+            </label>
+            <textarea id="reject_reason_note"
+                      name="note"
+                      class="form-control"
+                      rows="3"
+                      placeholder="e.g. Duplicate issue / Outside hostel maintenance scope..."
+                      style="width: 100%; padding: 8px 12px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); font-size: 13px; resize: vertical;"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('reject-ticket-modal')" style="border-radius: var(--r-control); font-size: 13px;">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-danger" style="background: var(--danger, #ef4444); color: white; border-radius: var(--r-control); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i>
+              <span>Confirm Reject</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <div style="font-size: 13px; color: var(--text-muted); background: var(--bg-subtle); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="shield-alert" style="width: 16px; height: 16px; color: var(--primary); flex-shrink: 0;"></i>
+      <span>Ticket status is managed by campus authority staff.</span>
+    </div>
+  {% endif %}
+  </div>
+</div>
+
+<style>
+/* Status Cards Grid System */
+.status-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .status-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+/* Individual Status Card */
+.status-option-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 14px 12px;
+  border-radius: var(--r-control);
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--t-fast) var(--ease);
+  min-height: 98px;
+}
+
+.status-option-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-option-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Header & Icons inside Card */
+.status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.status-card-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.status-card-icon-wrap.icon-neutral {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.status-card-icon-wrap.icon-blue {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.status-card-icon-wrap.icon-amber {
+  background: var(--st-hold-bg);
+  color: var(--st-hold-fg);
+}
+
+.status-card-icon-wrap.icon-green {
+  background: var(--st-resolved-bg);
+  color: var(--st-resolved-fg);
+}
+
+/* Check circle indicator */
+.status-card-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all var(--t-fast) var(--ease);
+  background: var(--bg-surface);
+}
+
+/* Active Selected State */
+.status-option-card.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.status-option-card.is-active[data-status-value="ASSIGNED"] {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.status-option-card.is-active[data-status-value="ON_HOLD"] {
+  border-color: var(--st-hold-fg);
+  background: var(--st-hold-bg);
+  box-shadow: 0 0 0 1px var(--st-hold-fg);
+}
+
+.status-option-card.is-active[data-status-value="RESOLVED"] {
+  border-color: var(--st-resolved-fg);
+  background: var(--st-resolved-bg);
+  box-shadow: 0 0 0 1px var(--st-resolved-fg);
+}
+
+.status-option-card.is-active .status-card-check {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
+
+.status-option-card.is-active[data-status-value="ASSIGNED"] .status-card-check {
+  background: var(--text-secondary);
+  border-color: var(--text-secondary);
+  color: var(--white);
+}
+
+.status-option-card.is-active[data-status-value="ON_HOLD"] .status-card-check {
+  background: var(--st-hold-fg);
+  border-color: var(--st-hold-fg);
+  color: var(--white);
+}
+
+.status-option-card.is-active[data-status-value="RESOLVED"] .status-card-check {
+  background: var(--st-resolved-fg);
+  border-color: var(--st-resolved-fg);
+  color: var(--white);
+}
+
+/* Text inside card */
+.status-card-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.status-card-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin-top: 3px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Suggestion Pill */
+.suggestion-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-strong);
+  padding: 4px 10px;
+  border-radius: var(--r-chip);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  text-align: left;
+}
+
+.suggestion-pill:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+  border-style: solid;
+}
+
+/* Action row responsiveness */
+.status-action-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .status-action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .status-action-row button {
+    width: 100%;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>

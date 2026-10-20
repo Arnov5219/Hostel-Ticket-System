@@ -46,6 +46,7 @@ ADMIN_CAPABILITIES = frozenset({
     Capability.VIEW_ASSIGNED_TICKETS,
     Capability.VIEW_HOSTEL_TICKETS,
     Capability.VIEW_ALL_TICKETS,
+    Capability.CHANGE_STATUS,
     Capability.REASSIGN_TICKET,
     Capability.DELETE_TICKET,
     Capability.RESTORE_TICKET,

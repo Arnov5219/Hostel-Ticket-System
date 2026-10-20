@@ -1,4 +1,4 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse, JsonResponse
@@ -14,6 +14,7 @@ from apps.core.permissions import (
 from apps.notifications.services import notify_ticket_reassigned
 from apps.tickets.models import (
     ActivityAction,
+    Status,
     Ticket,
     TicketActivity,
 )
@@ -30,20 +31,71 @@ def add_comment(request, ticket_no):
     raise PermissionDenied("Ticket comments have been disabled.")
 
 
+AUTHORITY_ROLES = [Role.CARETAKER, Role.WARDEN, Role.CHIEF_WARDEN, Role.DEAN, Role.ADMIN]
+ALLOWED_STATUS_INPUTS = {Status.ASSIGNED, Status.IN_PROGRESS, Status.ON_HOLD, Status.RESOLVED, Status.CLOSED, Status.REJECTED}
+
+
 @login_required
 def change_status(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
-        raise PermissionDenied("Admin cannot change ticket status.")
+    user_role = getattr(request.user, "role", None)
+
+    # Authority roles can update ticket status; hostellers cannot unless confirming/reopening their own ticket
+    is_authority = user_role in AUTHORITY_ROLES or request.user.is_superuser
+    is_reporter = request.user == ticket.reporter and user_role == Role.HOSTELER
+
+    if not is_authority and not is_reporter:
+        if request.headers.get("HX-Request") == "true" or request.headers.get("Accept") == "application/json":
+            return JsonResponse({"error": "You do not have permission to change ticket status."}, status=403)
+        raise PermissionDenied("You do not have permission to change ticket status.")
 
     if request.method == "POST":
         new_status = request.POST.get("status")
         note = request.POST.get("note", "").strip()
+
+        # Reporter restriction: can only confirm close (when RESOLVED) or reopen (when RESOLVED/CLOSED)
+        if is_reporter and not is_authority:
+            if new_status == Status.CLOSED and ticket.status == Status.RESOLVED:
+                pass  # Permitted
+            elif new_status == Status.IN_PROGRESS and ticket.status in [Status.RESOLVED, Status.CLOSED]:
+                pass  # Permitted
+            else:
+                if request.headers.get("HX-Request") == "true":
+                    return JsonResponse({"error": "Hostellers cannot change ticket status."}, status=403)
+                raise PermissionDenied("Hostellers cannot change ticket status.")
+
+        # Note requirement validation for authority status changes:
+        is_ajax = (
+            request.headers.get("HX-Request") == "true"
+            or request.headers.get("x-requested-with", "").lower() == "xmlhttprequest"
+            or "application/json" in request.headers.get("accept", "").lower()
+        )
+
+        # Note requirement: status note is optional per requirements
+
+
         try:
             service_change_status(ticket, new_status, actor=request.user, note=note)
+            if request.headers.get("HX-Request") == "true":
+                messages.success(request, f"Ticket status changed to {new_status}.")
+                # Return partials or signal refresh
+                response = render(request, "tickets/_status_update_panel.html", {
+                    "ticket": ticket,
+                    "user_can_change_status": is_authority,
+                    "success_message": f"Status updated to {ticket.get_status_display()}.",
+                })
+                response["HX-Trigger"] = "ticketStatusUpdated"
+                return response
             messages.success(request, f"Ticket status changed to {new_status}.")
         except ValidationError as e:
-            messages.error(request, str(e.message if hasattr(e, "message") else e))
+            err_msg = str(e.message if hasattr(e, "message") else e)
+            if request.headers.get("HX-Request") == "true":
+                return render(request, "tickets/_status_update_panel.html", {
+                    "ticket": ticket,
+                    "user_can_change_status": is_authority,
+                    "error_message": err_msg,
+                }, status=400)
+            messages.error(request, err_msg)
 
     return redirect("tickets:detail", ticket_no=ticket.ticket_no)
 
@@ -51,8 +103,9 @@ def change_status(request, ticket_no):
 @login_required
 def move_ticket(request, ticket_no):
     ticket = get_object_or_404(Ticket, ticket_no=ticket_no)
-    if getattr(request.user, "role", None) == Role.ADMIN or not has_capability(request.user, Capability.CHANGE_STATUS):
-        raise PermissionDenied("Admin cannot change ticket status.")
+    user_role = getattr(request.user, "role", None)
+    if user_role not in AUTHORITY_ROLES and not request.user.is_superuser:
+        raise PermissionDenied("You do not have permission to change ticket status.")
 
     if request.method == "POST":
         new_status = request.POST.get("status")

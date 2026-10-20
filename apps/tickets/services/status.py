@@ -1,4 +1,4 @@
-﻿from datetime import timedelta
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -21,8 +21,8 @@ ALLOWED_TRANSITIONS = {
         Status.REJECTED,
         Status.RESOLVED,
     ],
-    Status.IN_PROGRESS: [Status.ON_HOLD, Status.RESOLVED, Status.CLOSED],
-    Status.ON_HOLD: [Status.IN_PROGRESS, Status.RESOLVED],
+    Status.IN_PROGRESS: [Status.ON_HOLD, Status.RESOLVED, Status.CLOSED, Status.REJECTED],
+    Status.ON_HOLD: [Status.IN_PROGRESS, Status.RESOLVED, Status.REJECTED],
     Status.RESOLVED: [Status.CLOSED, Status.IN_PROGRESS],  # In_progress on reopen
     Status.CLOSED: [Status.IN_PROGRESS],  # Reopen
     Status.REJECTED: [],
