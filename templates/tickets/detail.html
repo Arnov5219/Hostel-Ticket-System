@@ -238,14 +238,7 @@
         {% endif %}
       </div>
 
-      {% if ticket.assigned_to and ticket.assigned_to.phone %}
-        <div style="display: flex; gap: 8px; margin-top: 4px;">
-          <a href="tel:{{ ticket.assigned_to.phone }}" class="btn btn-secondary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
-            <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--primary);"></i>
-            <span>Call</span>
-          </a>
-        </div>
-      {% endif %}
+
     </div>
 
     <!-- 3. Ticket Context Details Card -->

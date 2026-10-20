@@ -302,12 +302,6 @@
           </div>
 
           <div style="display: flex; gap: 8px; margin-top: 2px;">
-            {% if caretaker.phone %}
-              <a href="tel:{{ caretaker.phone }}" class="btn btn-secondary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
-                <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--primary);"></i>
-                <span>Call office</span>
-              </a>
-            {% endif %}
             <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="flex: 1; height: 38px; border-radius: var(--r-control); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
               <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
               <span>Report issue</span>
